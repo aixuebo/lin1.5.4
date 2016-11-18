@@ -2,3 +2,11 @@
 *.idea
 *target
 *.bak
+/storage-hbase/src/test/java
+/storage-hbase/src/test/resources
+/core-dictionary/src/test/java
+/core-dictionary/src/test/resources
+/examples
+/job
+/odbc
+/webapp
