@@ -23,7 +23,5 @@ License
 ============
 Please refer to [LICENSE](https://github.com/apache/kylin/blob/master/LICENSE) file.
 
-
-
-
+kylin1.5.4.1
 
