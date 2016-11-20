@@ -30,6 +30,7 @@ import org.apache.kylin.dict.DictionaryInfoSerializer;
 
 public class DumpDictionaryCLI {
 
+    //参数是一组path路径集合
     public static void main(String[] args) throws IOException {
         for (String path : args) {
             dump(new File(path));
@@ -37,13 +38,13 @@ public class DumpDictionaryCLI {
     }
 
     public static void dump(File f) throws IOException {
-        if (f.isDirectory()) {
+        if (f.isDirectory()) {//打印该目录下所有文件
             for (File c : f.listFiles())
                 dump(c);
             return;
         }
 
-        if (f.getName().endsWith(".dict")) {
+        if (f.getName().endsWith(".dict")) {//如果文件是.dict就执行
             DictionaryInfoSerializer ser = new DictionaryInfoSerializer();
             DictionaryInfo dictInfo = ser.deserialize(new DataInputStream(new FileInputStream(f)));
 
