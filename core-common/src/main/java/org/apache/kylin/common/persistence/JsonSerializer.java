@@ -25,7 +25,8 @@ import java.io.IOException;
 import org.apache.kylin.common.util.JsonUtil;
 
 /**
- * @author yangli9  
+ * @author yangli9
+ * 是T对象进行json序列化
  */
 public class JsonSerializer<T extends RootPersistentEntity> implements Serializer<T> {
 

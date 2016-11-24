@@ -32,7 +32,7 @@ import org.apache.kylin.common.KylinConfig;
  */
 public abstract class SingleValueCache<K, V> extends AbstractRestCache<K, V> {
 
-    private final ConcurrentMap<K, V> innerCache;
+    private final ConcurrentMap<K, V> innerCache;//内部缓存,put的时候都存储到缓存里面
 
     public SingleValueCache(KylinConfig config, Broadcaster.TYPE syncType) {
         this(config, syncType, new ConcurrentHashMap<K, V>());
@@ -43,6 +43,7 @@ public abstract class SingleValueCache<K, V> extends AbstractRestCache<K, V> {
         this.innerCache = innerCache;
     }
 
+    //不仅仅存储缓存,还要向广播推送数据
     public void put(K key, V value) {
         boolean exists = innerCache.containsKey(key);
 
@@ -55,6 +56,7 @@ public abstract class SingleValueCache<K, V> extends AbstractRestCache<K, V> {
         }
     }
 
+    //只是存储在缓存里面
     public void putLocal(K key, V value) {
         innerCache.put(key, value);
     }

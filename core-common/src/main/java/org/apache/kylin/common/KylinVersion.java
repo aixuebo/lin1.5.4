@@ -35,16 +35,17 @@ public class KylinVersion {
     private static final String COMMIT_SHA1_v15 = "commit_SHA1";
     private static final String COMMIT_SHA1_v13 = "commit.sha1";
 
-    public int major;
-    public int minor;
+    public int major;//主板本
+    public int minor;//小版本
     public int revision;
-    public boolean isSnapshot;
+    public boolean isSnapshot;//是否快照
 
+    //通过version内容确定版本以及是否是快照
     public KylinVersion(String version) {
 
         Preconditions.checkNotNull(version);
 
-        int index = version.indexOf("-");//index of "-SNAPSHOT"
+        int index = version.indexOf("-");//index of "-SNAPSHOT" 快照使用-SNAPSHOT表示
         String[] splits;
         if (index == -1) {
             splits = version.split("\\.");
@@ -59,6 +60,7 @@ public class KylinVersion {
         revision = Integer.parseInt(splits[2]);
     }
 
+    //创建版本
     @Override
     public String toString() {
         return "" + major + "." + minor + "." + revision;
@@ -66,6 +68,7 @@ public class KylinVersion {
 
     /**
      * Require MANUAL updating kylin version per ANY upgrading.
+     * 当前版本
      */
     private static final KylinVersion CURRENT_KYLIN_VERSION = new KylinVersion("1.5.4.1");
 
@@ -140,6 +143,7 @@ public class KylinVersion {
         return buf.toString();
     }
 
+    //获取git版本信息
     public static String getGitCommitInfo() {
         try {
             File commitFile = new File(KylinConfig.getKylinHome(), COMMIT_SHA1_v15);

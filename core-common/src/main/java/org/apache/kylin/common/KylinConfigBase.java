@@ -77,6 +77,7 @@ abstract public class KylinConfigBase implements Serializable {
         return getOptional(prop, null);
     }
 
+    //先从system查询,再从Properties中查询,因此System优先级>Properties
     protected String getOptional(String prop, String dft) {
         final String property = System.getProperty(prop);
         return property != null ? property : properties.getProperty(prop, dft);
@@ -86,6 +87,7 @@ abstract public class KylinConfigBase implements Serializable {
         return properties;
     }
 
+    //返回key由前缀组成的属性集合
     final protected Map<String, String> getPropertiesByPrefix(String prefix) {
         Map<String, String> result = Maps.newLinkedHashMap();
         for (Entry<Object, Object> entry : getAllProperties().entrySet()) {
@@ -97,6 +99,8 @@ abstract public class KylinConfigBase implements Serializable {
         return result;
     }
 
+
+    //按照逗号拆分成数组
     final protected String[] getOptionalStringArray(String prop, String[] dft) {
         final String property = getOptional(prop);
         if (!StringUtils.isBlank(property)) {
@@ -115,6 +119,7 @@ abstract public class KylinConfigBase implements Serializable {
         return intArray;
     }
 
+    //该属性对应的key必须存在
     final public String getRequired(String prop) {
         String r = getOptional(prop);
         if (StringUtils.isEmpty(r)) {
@@ -145,6 +150,7 @@ abstract public class KylinConfigBase implements Serializable {
         return getOptional("kylin.metadata.url");
     }
 
+    //设置数据源配置路径,即一个本地目录
     public void setMetadataUrl(String metadataUrl) {
         setProperty("kylin.metadata.url", metadataUrl);
     }
@@ -225,6 +231,7 @@ abstract public class KylinConfigBase implements Serializable {
         return getOptional("kylin.job.log.dir", "/tmp/kylin/logs");
     }
 
+    //kylin 设置job启动的主要jar
     public String getKylinJobJarPath() {
         final String jobJar = getOptional("kylin.job.jar");
         if (StringUtils.isNotEmpty(jobJar)) {
@@ -268,6 +275,7 @@ abstract public class KylinConfigBase implements Serializable {
     }
 
     private static final Pattern COPROCESSOR_JAR_NAME_PATTERN = Pattern.compile("kylin-coprocessor-(.+)\\.jar");
+    //设置job启动的主要jar
     private static final Pattern JOB_JAR_NAME_PATTERN = Pattern.compile("kylin-job-(.+)\\.jar");
     private static final Pattern SPARK_JOB_JAR_NAME_PATTERN = Pattern.compile("kylin-engine-spark-(.+)\\.jar");
 
@@ -314,14 +322,17 @@ abstract public class KylinConfigBase implements Serializable {
         return Double.parseDouble(getOptional("kylin.job.mapreduce.default.reduce.count.ratio", "1.0"));
     }
 
+    //最小的reduce数量
     public int getHadoopJobMinReducerNumber() {
         return Integer.parseInt(getOptional("kylin.job.mapreduce.min.reducer.number", "1"));
     }
 
+    //最大的reduce数量
     public int getHadoopJobMaxReducerNumber() {
         return Integer.parseInt(getOptional("kylin.job.mapreduce.max.reducer.number", "500"));
     }
 
+    //每一个reduce要处理多少行数据
     public int getHadoopJobMapperInputRows() {
         return Integer.parseInt(getOptional("kylin.job.mapreduce.mapper.input.rows", "1000000"));
     }
@@ -370,6 +381,7 @@ abstract public class KylinConfigBase implements Serializable {
         return Boolean.parseBoolean(getOptional("kylin.job.allow.empty.segment", "true"));
     }
 
+    //hive的所在路径
     public String getOverrideHiveTableLocation(String table) {
         return getOptional("hive.table.location." + table.toUpperCase());
     }
@@ -390,6 +402,7 @@ abstract public class KylinConfigBase implements Serializable {
         return getOptional("kylin.rest.timezone", "PST");
     }
 
+    //存储一组服务器登录信息user:pwd@host:port
     public String[] getRestServers() {
         return getOptionalStringArray("kylin.rest.servers", new String[0]);
     }

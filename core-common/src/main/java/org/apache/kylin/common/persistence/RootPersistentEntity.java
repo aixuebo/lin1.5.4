@@ -33,7 +33,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * Marks the root entity of JSON persistence. Unit of read, write, cache, and
  * refresh.
- * 
+ * 该类是序列化的基本类
  * - CubeInstance - CubeDesc - SourceTable - JobMeta - Dictionary (not JSON but
  * also top level persistence)
  * 
@@ -43,16 +43,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
 abstract public class RootPersistentEntity implements AclEntity, Serializable {
 
+    //定义时间格式
     static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss z";
     static FastDateFormat format = FastDateFormat.getInstance(DATE_PATTERN);
     static DateFormat df = new SimpleDateFormat(DATE_PATTERN);
 
+    //时间戳返回时间格式
     public static String formatTime(long millis) {
         return format.format(millis);
     }
 
     // ============================================================================
-
+    //序列化的三个属性
     @JsonProperty("uuid")
     protected String uuid;
 
@@ -63,9 +65,12 @@ abstract public class RootPersistentEntity implements AclEntity, Serializable {
      * Metadata model version
      *
      * User info only, we don't do version control
+     * kylin的版本
      */
     @JsonProperty("version")
     protected String version = KylinVersion.getCurrentVersion().toString();
+
+    // ============================================================================
 
     public String getVersion() {
         return version;

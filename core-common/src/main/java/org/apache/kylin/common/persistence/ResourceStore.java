@@ -41,11 +41,12 @@ abstract public class ResourceStore {
 
     private static final Logger logger = LoggerFactory.getLogger(ResourceStore.class);
 
+    //定义跟目录
     public static final String CUBE_RESOURCE_ROOT = "/cube";
     public static final String CUBE_DESC_RESOURCE_ROOT = "/cube_desc";
     public static final String DATA_MODEL_DESC_RESOURCE_ROOT = "/model_desc";
     public static final String DICT_RESOURCE_ROOT = "/dict";
-    public static final String PROJECT_RESOURCE_ROOT = "/project";
+    public static final String PROJECT_RESOURCE_ROOT = "/project";//存储project内容,将该project对象序列化成json对象,存储到/project/projectName.json文件中
     public static final String SNAPSHOT_RESOURCE_ROOT = "/table_snapshot";
     public static final String TABLE_EXD_RESOURCE_ROOT = "/table_exd";
     public static final String TABLE_RESOURCE_ROOT = "/table";
@@ -61,13 +62,15 @@ abstract public class ResourceStore {
 
     private static final ConcurrentHashMap<KylinConfig, ResourceStore> CACHE = new ConcurrentHashMap<KylinConfig, ResourceStore>();
 
+    //多少种资源存储的实现类
     private static final ArrayList<Class<? extends ResourceStore>> knownImpl = new ArrayList<Class<? extends ResourceStore>>();
 
+    //获取目前默认的两种资源存储实现类
     private static ArrayList<Class<? extends ResourceStore>> getKnownImpl() {
         if (knownImpl.isEmpty()) {
-            knownImpl.add(FileResourceStore.class);
+            knownImpl.add(FileResourceStore.class);//文件存储
             try {
-                knownImpl.add(ClassUtil.forName("org.apache.kylin.storage.hbase.HBaseResourceStore", ResourceStore.class));
+                knownImpl.add(ClassUtil.forName("org.apache.kylin.storage.hbase.HBaseResourceStore", ResourceStore.class));//hbase存储
             } catch (Throwable e) {
                 logger.warn("Failed to load HBaseResourceStore impl class: " + e.toString());
             }
@@ -75,6 +78,7 @@ abstract public class ResourceStore {
         return knownImpl;
     }
 
+    //获取第一个能获取的存储资源
     private static ResourceStore createResourceStore(KylinConfig kylinConfig) {
         List<Throwable> es = new ArrayList<Throwable>();
         logger.info("Using metadata url " + kylinConfig.getMetadataUrl() + " for resource store");
@@ -117,10 +121,11 @@ abstract public class ResourceStore {
      * List resources and sub-folders under a given folder, return null if given path is not a folder
      */
     final public NavigableSet<String> listResources(String folderPath) throws IOException {
-        String path = norm(folderPath);
+        String path = norm(folderPath);//路径
         return listResourcesImpl(path);
     }
 
+    //子类实现
     abstract protected NavigableSet<String> listResourcesImpl(String folderPath) throws IOException;
 
     /**
@@ -134,14 +139,16 @@ abstract public class ResourceStore {
 
     /**
      * Read a resource, return null in case of not found or is a folder
+     * 获取resPath对应的文件
+     * 按照serializer序列化方式,将文件的内容转换成clz对象的实例
      */
     final public <T extends RootPersistentEntity> T getResource(String resPath, Class<T> clz, Serializer<T> serializer) throws IOException {
         resPath = norm(resPath);
-        RawResource res = getResourceImpl(resPath);
+        RawResource res = getResourceImpl(resPath);//获取文件对应的流
         if (res == null)
             return null;
 
-        DataInputStream din = new DataInputStream(res.inputStream);
+        DataInputStream din = new DataInputStream(res.inputStream);//读取数据
         try {
             T r = serializer.deserialize(din);
             r.setLastModified(res.timestamp);
@@ -152,23 +159,27 @@ abstract public class ResourceStore {
         }
     }
 
+    //获取一个文件路径对应的文件内容流和最后修改时间
     final public RawResource getResource(String resPath) throws IOException {
         return getResourceImpl(norm(resPath));
     }
 
+    //获取文件的最后修改时间
     final public long getResourceTimestamp(String resPath) throws IOException {
         return getResourceTimestampImpl(norm(resPath));
     }
 
     /**
-     * Read all resources under a folder. Return empty list if folder not exist. 
+     * Read all resources under a folder. Return empty list if folder not exist.
+     * 获取文件夹下所有的文件,并且范序列化成对象集合
      */
     final public <T extends RootPersistentEntity> List<T> getAllResources(String folderPath, Class<T> clazz, Serializer<T> serializer) throws IOException {
         return getAllResources(folderPath, Long.MIN_VALUE, Long.MAX_VALUE, clazz, serializer);
     }
 
     /**
-     * Read all resources under a folder having last modified time between given range. Return empty list if folder not exist. 
+     * Read all resources under a folder having last modified time between given range. Return empty list if folder not exist.
+     * 获取文件夹下所有的文件,并且范序列化成对象集合 只是加了一个过滤条件
      */
     final public <T extends RootPersistentEntity> List<T> getAllResources(String folderPath, long timeStart, long timeEndExclusive, Class<T> clazz, Serializer<T> serializer) throws IOException {
         final List<RawResource> allResources = getAllResourcesImpl(folderPath, timeStart, timeEndExclusive);
@@ -270,6 +281,7 @@ abstract public class ResourceStore {
 
     abstract protected String getReadableResourcePathImpl(String resPath);
 
+    //格式化路径
     private String norm(String resPath) {
         resPath = resPath.trim();
         while (resPath.startsWith("//"))
@@ -287,6 +299,7 @@ abstract public class ResourceStore {
         void visit(String path) throws IOException;
     }
 
+    //递归扫描path下所有的子子孙孙文件
     public void scanRecursively(String path, Visitor visitor) throws IOException {
         NavigableSet<String> children = listResources(path);
         if (children != null) {
@@ -299,6 +312,9 @@ abstract public class ResourceStore {
             visitor.visit(path);
     }
 
+    /**
+     * 扫描root下所有子子孙孙文件,找到以suffix结尾的文件集合
+     */
     public List<String> collectResourceRecursively(String root, final String suffix) throws IOException {
         final ArrayList<String> collector = Lists.newArrayList();
         scanRecursively(root, new Visitor() {

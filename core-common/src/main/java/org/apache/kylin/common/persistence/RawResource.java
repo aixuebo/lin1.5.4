@@ -24,8 +24,8 @@ import java.io.InputStream;
  */
 public class RawResource {
 
-    public final InputStream inputStream;
-    public final long timestamp;
+    public final InputStream inputStream;//对应文件的流
+    public final long timestamp;//文件的最后修改时间
 
     public RawResource(InputStream resource, long timestamp) {
         this.inputStream = resource;

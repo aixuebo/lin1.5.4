@@ -39,6 +39,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 优先读取$KYLIN_CONF/kylin.properties对应的配置文件
+ * 其次读取$KYLIN_HOME/conf/kylin.properties对应的配置文件
+ *
+ * 优先读取$KYLIN_CONF/kylin_account.properties对应的配置文件
+ * 其次读取$KYLIN_HOME/conf/kylin_account.properties对应的配置文件
+ *
+ * 然后读取kylin_account.properties.override和kylin.properties.override文件,对相关key进行覆盖操作
  */
 public class KylinConfig extends KylinConfigBase {
     private static final long serialVersionUID = 1L;
@@ -46,19 +53,20 @@ public class KylinConfig extends KylinConfigBase {
 
 
     /** Kylin properties file name */
-    public static final String KYLIN_CONF_PROPERTIES_FILE = "kylin.properties";
+    public static final String KYLIN_CONF_PROPERTIES_FILE = "kylin.properties";//读取在home/conf下的配置文件名称
     public static final String KYLIN_ACCOUNT_CONF_PROPERTIES_FILE = "kylin_account.properties";
-    public static final String KYLIN_CONF = "KYLIN_CONF";
+    public static final String KYLIN_CONF = "KYLIN_CONF";//kylin的home对应的key
 
     // static cached instances
-    private static KylinConfig ENV_INSTANCE = null;
+    private static KylinConfig ENV_INSTANCE = null;//单例模式
 
+    //创建配置对象
     public static KylinConfig getInstanceFromEnv() {
         synchronized (KylinConfig.class) {
             if (ENV_INSTANCE == null) {
                 try {
                     KylinConfig config = new KylinConfig();
-                    config.reloadKylinConfig(getKylinProperties());
+                    config.reloadKylinConfig(getKylinProperties());//读取配置文件,生成一个Properties对象,因此config对象就有了一个property内容了
 
                     logger.info("Initialized a new KylinConfig from getInstanceFromEnv : " + System.identityHashCode(config));
                     ENV_INSTANCE = config;
@@ -70,7 +78,7 @@ public class KylinConfig extends KylinConfigBase {
         }
     }
 
-    //Only used in test cases!!! 
+    //Only used in test cases!!! 销毁该配置对象
     public static void destroyInstance() {
         logger.info("Destory KylinConfig");
         dumpStackTrace();
@@ -78,14 +86,17 @@ public class KylinConfig extends KylinConfigBase {
     }
 
     public enum UriType {
-        PROPERTIES_FILE, REST_ADDR, LOCAL_FOLDER
+        PROPERTIES_FILE,//是 properties文件
+        REST_ADDR,// user:pwd@host:port方式,即本地是一个客户端,可以向host和port发送请求获取数据,并且服务端可以有用户名和密码,这个客户端也可以访问
+        LOCAL_FOLDER//是本地的一个目录
     }
 
+    //获取文件类型
     private static UriType decideUriType(String metaUri) {
 
         try {
             File file = new File(metaUri);
-            if (file.exists() || metaUri.contains("/")) {
+            if (file.exists() || metaUri.contains("/")) {//如果文件存在
                 if (file.exists() == false) {
                     file.mkdirs();
                 }
@@ -100,8 +111,8 @@ public class KylinConfig extends KylinConfigBase {
                 } else {
                     throw new IllegalStateException("Metadata uri : " + metaUri + " looks like a file but it's neither a file nor a directory");
                 }
-            } else {
-                if (RestClient.matchFullRestPattern(metaUri))
+            } else {//如果文件不存在
+                if (RestClient.matchFullRestPattern(metaUri))// user:pwd@host:port
                     return UriType.REST_ADDR;
                 else
                     throw new IllegalStateException("Metadata uri : " + metaUri + " is not a valid REST URI address");
@@ -120,15 +131,15 @@ public class KylinConfig extends KylinConfigBase {
         UriType uriType = decideUriType(uri);
         logger.info("The URI " + uri + " is recognized as " + uriType);
 
-        if (uriType == UriType.LOCAL_FOLDER) {
+        if (uriType == UriType.LOCAL_FOLDER) {//说明是本地目录
             KylinConfig config = new KylinConfig();
             config.setMetadataUrl(uri);
             return config;
-        } else if (uriType == UriType.PROPERTIES_FILE) {
+        } else if (uriType == UriType.PROPERTIES_FILE) {//说明是配置文件
             KylinConfig config;
             try {
                 config = new KylinConfig();
-                InputStream is = new FileInputStream(uri);
+                InputStream is = new FileInputStream(uri);//读取本地配置内容,生成KylinConfig对象
                 Properties prop = streamToProps(is);
                 config.reloadKylinConfig(prop);
             } catch (IOException e) {
@@ -138,9 +149,9 @@ public class KylinConfig extends KylinConfigBase {
         } else {// rest_addr
             try {
                 KylinConfig config = new KylinConfig();
-                RestClient client = new RestClient(uri);
-                String propertyText = client.getKylinProperties();
-                InputStream is = IOUtils.toInputStream(propertyText, Charset.defaultCharset());
+                RestClient client = new RestClient(uri);//通过远程http发送请求获取配置内容
+                String propertyText = client.getKylinProperties();//获取的配置内容
+                InputStream is = IOUtils.toInputStream(propertyText, Charset.defaultCharset());//解析配置内容,生成KylinConfig对象
                 Properties prop = streamToProps(is);
                 config.reloadKylinConfig(prop);
                 return config;
@@ -150,6 +161,7 @@ public class KylinConfig extends KylinConfigBase {
         }
     }
 
+    //从流中获取Properties
     private static Properties streamToProps(InputStream is) throws IOException {
         Properties prop = new Properties();
         prop.load(is);
@@ -157,6 +169,7 @@ public class KylinConfig extends KylinConfigBase {
         return prop;
     }
 
+    //如果没有初始化,才去创建KylinConfig对象,使用参数的配置对象
     public static void setKylinConfigInEnvIfMissing(Properties prop) {
         synchronized (KylinConfig.class) {
             if (ENV_INSTANCE == null) {
@@ -177,17 +190,21 @@ public class KylinConfig extends KylinConfigBase {
         props.load(new StringReader(propsInStr));
         return createKylinConfig(props);
     }
-    
+
     public static KylinConfig createKylinConfig(KylinConfig another) {
         return createKylinConfig(another.getAllProperties());
     }
-    
+
     public static KylinConfig createKylinConfig(Properties prop) {
         KylinConfig kylinConfig = new KylinConfig();
         kylinConfig.reloadKylinConfig(prop);
         return kylinConfig;
     }
 
+    /**
+     * 优先读取$KYLIN_CONF/kylin.properties对应的配置文件
+     * 其次读取$KYLIN_HOME/conf/kylin.properties对应的配置文件
+     */
     static File getKylinPropertiesFile() {
         String kylinConfHome = System.getProperty(KYLIN_CONF);
         if (!StringUtils.isEmpty(kylinConfHome)) {
@@ -205,6 +222,10 @@ public class KylinConfig extends KylinConfigBase {
         return getKylinPropertiesFile(path);
     }
 
+    /**
+     * 优先读取$KYLIN_CONF/kylin_account.properties对应的配置文件
+     * 其次读取$KYLIN_HOME/conf/kylin_account.properties对应的配置文件
+     */
     static File getKylinAccountPropertiesFile() {
         String kylinConfHome = System.getProperty(KYLIN_CONF);
         if (!StringUtils.isEmpty(kylinConfHome)) {
@@ -222,20 +243,21 @@ public class KylinConfig extends KylinConfigBase {
         return getKylinAccountPropertiesFile(path);
     }
 
+    //读取配置文件,生成一个Properties对象
     public static Properties getKylinProperties() {
-        File propFile = getKylinPropertiesFile();
+        File propFile = getKylinPropertiesFile();//读取kylin.properties文件
         if (propFile == null || !propFile.exists()) {
             logger.error("fail to locate " + KYLIN_CONF_PROPERTIES_FILE);
             throw new RuntimeException("fail to locate " + KYLIN_CONF_PROPERTIES_FILE);
         }
-        Properties conf = new Properties();
+        Properties conf = new Properties();//读取kylin.properties的内容填充
         try {
             FileInputStream is = new FileInputStream(propFile);
             conf.load(is);
             IOUtils.closeQuietly(is);
 
-            File propOverrideFile = new File(propFile.getParentFile(), propFile.getName() + ".override");
-            if (propOverrideFile.exists()) {
+            File propOverrideFile = new File(propFile.getParentFile(), propFile.getName() + ".override");//读取kylin.properties.override文件
+            if (propOverrideFile.exists()) {//读取覆盖文件,该文件会将key相同的覆盖掉
                 FileInputStream ois = new FileInputStream(propOverrideFile);
                 Properties propOverride = new Properties();
                 propOverride.load(ois);
@@ -243,7 +265,7 @@ public class KylinConfig extends KylinConfigBase {
                 conf.putAll(propOverride);
             }
 
-            File accountPropFile = getKylinAccountPropertiesFile();
+            File accountPropFile = getKylinAccountPropertiesFile();//读取kylin_account.properties文件
             if (accountPropFile.exists()) {
                 FileInputStream ois = new FileInputStream(accountPropFile);
                 Properties propAccount = new Properties();
@@ -252,7 +274,7 @@ public class KylinConfig extends KylinConfigBase {
                 conf.putAll(propAccount);
             }
 
-            File accountPropOverrideFile = new File(accountPropFile.getParentFile(), accountPropFile.getName() + ".override");
+            File accountPropOverrideFile = new File(accountPropFile.getParentFile(), accountPropFile.getName() + ".override");//读取kylin_account.properties.override文件
             if (accountPropOverrideFile.exists()) {
                 FileInputStream ois = new FileInputStream(accountPropOverrideFile);
                 Properties propAccountOverride = new Properties();
@@ -273,6 +295,7 @@ public class KylinConfig extends KylinConfigBase {
      *
      * @param path
      * @return the properties file
+     * 读取kylin.properties对应的配置文件
      */
     private static File getKylinPropertiesFile(String path) {
         if (path == null) {
@@ -282,6 +305,7 @@ public class KylinConfig extends KylinConfigBase {
         return new File(path, KYLIN_CONF_PROPERTIES_FILE);
     }
 
+    //返回kylin_account.properties配置文件
     private static File getKylinAccountPropertiesFile(String path) {
         if (path == null) {
             return null;
@@ -290,6 +314,7 @@ public class KylinConfig extends KylinConfigBase {
         return new File(path, KYLIN_ACCOUNT_CONF_PROPERTIES_FILE);
     }
 
+    //设置沙箱,用于demo,即将配置文件路径指向其他目录
     public static void setSandboxEnvIfPossible() {
         File dir1 = new File("../examples/test_case_data/sandbox");
         File dir2 = new File("../../kylin/examples/test_case_data/sandbox");
@@ -317,6 +342,7 @@ public class KylinConfig extends KylinConfigBase {
         super(props);
     }
 
+    //将所有的配置信息写入到file中
     public void writeProperties(File file) throws IOException {
         FileOutputStream fos = null;
         try {
@@ -327,6 +353,7 @@ public class KylinConfig extends KylinConfigBase {
         }
     }
 
+    //打印所有的配置信息组成String,每一行使用key=value形式组成,每一行用\n拆分
     public String getConfigAsString() throws IOException {
         final StringWriter stringWriter = new StringWriter();
         list(new PrintWriter(stringWriter));
@@ -363,8 +390,9 @@ public class KylinConfig extends KylinConfigBase {
             return this.base() == ((KylinConfig) another).base();
     }
 
+    //将参数配置文件内容输出成kylin.properties.override文件
     public static void writeOverrideProperties(Properties properties) throws IOException {
-        File propFile = getKylinPropertiesFile();
+        File propFile = getKylinPropertiesFile();//获取kylin.properties文件
         File overrideFile = new File(propFile.getParentFile(), propFile.getName() + ".override");
         overrideFile.createNewFile();
         FileInputStream fis2 = null;
@@ -372,7 +400,7 @@ public class KylinConfig extends KylinConfigBase {
         try {
             fis2 = new FileInputStream(overrideFile);
             override.load(fis2);
-            for (Map.Entry<Object, Object> entries : properties.entrySet()) {
+            for (Map.Entry<Object, Object> entries : properties.entrySet()) {//将参数内容添加到override中
                 override.setProperty(entries.getKey().toString(), entries.getValue().toString());
             }
         } catch (IOException e) {
@@ -383,7 +411,7 @@ public class KylinConfig extends KylinConfigBase {
 
         PrintWriter pw = null;
         try {
-            pw = new PrintWriter(overrideFile);
+            pw = new PrintWriter(overrideFile);//将override内容添加到输出文件中
             Enumeration<?> e = override.propertyNames();
             while (e.hasMoreElements()) {
                 String key = (String) e.nextElement();

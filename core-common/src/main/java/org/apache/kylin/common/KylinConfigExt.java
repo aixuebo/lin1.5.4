@@ -23,6 +23,7 @@ import java.util.Properties;
 
 /**
  * Extends a KylinConfig with additional overrides.
+ * 扩展配置,使用附加的属性覆盖
  */
 @SuppressWarnings("serial")
 public class KylinConfigExt extends KylinConfig {
@@ -53,6 +54,7 @@ public class KylinConfigExt extends KylinConfig {
         this.overrides = overrides;
     }
 
+    //先从overrides中获取数据,然后再调用prop中获取数据
     protected String getOptional(String prop, String dft) {
         String value = overrides.get(prop);
         if (value != null)
@@ -64,7 +66,7 @@ public class KylinConfigExt extends KylinConfig {
     public Properties getAllProperties() {
         Properties result = new Properties();
         result.putAll(super.getAllProperties());
-        result.putAll(overrides);
+        result.putAll(overrides);//因为要覆盖,因此这个放到最后
         return result;
     }
 

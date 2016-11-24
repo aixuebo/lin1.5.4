@@ -37,15 +37,17 @@ import org.apache.kylin.common.util.JsonUtil;
 
 /**
  * @author yangli9
+ * rest方式 user:pwd@host:port
+ *
  */
 public class RestClient {
 
     protected String host;
     protected int port;
-    protected String baseUrl;
-    protected String userName;
+    protected String baseUrl;//http://host:port/kylin/api
+    protected String userName;//登录该host的用户名和密码
     protected String password;
-    protected CloseableHttpClient client;
+    protected CloseableHttpClient client;//客户端对象
 
     protected static Pattern fullRestPattern = Pattern.compile("(?:([^:]+)[:]([^@]+)[@])?([^:]+)(?:[:](\\d+))?");
 
@@ -72,6 +74,7 @@ public class RestClient {
         init(host, port, user, pwd);
     }
 
+    //创建一个http对象,发送请求,发送给http://host:port/kylin/api
     private void init(String host, int port, String userName, String password) {
         this.host = host;
         this.port = port;
@@ -81,6 +84,7 @@ public class RestClient {
 
         client = HttpClients.createDefault();
 
+        //为请求设置name和密码
         if (userName != null && password != null) {
             CredentialsProvider provider = new BasicCredentialsProvider();
             UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(userName, password);
@@ -89,13 +93,17 @@ public class RestClient {
         }
     }
 
+    /**
+     * 发送请求 http://host:port/kylin/cache/${type}/${name}/${action}
+     * 只是检查返回状态码是否是200
+     */
     public void wipeCache(String type, String action, String name) throws IOException {
         String url = baseUrl + "/cache/" + type + "/" + name + "/" + action;
         HttpPut request = new HttpPut(url);
 
         try {
             CloseableHttpResponse response = client.execute(request);
-            String msg = EntityUtils.toString(response.getEntity());
+            String msg = EntityUtils.toString(response.getEntity());//返回值转换成字符串
 
             if (response.getStatusLine().getStatusCode() != 200)
                 throw new IOException("Invalid response " + response.getStatusLine().getStatusCode() + " with cache wipe url " + url + "\n" + msg);
@@ -107,14 +115,15 @@ public class RestClient {
         }
     }
 
+    //获取配置信息http://host:port/kylin/api/admin/config---返回json.config的内容
     public String getKylinProperties() throws IOException {
         String url = baseUrl + "/admin/config";
         HttpGet request = new HttpGet(url);
         try {
             CloseableHttpResponse response = client.execute(request);
             String msg = EntityUtils.toString(response.getEntity());
-            Map<String, String> map = JsonUtil.readValueAsMap(msg);
-            msg = map.get("config");
+            Map<String, String> map = JsonUtil.readValueAsMap(msg);//转换成json对象
+            msg = map.get("config");//获取对应的config的内容
 
             if (response.getStatusLine().getStatusCode() != 200)
                 throw new IOException("Invalid response " + response.getStatusLine().getStatusCode() + " with cache wipe url " + url + "\n" + msg);

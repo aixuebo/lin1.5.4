@@ -66,6 +66,7 @@ public class JsonUtil {
         return mapper.readValue(src, valueType);
     }
 
+    //将json内容转换成map
     public static Map<String, String> readValueAsMap(String content) throws IOException {
         TypeReference<HashMap<String, String>> typeRef = new TypeReference<HashMap<String, String>>() {
         };

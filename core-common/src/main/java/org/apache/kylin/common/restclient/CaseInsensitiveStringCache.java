@@ -23,6 +23,8 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.kylin.common.KylinConfig;
 
 /**
+ * key是字符串类型的,并且忽略大小写
+ * V是Broadcaster.TYPE类型
  */
 public class CaseInsensitiveStringCache<V> extends SingleValueCache<String, V> {
 

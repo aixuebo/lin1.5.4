@@ -112,9 +112,10 @@ public class CliCommandExecutor {
         }
     }
 
+    //执行本地命令,返回值是状态码和输出内容
     private Pair<Integer, String> runNativeCommand(String command, Logger logAppender) throws IOException {
         String[] cmd = new String[3];
-        String osName = System.getProperty("os.name");
+        String osName = System.getProperty("os.name");//操作系统
         if (osName.startsWith("Windows")) {
             cmd[0] = "cmd.exe";
             cmd[1] = "/C";

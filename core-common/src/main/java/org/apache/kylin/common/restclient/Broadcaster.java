@@ -76,10 +76,10 @@ public class Broadcaster {
 
     private BlockingDeque<BroadcastEvent> broadcastEvents = new LinkedBlockingDeque<>();
 
-    private AtomicLong counter = new AtomicLong();
+    private AtomicLong counter = new AtomicLong();//队列里存储的数量
 
     private Broadcaster(final KylinConfig config) {
-        final String[] nodes = config.getRestServers();
+        final String[] nodes = config.getRestServers();//存储一组服务器登录信息user:pwd@host:port
         if (nodes == null || nodes.length < 1) {
             logger.warn("There is no available rest server; check the 'kylin.rest.servers' config");
             broadcastEvents = null; // disable the broadcaster
@@ -87,6 +87,7 @@ public class Broadcaster {
         }
         logger.debug(nodes.length + " nodes in the cluster: " + Arrays.toString(nodes));
 
+        //启动一个线程去执行run内的任务
         Executors.newSingleThreadExecutor(new DaemonThreadFactory()).execute(new Runnable() {
             @Override
             public void run() {
@@ -97,14 +98,14 @@ public class Broadcaster {
                 final ExecutorService wipingCachePool = Executors.newFixedThreadPool(restClients.size());
                 while (true) {
                     try {
-                        final BroadcastEvent broadcastEvent = broadcastEvents.takeFirst();
+                        final BroadcastEvent broadcastEvent = broadcastEvents.takeFirst();//获取每一个事件
                         logger.info("new broadcast event:" + broadcastEvent);
                         for (final RestClient restClient : restClients) {
                             wipingCachePool.execute(new Runnable() {
                                 @Override
                                 public void run() {
                                     try {
-                                        restClient.wipeCache(broadcastEvent.getType(), broadcastEvent.getAction(), broadcastEvent.getName());
+                                        restClient.wipeCache(broadcastEvent.getType(), broadcastEvent.getAction(), broadcastEvent.getName());//向每一个节点发送请求
                                     } catch (IOException e) {
                                         logger.warn("Thread failed during wipe cache at " + broadcastEvent);
                                     }
@@ -121,9 +122,9 @@ public class Broadcaster {
 
     /**
      * Broadcast the cubedesc event out
-     * 
+     * @param type 对应TYPE
      * @param action
-     *            event action
+     *            event action 对应EVENT  create  update  drop
      */
     public void queue(String type, String action, String key) {
         if (broadcastEvents == null)
@@ -142,6 +143,7 @@ public class Broadcaster {
         return counter.getAndSet(0);
     }
 
+    //事件类型
     public enum EVENT {
 
         CREATE("create"), UPDATE("update"), DROP("drop");
@@ -168,7 +170,7 @@ public class Broadcaster {
 
     public enum TYPE {
         ALL("all"), //
-        PROJECT("project"), //
+        PROJECT("project"), //说明是一个project信息
         CUBE("cube"), //
         CUBE_DESC("cube_desc"), //
         STREAMING("streaming"), //
