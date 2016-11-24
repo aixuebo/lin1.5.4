@@ -38,7 +38,7 @@ import org.apache.hadoop.hive.ql.session.SessionState;
 /**
  * Hive meta API client for Kylin
  * @author shaoshi
- *
+ * hive的客户端
  */
 public class HiveClient {
 

@@ -36,34 +36,37 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.Lists;
 
 /**
+ * 执行一组hql命令
  */
 public class HqlExecutable extends AbstractExecutable {
 
     private static final Logger logger = LoggerFactory.getLogger(HqlExecutable.class);
 
-    private static final String HQL = "hql";
-    private static final String HIVE_CONFIG = "hive-config";
+    private static final String HQL = "hql";//该key存储一组hql集合
+    private static final String HIVE_CONFIG = "hive-config";//该key存放josn类型的配置信息
 
     public HqlExecutable() {
         super();
     }
 
+    //真正的工作类
     @Override
     protected ExecuteResult doWork(ExecutableContext context) throws ExecuteException {
         try {
-            Map<String, String> configMap = getConfiguration();
+            Map<String, String> configMap = getConfiguration();//获取配置信息
             HiveClient hiveClient = new HiveClient(configMap);
 
-            for (String hql : getHqls()) {
+            for (String hql : getHqls()) {//依次执行一组sql
                 hiveClient.executeHQL(hql);
             }
-            return new ExecuteResult(ExecuteResult.State.SUCCEED);
+            return new ExecuteResult(ExecuteResult.State.SUCCEED);//返回成功
         } catch (Exception e) {
             logger.error("error run hive query:" + getHqls(), e);
-            return new ExecuteResult(ExecuteResult.State.ERROR, e.getLocalizedMessage());
+            return new ExecuteResult(ExecuteResult.State.ERROR, e.getLocalizedMessage());//返回失败
         }
     }
 
+    //设置配置信息
     public void setConfiguration(Map<String, String> configMap) {
         if (configMap != null) {
             String configStr = "";
@@ -76,6 +79,7 @@ public class HqlExecutable extends AbstractExecutable {
         }
     }
 
+    //获取配置信息
     @SuppressWarnings("unchecked")
     private Map<String, String> getConfiguration() {
         String configStr = getParam(HIVE_CONFIG);
@@ -91,10 +95,12 @@ public class HqlExecutable extends AbstractExecutable {
         return result;
     }
 
+    //设置一组hql集合
     public void setHqls(List<String> hqls) {
         setParam(HQL, StringUtils.join(hqls, ";"));
     }
 
+    //获取一组hql集合
     private List<String> getHqls() {
         final String hqls = getParam(HQL);
         if (hqls != null) {

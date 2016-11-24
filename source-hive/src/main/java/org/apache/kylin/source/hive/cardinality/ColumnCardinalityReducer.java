@@ -36,11 +36,15 @@ import org.apache.kylin.measure.hllc.HyperLogLogPlusCounter;
 
 /**
  * @author Jack
- * 
+ * 对hive的table表中每一个列进行估算distinct(value),
+ * 输入列序号,统计值
+ * 输出每一个列序号作为key,value是该列distinct(value)的估值
  */
 public class ColumnCardinalityReducer extends KylinReducer<IntWritable, BytesWritable, IntWritable, LongWritable> {
 
     public static final int ONE = 1;
+
+    //key是第几个列,value是该列对应的统计对象,该对象是估算对象
     private Map<Integer, HyperLogLogPlusCounter> hllcMap = new HashMap<Integer, HyperLogLogPlusCounter>();
 
     @Override
@@ -50,12 +54,12 @@ public class ColumnCardinalityReducer extends KylinReducer<IntWritable, BytesWri
 
     @Override
     public void reduce(IntWritable key, Iterable<BytesWritable> values, Context context) throws IOException, InterruptedException {
-        int skey = key.get();
-        for (BytesWritable v : values) {
-            ByteBuffer buffer = ByteBuffer.wrap(v.getBytes());
+        int skey = key.get();//获取该列信息
+        for (BytesWritable v : values) {//每一个map对该列的统计结果
+            ByteBuffer buffer = ByteBuffer.wrap(v.getBytes());//统计结果转换成HyperLogLogPlusCounter对象
             HyperLogLogPlusCounter hll = new HyperLogLogPlusCounter();
             hll.readRegisters(buffer);
-            getHllc(skey).merge(hll);
+            getHllc(skey).merge(hll);//合并统计内容
             hll.clear();
         }
     }
@@ -69,12 +73,12 @@ public class ColumnCardinalityReducer extends KylinReducer<IntWritable, BytesWri
 
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
-        List<Integer> keys = new ArrayList<Integer>();
+        List<Integer> keys = new ArrayList<Integer>();//所有的列序号集合
         Iterator<Integer> it = hllcMap.keySet().iterator();
         while (it.hasNext()) {
             keys.add(it.next());
         }
-        Collections.sort(keys);
+        Collections.sort(keys);//对列序号排序
         it = keys.iterator();
         while (it.hasNext()) {
             int key = it.next();
@@ -83,7 +87,7 @@ public class ColumnCardinalityReducer extends KylinReducer<IntWritable, BytesWri
             buf.clear();
             hllc.writeRegisters(buf);
             buf.flip();
-            context.write(new IntWritable(key), new LongWritable(hllc.getCountEstimate()));
+            context.write(new IntWritable(key), new LongWritable(hllc.getCountEstimate()));//输出每一个列序号作为key,value是该列distinct(value)的估值
             // context.write(new Text("ErrorRate_" + key), new
             // LongWritable((long)hllc.getErrorRate()));
         }

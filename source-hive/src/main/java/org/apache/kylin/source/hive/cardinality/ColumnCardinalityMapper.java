@@ -42,14 +42,16 @@ import org.apache.kylin.metadata.model.TableDesc;
 
 /**
  * @author Jack
- * 
+ * 对hive的table表中每一个列进行估算distinct(value),
+ * 输出列序号,统计值
  */
 public class ColumnCardinalityMapper<T> extends KylinMapper<T, Object, IntWritable, BytesWritable> {
 
+    //key是第几个列,value是该列对应的统计对象,该对象是估算对象
     private Map<Integer, HyperLogLogPlusCounter> hllcMap = new HashMap<Integer, HyperLogLogPlusCounter>();
     public static final String DEFAULT_DELIM = ",";
 
-    private int counter = 0;
+    private int counter = 0;//该map解析了多少行table信息
 
     private TableDesc tableDesc;
     private IMRTableInputFormat tableInputFormat;
@@ -57,36 +59,38 @@ public class ColumnCardinalityMapper<T> extends KylinMapper<T, Object, IntWritab
     @Override
     protected void setup(Context context) throws IOException {
         Configuration conf = context.getConfiguration();
-        bindCurrentConfiguration(conf);
+        bindCurrentConfiguration(conf);//让线程持有该Configuration对象
         KylinConfig config = AbstractHadoopJob.loadKylinPropsAndMetadata();
 
-        String tableName = conf.get(BatchConstants.CFG_TABLE_NAME);
-        tableDesc = MetadataManager.getInstance(config).getTableDesc(tableName);
-        tableInputFormat = MRUtil.getTableInputFormat(tableDesc);
+        String tableName = conf.get(BatchConstants.CFG_TABLE_NAME);//获取hive的table名称
+        tableDesc = MetadataManager.getInstance(config).getTableDesc(tableName);//获得table对应的元数据
+        tableInputFormat = MRUtil.getTableInputFormat(tableDesc);//元数据对应的格式
     }
 
     @Override
     public void map(T key, Object value, Context context) throws IOException, InterruptedException {
         ColumnDesc[] columns = tableDesc.getColumns();
-        String[] values = tableInputFormat.parseMapperInput(value);
+        String[] values = tableInputFormat.parseMapperInput(value);//将所有列转换成数组
 
+        //循环所有的列
         for (int m = 0; m < columns.length; m++) {
-            String field = columns[m].getName();
-            String fieldValue = values[m];
-            if (fieldValue == null)
+            String field = columns[m].getName();//获取列名字
+            String fieldValue = values[m];//获取列值
+            if (fieldValue == null) //列值是null,则赋予字符串为null
                 fieldValue = "NULL";
 
-            if (counter < 5 && m < 10) {
+            if (counter < 5 && m < 10) {//打印每一个map的前5行的前10列内容
                 System.out.println("Get row " + counter + " column '" + field + "'  value: " + fieldValue);
             }
 
             if (fieldValue != null)
-                getHllc(m).add(Bytes.toBytes(fieldValue.toString()));
+                getHllc(m).add(Bytes.toBytes(fieldValue.toString()));//向该列添加字节内容,去进行估算distinct内容信息
         }
 
-        counter++;
+        counter++;//累加行信息
     }
 
+    //参数是第几个列
     private HyperLogLogPlusCounter getHllc(Integer key) {
         if (!hllcMap.containsKey(key)) {
             hllcMap.put(key, new HyperLogLogPlusCounter());
@@ -97,14 +101,14 @@ public class ColumnCardinalityMapper<T> extends KylinMapper<T, Object, IntWritab
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
         Iterator<Integer> it = hllcMap.keySet().iterator();
-        ByteBuffer buf = ByteBuffer.allocate(BufferedMeasureEncoder.DEFAULT_BUFFER_SIZE);
+        ByteBuffer buf = ByteBuffer.allocate(BufferedMeasureEncoder.DEFAULT_BUFFER_SIZE);//1M
         while (it.hasNext()) {
             int key = it.next();
             HyperLogLogPlusCounter hllc = hllcMap.get(key);
             buf.clear();
             hllc.writeRegisters(buf);
             buf.flip();
-            context.write(new IntWritable(key), new BytesWritable(buf.array(), buf.limit()));
+            context.write(new IntWritable(key), new BytesWritable(buf.array(), buf.limit()));//输出某一个列,value是估算内容
         }
     }
 

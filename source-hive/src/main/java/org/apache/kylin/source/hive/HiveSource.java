@@ -26,6 +26,9 @@ import org.apache.kylin.source.ReadableTable;
 
 import java.util.List;
 
+/**
+ * 对外提供如何读取一个hive表等信息
+ */
 //used by reflection
 public class HiveSource implements ISource {
 
@@ -39,11 +42,13 @@ public class HiveSource implements ISource {
         }
     }
 
+    //创建如何读取一个表内容
     @Override
     public ReadableTable createReadableTable(TableDesc tableDesc) {
         return new HiveTable(tableDesc);
     }
 
+    //返回该表依赖的资源集合
     @Override
     public List<String> getMRDependentResources(TableDesc table) {
         return Lists.newArrayList();

@@ -41,15 +41,19 @@ import org.apache.kylin.metadata.model.TableDesc;
 /**
  * This hadoop job will scan all rows of the hive table and then calculate the cardinality on each column.
  * @author shaoshi
+ * 该job扫描hive table的所有行,然后计算每一个列的基数
  *
+ * 对hive的table表中每一个列进行估算distinct(value),
+ * 输入列序号,统计值
+ * 输出每一个列序号作为key,value是该列distinct(value)的估值
  */
 public class HiveColumnCardinalityJob extends AbstractHadoopJob {
-    public static final String JOB_TITLE = "Kylin Hive Column Cardinality Job";
+    public static final String JOB_TITLE = "Kylin Hive Column Cardinality Job";//列基数job
 
     @SuppressWarnings("static-access")
     protected static final Option OPTION_TABLE = OptionBuilder.withArgName("table name").hasArg().isRequired(true).withDescription("The hive table name").create("table");
 
-    public static final String OUTPUT_PATH = BatchConstants.CFG_KYLIN_HDFS_TEMP_DIR + "cardinality";
+    public static final String OUTPUT_PATH = BatchConstants.CFG_KYLIN_HDFS_TEMP_DIR + "cardinality";///tmp/kylin/cardinality临时目录存储基数
 
     public HiveColumnCardinalityJob() {
     }
@@ -60,8 +64,8 @@ public class HiveColumnCardinalityJob extends AbstractHadoopJob {
         Options options = new Options();
 
         try {
-            options.addOption(OPTION_TABLE);
-            options.addOption(OPTION_OUTPUT_PATH);
+            options.addOption(OPTION_TABLE);//设置table
+            options.addOption(OPTION_OUTPUT_PATH);//设置输出目录
 
             parseOptions(options, args);
 
@@ -70,20 +74,22 @@ public class HiveColumnCardinalityJob extends AbstractHadoopJob {
             logger.info("Starting: " + jobName);
             Configuration conf = getConf();
 
-            KylinConfig kylinConfig = KylinConfig.getInstanceFromEnv();
+            KylinConfig kylinConfig = KylinConfig.getInstanceFromEnv();//获取本地的KylinConfig对象
+
             JobEngineConfig jobEngineConfig = new JobEngineConfig(kylinConfig);
             conf.addResource(new Path(jobEngineConfig.getHadoopJobConfFilePath(null)));
 
             job = Job.getInstance(conf, jobName);
 
+            //设置kylin启动的环境信息
             setJobClasspath(job, kylinConfig);
 
-            String table = getOptionValue(OPTION_TABLE);
-            job.getConfiguration().set(BatchConstants.CFG_TABLE_NAME, table);
+            String table = getOptionValue(OPTION_TABLE);//获取hive的table信息
+            job.getConfiguration().set(BatchConstants.CFG_TABLE_NAME, table);//设置table.name属性
 
-            Path output = new Path(getOptionValue(OPTION_OUTPUT_PATH));
+            Path output = new Path(getOptionValue(OPTION_OUTPUT_PATH));//设置输出
             FileOutputFormat.setOutputPath(job, output);
-            job.getConfiguration().set("dfs.block.size", "67108864");
+            job.getConfiguration().set("dfs.block.size", "67108864");//64M
 
             // Mapper
             IMRTableInputFormat tableInputFormat = MRUtil.getTableInputFormat(table);
@@ -98,14 +104,15 @@ public class HiveColumnCardinalityJob extends AbstractHadoopJob {
             job.setOutputFormatClass(TextOutputFormat.class);
             job.setOutputKeyClass(IntWritable.class);
             job.setOutputValueClass(LongWritable.class);
-            job.setNumReduceTasks(1);
+            job.setNumReduceTasks(1);//1个reduce
 
-            this.deletePath(job.getConfiguration(), output);
+            this.deletePath(job.getConfiguration(), output);//删除输出原有内容
 
             logger.info("Going to submit HiveColumnCardinalityJob for table '" + table + "'");
 
             TableDesc tableDesc = MetadataManager.getInstance(kylinConfig).getTableDesc(table);
-            attachKylinPropsAndMetadata(tableDesc, job.getConfiguration());
+            attachKylinPropsAndMetadata(tableDesc, job.getConfiguration());//上传job的元数据信息
+
             int result = waitForCompletion(job);
 
             return result;

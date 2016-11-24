@@ -45,6 +45,7 @@ import com.google.common.collect.Sets;
  * how to use the class
  *
  * @author jianliu
+ * 用于加载hive的表结构到kylin中,或者在kylin内存中删除hive的表结构映射信息
  */
 public class HiveSourceTableLoader {
 
@@ -55,11 +56,27 @@ public class HiveSourceTableLoader {
     public static final String TABLE_FOLDER_NAME = "table";
     public static final String TABLE_EXD_FOLDER_NAME = "table_exd";
 
+    //移除该表的元数据以及参数信息
+    public static void unLoadHiveTable(String hiveTable) throws IOException {
+        MetadataManager metaMgr = MetadataManager.getInstance(KylinConfig.getInstanceFromEnv());
+        metaMgr.removeSourceTable(hiveTable);
+        metaMgr.removeTableExd(hiveTable);
+    }
+
+    /**
+     * 加载若干数据库表集合
+     * @param hiveTables 数据库.表组成的集合
+     * @param config
+     * @return
+     * @throws IOException
+     */
     public static Set<String> reloadHiveTables(String[] hiveTables, KylinConfig config) throws IOException {
 
+        //key是database,value是该下table集合
         Map<String, Set<String>> db2tables = Maps.newHashMap();
+
         for (String table : hiveTables) {
-            String[] parts = HadoopUtil.parseHiveTableName(table);
+            String[] parts = HadoopUtil.parseHiveTableName(table);//返回数据库和table名字组成的数组
             Set<String> set = db2tables.get(parts[0]);
             if (set == null) {
                 set = Sets.newHashSet();
@@ -70,7 +87,7 @@ public class HiveSourceTableLoader {
 
         // extract from hive
         Set<String> loadedTables = Sets.newHashSet();
-        for (String database : db2tables.keySet()) {
+        for (String database : db2tables.keySet()) {//循环所有数据库
             List<String> loaded = extractHiveTables(database, db2tables.get(database), config);
             loadedTables.addAll(loaded);
         }
@@ -78,23 +95,28 @@ public class HiveSourceTableLoader {
         return loadedTables;
     }
 
-    public static void unLoadHiveTable(String hiveTable) throws IOException {
-        MetadataManager metaMgr = MetadataManager.getInstance(KylinConfig.getInstanceFromEnv());
-        metaMgr.removeSourceTable(hiveTable);
-        metaMgr.removeTableExd(hiveTable);
-    }
-
+    /**
+     * 加载某一个库下的一些表集合
+     * @param database 数据库
+     * @param tables 该数据库下表集合
+     * @param config
+     * @return
+     * @throws IOException
+     */
     private static List<String> extractHiveTables(String database, Set<String> tables, KylinConfig config) throws IOException {
 
+        //返回加载的database.table字符串集合
         List<String> loadedTables = Lists.newArrayList();
-        MetadataManager metaMgr = MetadataManager.getInstance(KylinConfig.getInstanceFromEnv());
-        for (String tableName : tables) {
-            Table table = null;
+
+        MetadataManager metaMgr = MetadataManager.getInstance(KylinConfig.getInstanceFromEnv());//获取元数据对象
+
+        for (String tableName : tables) {//循环要加载的表
             HiveClient hiveClient = new HiveClient();
-            List<FieldSchema> partitionFields = null;
-            List<FieldSchema> fields = null;
+            Table table = null;//表对象
+            List<FieldSchema> partitionFields = null;//分区字段集合
+            List<FieldSchema> fields = null;//该列属性集合
             try {
-                table = hiveClient.getHiveTable(database, tableName);
+                table = hiveClient.getHiveTable(database, tableName);//获取table信息
                 partitionFields = table.getPartitionKeys();
                 fields = hiveClient.getHiveTableFields(database, tableName);
             } catch (Exception e) {
@@ -102,41 +124,44 @@ public class HiveSourceTableLoader {
                 throw new IOException(e);
             }
 
-            if (fields != null && partitionFields != null && partitionFields.size() > 0) {
+            if (fields != null && partitionFields != null && partitionFields.size() > 0) {//列中加入分区
                 fields.addAll(partitionFields);
             }
 
-            long tableSize = hiveClient.getFileSizeForTable(table);
-            long tableFileNum = hiveClient.getFileNumberForTable(table);
-            TableDesc tableDesc = metaMgr.getTableDesc(database + "." + tableName);
-            if (tableDesc == null) {
+            long tableSize = hiveClient.getFileSizeForTable(table);//表大小
+            long tableFileNum = hiveClient.getFileNumberForTable(table);//该table的文件数
+
+            TableDesc tableDesc = metaMgr.getTableDesc(database + "." + tableName);//返回kylin中存储的该表信息
+            if (tableDesc == null) {//创建一个表
                 tableDesc = new TableDesc();
                 tableDesc.setDatabase(database.toUpperCase());
                 tableDesc.setName(tableName.toUpperCase());
                 tableDesc.setUuid(UUID.randomUUID().toString());
                 tableDesc.setLastModified(0);
             }
-            if (table.getTableType() != null) {
+            if (table.getTableType() != null) {//是内部表还是外部表
                 tableDesc.setTableType(table.getTableType());
             }
 
             int columnNumber = fields.size();
-            List<ColumnDesc> columns = new ArrayList<ColumnDesc>(columnNumber);
+            List<ColumnDesc> columns = new ArrayList<ColumnDesc>(columnNumber);//存储所有的列信息
+
             for (int i = 0; i < columnNumber; i++) {
                 FieldSchema field = fields.get(i);
                 ColumnDesc cdesc = new ColumnDesc();
                 cdesc.setName(field.getName().toUpperCase());
                 // use "double" in kylin for "float"
-                if ("float".equalsIgnoreCase(field.getType())) {
+                if ("float".equalsIgnoreCase(field.getType())) {//转换成double类型
                     cdesc.setDatatype("double");
                 } else {
                     cdesc.setDatatype(field.getType());
                 }
-                cdesc.setId(String.valueOf(i + 1));
+                cdesc.setId(String.valueOf(i + 1));//第几个列
                 columns.add(cdesc);
             }
             tableDesc.setColumns(columns.toArray(new ColumnDesc[columnNumber]));
 
+            //设置所有分区信息,分区信息用逗号拆分
             StringBuffer partitionColumnString = new StringBuffer();
             for (int i = 0, n = partitionFields.size(); i < n; i++) {
                 if (i > 0)
@@ -144,24 +169,25 @@ public class HiveSourceTableLoader {
                 partitionColumnString.append(partitionFields.get(i).getName().toUpperCase());
             }
 
+            //存放该table的元数据参数信息
             Map<String, String> map = metaMgr.getTableDescExd(tableDesc.getIdentity());
 
             if (map == null) {
                 map = Maps.newHashMap();
             }
             map.put(MetadataConstants.TABLE_EXD_TABLENAME, table.getTableName());
-            map.put(MetadataConstants.TABLE_EXD_LOCATION, table.getSd().getLocation());
-            map.put(MetadataConstants.TABLE_EXD_IF, table.getSd().getInputFormat());
-            map.put(MetadataConstants.TABLE_EXD_OF, table.getSd().getOutputFormat());
-            map.put(MetadataConstants.TABLE_EXD_OWNER, table.getOwner());
-            map.put(MetadataConstants.TABLE_EXD_LAT, String.valueOf(table.getLastAccessTime()));
-            map.put(MetadataConstants.TABLE_EXD_PC, partitionColumnString.toString());
-            map.put(MetadataConstants.TABLE_EXD_TFS, String.valueOf(tableSize));
-            map.put(MetadataConstants.TABLE_EXD_TNF, String.valueOf(tableFileNum));
-            map.put(MetadataConstants.TABLE_EXD_PARTITIONED, Boolean.valueOf(partitionFields != null && partitionFields.size() > 0).toString());
+            map.put(MetadataConstants.TABLE_EXD_LOCATION, table.getSd().getLocation());//hive的Location,hdfs://host:port/log/stat/path
+            map.put(MetadataConstants.TABLE_EXD_IF, table.getSd().getInputFormat());//hive的输入格式化类org.apache.hadoop.mapred.TextInputFormat
+            map.put(MetadataConstants.TABLE_EXD_OF, table.getSd().getOutputFormat());//hive的输出格式化类org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
+            map.put(MetadataConstants.TABLE_EXD_OWNER, table.getOwner());//表的所有者
+            map.put(MetadataConstants.TABLE_EXD_LAT, String.valueOf(table.getLastAccessTime()));//表的最后访问时间
+            map.put(MetadataConstants.TABLE_EXD_PC, partitionColumnString.toString());//表的分区信息,多个分区字段用逗号拆分,比如column1,column2
+            map.put(MetadataConstants.TABLE_EXD_TFS, String.valueOf(tableSize));//表此时的大小
+            map.put(MetadataConstants.TABLE_EXD_TNF, String.valueOf(tableFileNum));//表此时的文件数量
+            map.put(MetadataConstants.TABLE_EXD_PARTITIONED, Boolean.valueOf(partitionFields != null && partitionFields.size() > 0).toString());//表是否包含分区
 
-            metaMgr.saveSourceTable(tableDesc);
-            metaMgr.saveTableExd(tableDesc.getIdentity(), map);
+            metaMgr.saveSourceTable(tableDesc);//保存该table的元数据信息到kylin
+            metaMgr.saveTableExd(tableDesc.getIdentity(), map);//保存该table的一些参数信息
             loadedTables.add(tableDesc.getIdentity());
         }
 

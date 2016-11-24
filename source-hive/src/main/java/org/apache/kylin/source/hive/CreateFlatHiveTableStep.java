@@ -45,6 +45,7 @@ public class CreateFlatHiveTableStep extends AbstractExecutable {
     private static final Logger logger = LoggerFactory.getLogger(CreateFlatHiveTableStep.class);
     private final BufferedLogger stepLogger = new BufferedLogger(logger);
 
+    //读取cunt文件,返回一个long类型内容
     private long readRowCountFromFile() throws IOException {
         Path rowCountFile = new Path(getRowCountOutputDir(), "000000_0");
 
@@ -59,10 +60,13 @@ public class CreateFlatHiveTableStep extends AbstractExecutable {
         }
     }
 
+    //计算reduce数量
     private int determineNumReducer(KylinConfig config, long rowCount) throws IOException {
-        int mapperInputRows = config.getHadoopJobMapperInputRows();
+        int mapperInputRows = config.getHadoopJobMapperInputRows();//每一个reduce要处理多少行数据
 
-        int numReducers = Math.round(rowCount / ((float) mapperInputRows));
+        int numReducers = Math.round(rowCount / ((float) mapperInputRows));//计算多少个reduce能完成这些任务
+
+        //让reduce在max和min之间
         numReducers = Math.max(numReducers, config.getHadoopJobMinReducerNumber());
         numReducers = Math.min(numReducers, config.getHadoopJobMaxReducerNumber());
 
@@ -75,11 +79,11 @@ public class CreateFlatHiveTableStep extends AbstractExecutable {
 
     private void createFlatHiveTable(KylinConfig config, int numReducers) throws IOException {
         final HiveCmdBuilder hiveCmdBuilder = new HiveCmdBuilder();
-        hiveCmdBuilder.addStatement(getInitStatement());
+        hiveCmdBuilder.addStatement(getInitStatement());//hive初始化sql
         boolean useRedistribute = getUseRedistribute();
         if (useRedistribute == true) {
-            hiveCmdBuilder.addStatement("set mapreduce.job.reduces=" + numReducers + ";\n");
-            hiveCmdBuilder.addStatement("set hive.merge.mapredfiles=false;\n"); //disable merge
+            hiveCmdBuilder.addStatement("set mapreduce.job.reduces=" + numReducers + ";\n");//设置reduce数量
+            hiveCmdBuilder.addStatement("set hive.merge.mapredfiles=false;\n"); //disable merge 不需要合并文件
         }
         hiveCmdBuilder.addStatement(getCreateTableStatement());
         final String cmd = hiveCmdBuilder.toString();
@@ -87,8 +91,9 @@ public class CreateFlatHiveTableStep extends AbstractExecutable {
         stepLogger.log("Create and distribute table, cmd: ");
         stepLogger.log(cmd);
 
+        //本地去执行该命令,返回执行的状态码和输出日志
         Pair<Integer, String> response = config.getCliCommandExecutor().execute(cmd, stepLogger);
-        if (response.getFirst() != 0) {
+        if (response.getFirst() != 0) {//状态码出现异常,则抛异常
             throw new RuntimeException("Failed to create flat hive table, error code " + response.getFirst());
         }
     }
@@ -127,34 +132,33 @@ public class CreateFlatHiveTableStep extends AbstractExecutable {
         }
     }
 
+    //hive初始化sql
+    public String getInitStatement() {
+        return getParam("HiveInit");
+    }
     public void setInitStatement(String sql) {
         setParam("HiveInit", sql);
     }
 
-    public String getInitStatement() {
-        return getParam("HiveInit");
-    }
-
-    public void setUseRedistribute(boolean useRedistribute) {
-        setParam("useRedistribute", String.valueOf(useRedistribute));
-    }
 
     public boolean getUseRedistribute() {
         return Boolean.valueOf(getParam("useRedistribute"));
     }
-
-    public void setCreateTableStatement(String sql) {
-        setParam("HiveRedistributeData", sql);
+    public void setUseRedistribute(boolean useRedistribute) {
+        setParam("useRedistribute", String.valueOf(useRedistribute));
     }
 
     public String getCreateTableStatement() {
         return getParam("HiveRedistributeData");
     }
+    public void setCreateTableStatement(String sql) {
+        setParam("HiveRedistributeData", sql);
+    }
 
+    //行总数文件
     public void setRowCountOutputDir(String rowCountOutputDir) {
         setParam("rowCountOutputDir", rowCountOutputDir);
     }
-
     public String getRowCountOutputDir() {
         return getParam("rowCountOutputDir");
     }

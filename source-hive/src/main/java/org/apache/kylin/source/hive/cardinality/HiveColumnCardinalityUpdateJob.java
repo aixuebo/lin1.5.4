@@ -69,8 +69,8 @@ public class HiveColumnCardinalityUpdateJob extends AbstractHadoopJob {
         Options options = new Options();
 
         try {
-            options.addOption(OPTION_TABLE);
-            options.addOption(OPTION_OUTPUT_PATH);
+            options.addOption(OPTION_TABLE);//table名字
+            options.addOption(OPTION_OUTPUT_PATH);//输出
 
             parseOptions(options, args);
 
@@ -93,7 +93,7 @@ public class HiveColumnCardinalityUpdateJob extends AbstractHadoopJob {
     public void updateKylinTableExd(String tableName, String outPath, Configuration config) throws IOException {
         List<String> columns = null;
         try {
-            columns = readLines(new Path(outPath), config);
+            columns = readLines(new Path(outPath), config);//读取所有的文件内容,每一行一个元素
         } catch (Exception e) {
             e.printStackTrace();
             logger.info("Failed to resolve cardinality for " + tableName + " from " + outPath);
@@ -125,20 +125,30 @@ public class HiveColumnCardinalityUpdateJob extends AbstractHadoopJob {
         }
     }
 
+    /**
+     * 返回location下所有文件对应的所有行内容
+     * @param location
+     * @param conf
+     * @return
+     * @throws Exception
+     */
     private static List<String> readLines(Path location, Configuration conf) throws Exception {
         FileSystem fileSystem = FileSystem.get(location.toUri(), conf);
         CompressionCodecFactory factory = new CompressionCodecFactory(conf);
-        FileStatus[] items = fileSystem.listStatus(location);
+        FileStatus[] items = fileSystem.listStatus(location);//目录下所有文件
         if (items == null)
             return new ArrayList<String>();
-        List<String> results = new ArrayList<String>();
-        for (FileStatus item : items) {
+
+        List<String> results = new ArrayList<String>();//存储所有的文件内容,每一行是一个元素
+
+        for (FileStatus item : items) {//循环每一个文件
 
             // ignoring files like _SUCCESS
             if (item.getPath().getName().startsWith("_")) {
                 continue;
             }
 
+            //读取文件内容
             CompressionCodec codec = factory.getCodec(item.getPath());
             InputStream stream = null;
 
@@ -150,10 +160,10 @@ public class HiveColumnCardinalityUpdateJob extends AbstractHadoopJob {
             }
 
             StringWriter writer = new StringWriter();
-            IOUtils.copy(stream, writer, "UTF-8");
+            IOUtils.copy(stream, writer, "UTF-8");//将文件内容转换成String字符串
             String raw = writer.toString();
-            for (String str : raw.split("\n")) {
-                results.add(str);
+            for (String str : raw.split("\n")) {//文件的内容按照\n拆分成一行
+                results.add(str);//添加到结果集中
             }
         }
         return results;
