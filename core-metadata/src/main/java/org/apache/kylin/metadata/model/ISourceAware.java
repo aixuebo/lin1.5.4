@@ -18,9 +18,10 @@
 
 package org.apache.kylin.metadata.model;
 
+//数据源
 public interface ISourceAware {
 
-    public static final int ID_HIVE = 0;
+    public static final int ID_HIVE = 0;//来源于hive
     public static final int ID_STREAMING = 1;
     public static final int ID_SPARKSQL = 5;
     public static final int ID_EXTERNAL = 7;

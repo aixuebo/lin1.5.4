@@ -30,6 +30,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * Column Metadata from Source. All name should be uppercase.
  * <p/>
+ * 在hive的HiveSourceTableLoader中创建的该对象,表示一个table的某一个列
  */
 @SuppressWarnings("serial")
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
@@ -46,16 +47,17 @@ public class ColumnDesc implements Serializable {
     }
 
     @JsonProperty("id")
-    private String id;
+    private String id;//表中第几个列
     @JsonProperty("name")
-    private String name;
+    private String name;//列名字
     @JsonProperty("datatype")
-    private String datatype;
+    private String datatype;//列的类型,比如double类型
 
     // parsed from data type
-    private DataType type;
+    private DataType type;//解析datatype转换成kylin识别的类型
 
-    private TableDesc table;
+    private TableDesc table;//该列所属表
+
     private int zeroBasedIndex = -1;
     private boolean isNullable = true;
 

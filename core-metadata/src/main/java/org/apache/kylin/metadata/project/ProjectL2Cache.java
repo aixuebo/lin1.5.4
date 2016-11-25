@@ -45,6 +45,7 @@ import com.google.common.collect.Sets;
  * including Realization, TableDesc, ColumnDesc etc, to speed up query time metadata lookup.
  * <p/>
  * On any object update, the L2 cache simply gets wiped out because it's cheap to rebuild.
+ * 二级缓存功能
  */
 class ProjectL2Cache {
 

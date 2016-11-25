@@ -35,6 +35,8 @@ import org.slf4j.LoggerFactory;
 
 public class HadoopUtil {
     private static final Logger logger = LoggerFactory.getLogger(HadoopUtil.class);
+
+    //一个线程持有一个Configuration对象
     private static final ThreadLocal<Configuration> hadoopConfig = new ThreadLocal<>();
 
     public static void setCurrentConfiguration(Configuration conf) {
@@ -43,7 +45,7 @@ public class HadoopUtil {
 
     public static Configuration getCurrentConfiguration() {
         if (hadoopConfig.get() == null) {
-            Configuration conf = healSickConfig(new Configuration());
+            Configuration conf = healSickConfig(new Configuration());//创建一个新的
             // do not cache this conf, or will affect following mr jobs
             logger.info("The conf for current mapper will be " + System.identityHashCode(conf));
             return conf;
@@ -53,8 +55,9 @@ public class HadoopUtil {
         return conf;
     }
 
+    //设置Configuration一些信息
     private static Configuration healSickConfig(Configuration conf) {
-        // why we have this hard code?
+        // why we have this hard code? 尝试8次
         conf.set(DFSConfigKeys.DFS_CLIENT_BLOCK_WRITE_LOCATEFOLLOWINGBLOCK_RETRIES_KEY, "8");
 
         // https://issues.apache.org/jira/browse/KYLIN-953
@@ -103,6 +106,7 @@ public class HadoopUtil {
         return new String[] { database, tableName };
     }
 
+    //删除该path
     public static void deletePath(Configuration conf, Path path) throws IOException {
         FileSystem fs = FileSystem.get(path.toUri(), conf);
         if (fs.exists(path)) {
@@ -110,6 +114,7 @@ public class HadoopUtil {
         }
     }
 
+    //将writable的内容写入到ByteArrayOutputStream中,转换成字节数组
     public static byte[] toBytes(Writable writable) {
         try {
             ByteArrayOutputStream bout = new ByteArrayOutputStream();

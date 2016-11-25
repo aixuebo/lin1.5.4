@@ -21,11 +21,11 @@ package org.apache.kylin.rest.request;
 public class ModelRequest {
 
     private String uuid;
-    private String modelName;
-    private String modelDescData;
+    private String modelName;//model名称
+    private String modelDescData;//描述
     private boolean successful;
     private String message;
-    private String project;
+    private String project;//所属project
 
     public String getUuid() {
         return uuid;

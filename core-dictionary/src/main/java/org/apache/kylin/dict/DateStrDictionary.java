@@ -46,10 +46,11 @@ import org.apache.kylin.dimension.DateDimEnc;
 @SuppressWarnings("serial")
 public class DateStrDictionary extends Dictionary<String> {
 
-    private String pattern;
+    private String pattern;//日期格式,默认是yyyy-MM-dd
     private int baseId;
     private int maxId;
 
+    //默认日期格式是yyyy-MM-dd
     public DateStrDictionary() {
         init(DEFAULT_DATE_PATTERN, 0);
     }

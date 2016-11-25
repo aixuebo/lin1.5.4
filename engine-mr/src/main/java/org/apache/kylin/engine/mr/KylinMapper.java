@@ -30,6 +30,6 @@ public class KylinMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Mapper<KEYIN,
 
     protected void bindCurrentConfiguration(Configuration conf) {
         logger.info("The conf for current mapper will be " + System.identityHashCode(conf));
-        HadoopUtil.setCurrentConfiguration(conf);
+        HadoopUtil.setCurrentConfiguration(conf);//设置本地线程持有该Configuration对象
     }
 }

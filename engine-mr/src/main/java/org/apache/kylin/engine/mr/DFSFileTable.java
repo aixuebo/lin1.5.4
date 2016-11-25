@@ -74,6 +74,7 @@ public class DFSFileTable implements ReadableTable {
         return path;
     }
 
+    //返回该路径下文件的最后修改时间和总字节大小
     public static Pair<Long, Long> getSizeAndLastModified(String path) throws IOException {
         FileSystem fs = HadoopUtil.getFileSystem(path);
 
@@ -87,8 +88,8 @@ public class DFSFileTable implements ReadableTable {
             allFiles.addAll(Arrays.asList(listStatus));
         }
 
-        long size = 0;
-        long lastModified = 0;
+        long size = 0;//总字节
+        long lastModified = 0;//最后修改时间
         for (FileStatus file : allFiles) {
             size += file.getLen();
             lastModified = Math.max(lastModified, file.getModificationTime());

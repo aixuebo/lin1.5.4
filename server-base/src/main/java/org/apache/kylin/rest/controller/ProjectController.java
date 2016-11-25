@@ -72,6 +72,7 @@ public class ProjectController extends BasicController {
      *
      * @return Table metadata array
      * @throws IOException
+     * 获取所有的project集合
      */
     @RequestMapping(value = "", method = { RequestMethod.GET })
     @ResponseBody
@@ -84,7 +85,7 @@ public class ProjectController extends BasicController {
     public List<ProjectInstance> getReadableProjects(@RequestParam(value = "limit", required = false) Integer limit, @RequestParam(value = "offset", required = false) Integer offset) {
         List<ProjectInstance> readableProjects = new ArrayList<ProjectInstance>();
         //list all projects first
-        List<ProjectInstance> projectInstances = projectService.listAllProjects(limit, offset);
+        List<ProjectInstance> projectInstances = projectService.listAllProjects(limit, offset);//查询projefct集合
 
         //get user infomation
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -193,6 +194,7 @@ public class ProjectController extends BasicController {
         return readableProjects;
     }
 
+    //创建一个project
     @RequestMapping(value = "", method = { RequestMethod.POST })
     @ResponseBody
     public ProjectInstance saveProject(@RequestBody CreateProjectRequest projectRequest) {
@@ -211,6 +213,7 @@ public class ProjectController extends BasicController {
         return createdProj;
     }
 
+    //更新一个project
     @RequestMapping(value = "", method = { RequestMethod.PUT })
     @ResponseBody
     public ProjectInstance updateProject(@RequestBody UpdateProjectRequest projectRequest) {
@@ -230,6 +233,7 @@ public class ProjectController extends BasicController {
         return updatedProj;
     }
 
+    //删除一个project
     @RequestMapping(value = "/{projectName}", method = { RequestMethod.DELETE })
     @ResponseBody
     public void deleteProject(@PathVariable String projectName) {

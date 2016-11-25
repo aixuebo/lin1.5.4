@@ -145,7 +145,7 @@ public class TableController extends BasicController {
     @ResponseBody
     public Map<String, String[]> loadHiveTable(@PathVariable String tables, @PathVariable String project, @RequestBody HiveTableRequest request) throws IOException {
         String submitter = SecurityContextHolder.getContext().getAuthentication().getName();
-        String[] loaded = cubeMgmtService.reloadHiveTable(tables);
+        String[] loaded = cubeMgmtService.reloadHiveTable(tables);//加载书
         if (request.isCalculate()) {
             cubeMgmtService.calculateCardinalityIfNotPresent(loaded, submitter);
         }
@@ -305,7 +305,7 @@ public class TableController extends BasicController {
 
     /**
      * Show all databases in Hive
-     *
+     * 返回所有数据库
      * @return Hive databases list
      * @throws IOException
      */
@@ -326,7 +326,7 @@ public class TableController extends BasicController {
 
     /**
      * Show all tables in a Hive database
-     *
+     * 返回数据库下所有表
      * @return Hive table list
      * @throws IOException
      */

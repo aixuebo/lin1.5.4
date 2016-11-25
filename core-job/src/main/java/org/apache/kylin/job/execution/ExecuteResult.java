@@ -21,6 +21,7 @@ package org.apache.kylin.job.execution;
 import com.google.common.base.Preconditions;
 
 /**
+ * 存储执行的结果
  */
 public final class ExecuteResult {
 

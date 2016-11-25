@@ -43,7 +43,7 @@ public class AdminService extends BasicService {
 
     /**
      * Get Java Env info as string
-     *
+     * 获取java的环境变量 System.getenv();和System.getProperties(); 内容
      * @return
      */
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN)
@@ -81,8 +81,7 @@ public class AdminService extends BasicService {
 
     /**
      * Get Java config info as String
-     *
-     * @return
+     * 将所有配置信息组织成字符串返回给客户端
      */
     // @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN)
     public String getConfigAsString() {

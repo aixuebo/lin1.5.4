@@ -40,15 +40,18 @@ public class DateDimEnc extends AbstractDateDimEnc {
         }
     };
 
+    //天维度
     public DateDimEnc() {
         super(3, new IMillisCodec() {
             private static final long serialVersionUID = 1L;
 
+            //时间戳精确到天
             @Override
             public long millisToCode(long millis) {
                 return getNumOfDaysSince0000FromMillis(millis);
             }
 
+            //天精确到时间戳
             @Override
             public long codeToMillis(long code) {
                 return getMillisFromNumOfDaysSince0000(code);
@@ -56,12 +59,14 @@ public class DateDimEnc extends AbstractDateDimEnc {
         });
     }
 
+    //传入时间戳,返回多少天
     public static long getNumOfDaysSince0000FromMillis(long millis) {
-        // 86400000 = 1000 * 60 * 60 * 24
+        // 86400000 = 1000 * 60 * 60 * 24 一天
         // -719530 is offset of 0000-01-01
         return (int) (millis / 86400000 + 719530);
     }
 
+    //传入天数,返回时间戳,是getNumOfDaysSince0000FromMillis方法的反方法,单位精确到天,而不是小时
     public static long getMillisFromNumOfDaysSince0000(long n) {
         long millis = ((long) n - 719530) * 86400000;
         return millis;

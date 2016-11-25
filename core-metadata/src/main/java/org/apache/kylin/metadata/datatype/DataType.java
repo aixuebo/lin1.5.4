@@ -69,12 +69,14 @@ public class DataType implements Serializable {
                 InnerDataTypeEnum.LITERAL.getDataType(), InnerDataTypeEnum.DERIVED.getDataType());
     }
 
-    public static final Set<String> INTEGER_FAMILY = new HashSet<String>();
-    public static final Set<String> NUMBER_FAMILY = new HashSet<String>();
-    public static final Set<String> DATETIME_FAMILY = new HashSet<String>();
-    public static final Set<String> STRING_FAMILY = new HashSet<String>();
-    private static final Map<String, String> LEGACY_TYPE_MAP = new HashMap<String, String>();
+    public static final Set<String> INTEGER_FAMILY = new HashSet<String>();//整数类型集合
+    public static final Set<String> NUMBER_FAMILY = new HashSet<String>();//整数、小数集合
+    public static final Set<String> DATETIME_FAMILY = new HashSet<String>();//时间集合
+    public static final Set<String> STRING_FAMILY = new HashSet<String>();//字符串集合
+    private static final Map<String, String> LEGACY_TYPE_MAP = new HashMap<String, String>();//其他类型映射
     static {
+
+        //整数集合
         INTEGER_FAMILY.add("tinyint");
         INTEGER_FAMILY.add("smallint");
         INTEGER_FAMILY.add("integer");
@@ -82,6 +84,7 @@ public class DataType implements Serializable {
         INTEGER_FAMILY.add("int4");
         INTEGER_FAMILY.add("long8");
 
+        //整数 小数集合
         NUMBER_FAMILY.addAll(INTEGER_FAMILY);
         NUMBER_FAMILY.add("float");
         NUMBER_FAMILY.add("double");
@@ -89,14 +92,17 @@ public class DataType implements Serializable {
         NUMBER_FAMILY.add("real");
         NUMBER_FAMILY.add("numeric");
 
+        //时间集合
         DATETIME_FAMILY.add("date");
         DATETIME_FAMILY.add("time");
         DATETIME_FAMILY.add("datetime");
         DATETIME_FAMILY.add("timestamp");
 
+        //字符串集合
         STRING_FAMILY.add("varchar");
         STRING_FAMILY.add("char");
 
+        //其他类型映射
         LEGACY_TYPE_MAP.put("byte", "tinyint");
         LEGACY_TYPE_MAP.put("int", "integer");
         LEGACY_TYPE_MAP.put("short", "smallint");
@@ -313,6 +319,7 @@ public class DataType implements Serializable {
             return name + "(" + precision + "," + scale + ")";
     }
 
+    //序列化字段类型name和精度
     public static final BytesSerializer<DataType> serializer = new BytesSerializer<DataType>() {
         @Override
         public void serialize(DataType value, ByteBuffer out) {

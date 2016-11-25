@@ -25,6 +25,9 @@ import org.apache.kylin.common.KylinVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 描述启动kylin的机器的配置信息
+ */
 public class ClientInfoTask extends InitialTask {
 
     private static final Logger logger = LoggerFactory.getLogger(ClientInfoTask.class);

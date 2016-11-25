@@ -18,8 +18,10 @@
 
 package org.apache.kylin.metadata.project;
 
+//确定该project的状态是可用还是不可用
 public enum ProjectStatusEnum {
 
-    DISABLED, ENABLED
+    DISABLED,
+    ENABLED
 
 }

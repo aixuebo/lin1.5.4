@@ -47,6 +47,8 @@ import com.google.common.collect.Lists;
 public class ProjectManager {
     private static final Logger logger = LoggerFactory.getLogger(ProjectManager.class);
     private static final ConcurrentHashMap<KylinConfig, ProjectManager> CACHE = new ConcurrentHashMap<KylinConfig, ProjectManager>();
+
+    //json序列化该对象
     public static final Serializer<ProjectInstance> PROJECT_SERIALIZER = new JsonSerializer<ProjectInstance>(ProjectInstance.class);
 
     public static ProjectManager getInstance(KylinConfig config) {
@@ -82,7 +84,7 @@ public class ProjectManager {
     private KylinConfig config;
     private ProjectL2Cache l2Cache;
     // project name => ProjrectInstance
-    private CaseInsensitiveStringCache<ProjectInstance> projectMap;
+    private CaseInsensitiveStringCache<ProjectInstance> projectMap;//key是project的name,value是对应的project对象
 
     private ProjectManager(KylinConfig config) throws IOException {
         logger.info("Initializing ProjectManager with metadata url " + config);
@@ -134,10 +136,11 @@ public class ProjectManager {
     }
 
     public ProjectInstance getProject(String projectName) {
-        projectName = norm(projectName);
+        projectName = norm(projectName);//对name进行格式化
         return projectMap.get(projectName);
     }
 
+    //创建一个project,有name和创建者还有描述
     public ProjectInstance createProject(String projectName, String owner, String description) throws IOException {
         logger.info("Creating project " + projectName);
 
@@ -148,6 +151,7 @@ public class ProjectManager {
             throw new IllegalStateException("The project named " + projectName + "already exists");
         }
 
+        //序列化该对象
         updateProject(currentProject);
 
         return currentProject;
@@ -182,6 +186,7 @@ public class ProjectManager {
         }
     }
 
+    //更新一个project,更新新的name和描述信息
     //update project itself
     public ProjectInstance updateProject(ProjectInstance project, String newName, String newDesc) throws IOException {
         if (!project.getName().equals(newName)) {
@@ -211,6 +216,7 @@ public class ProjectManager {
         }
     }
 
+    //将该project对象序列化成json对象,存储到/project/projectName.json文件中
     private void updateProject(ProjectInstance prj) throws IOException {
         synchronized (prj) {
             getStore().putResource(prj.getResourcePath(), prj, PROJECT_SERIALIZER);
@@ -415,6 +421,7 @@ public class ProjectManager {
         return MetadataManager.getInstance(config);
     }
 
+    //对project的name进行格式化
     private String norm(String project) {
         return project;
     }

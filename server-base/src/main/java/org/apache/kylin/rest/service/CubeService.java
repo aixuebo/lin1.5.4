@@ -560,9 +560,10 @@ public class CubeService extends BasicService {
         CubeManager.getInstance(getConfig()).updateCube(update);
     }
 
+    //加载若干个hive的表
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_MODELER + " or " + Constant.ACCESS_HAS_ROLE_ADMIN)
     public String[] reloadHiveTable(String tables) throws IOException {
-        Set<String> loaded = HiveSourceTableLoader.reloadHiveTables(tables.split(","), getConfig());
+        Set<String> loaded = HiveSourceTableLoader.reloadHiveTables(tables.split(","), getConfig());//返回加载后的表集合
         return (String[]) loaded.toArray(new String[loaded.size()]);
     }
 

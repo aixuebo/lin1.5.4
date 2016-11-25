@@ -19,10 +19,11 @@
 package org.apache.kylin.rest.request;
 
 /**
+ * 表示更新一个project
  */
 public class UpdateProjectRequest {
-    private String formerProjectName;
-    private String newProjectName;
+    private String formerProjectName;//老的名字
+    private String newProjectName;//新的名字和描述
     private String newDescription;
 
     public UpdateProjectRequest() {

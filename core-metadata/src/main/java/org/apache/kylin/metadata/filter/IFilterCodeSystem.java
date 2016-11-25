@@ -34,16 +34,16 @@ import java.util.Comparator;
  */
 public interface IFilterCodeSystem<T> extends Comparator<T> {
 
-    /** if given code represents the NULL value */
+    /** if given code represents the NULL value 判断true表示null*/
     boolean isNull(T code);
 
     /** compare two values by their codes */
     // int compare(T code1, T code2);
 
-    /** write code to buffer */
+    /** write code to buffer 将T对象内容序列化到ByteBuffer中*/
     void serialize(T code, ByteBuffer buf);
 
-    /** read code from buffer */
+    /** read code from buffer 从buffer中范序列化T对象 */
     T deserialize(ByteBuffer buf);
 
 }

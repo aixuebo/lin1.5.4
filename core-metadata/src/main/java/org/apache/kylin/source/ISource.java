@@ -26,7 +26,9 @@ public interface ISource {
 
     public <I> I adaptToBuildEngine(Class<I> engineInterface);
 
+    //创建如何读取一个表内容
     public ReadableTable createReadableTable(TableDesc tableDesc);
 
+    //返回该表依赖的资源集合
     public List<String> getMRDependentResources(TableDesc table);
 }

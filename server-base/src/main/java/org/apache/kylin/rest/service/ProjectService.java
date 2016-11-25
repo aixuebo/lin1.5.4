@@ -49,6 +49,7 @@ public class ProjectService extends BasicService {
     @Autowired
     private AccessService accessService;
 
+    //创建一个project
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN)
     public ProjectInstance createProject(CreateProjectRequest projectRequest) throws IOException {
         String projectName = projectRequest.getName();
@@ -66,6 +67,13 @@ public class ProjectService extends BasicService {
         return createdProject;
     }
 
+    /**
+     * 更新一个project
+     * @param projectRequest 当前请求的信息
+     * @param currentProject 当前已经存在的project对象
+     * @return
+     * @throws IOException
+     */
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN + " or hasPermission(#currentProject, 'ADMINISTRATION') or hasPermission(#currentProject, 'MANAGEMENT')")
     public ProjectInstance updateProject(UpdateProjectRequest projectRequest, ProjectInstance currentProject) throws IOException {
         String formerProjectName = projectRequest.getFormerProjectName();
@@ -84,12 +92,14 @@ public class ProjectService extends BasicService {
     }
 
 
+    //返回一个project集合
     @PostFilter(Constant.ACCESS_POST_FILTER_READ)
     public List<ProjectInstance> listProjects(final Integer limit, final Integer offset) {
         List<ProjectInstance> projects = listAllProjects(limit, offset);
         return projects;
     }
 
+    //返回一个project集合
     @Deprecated
     public List<ProjectInstance> listAllProjects(final Integer limit, final Integer offset) {
         List<ProjectInstance> projects = getProjectManager().listAllProjects();
@@ -108,6 +118,7 @@ public class ProjectService extends BasicService {
         return projects.subList(coffset, coffset + climit);
     }
 
+    //删除一个project
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN + " or hasPermission(#project, 'ADMINISTRATION') or hasPermission(#cube, 'MANAGEMENT')")
     public void deleteProject(String projectName, ProjectInstance project) throws IOException {
         getProjectManager().dropProject(projectName);
@@ -115,6 +126,7 @@ public class ProjectService extends BasicService {
         accessService.clean(project, true);
     }
 
+    //是否包含该table
     public boolean isTableInAnyProject(String tableName) {
         for (ProjectInstance projectInstance : ProjectManager.getInstance(getConfig()).listAllProjects()) {
             if (projectInstance.containsTable(tableName.toUpperCase())) {
@@ -124,6 +136,7 @@ public class ProjectService extends BasicService {
         return false;
     }
 
+    //该table是否在projectName中
     public boolean isTableInProject(String tableName, String projectName) {
         ProjectInstance projectInstance = ProjectManager.getInstance(getConfig()).getProject(projectName);
         if (projectInstance != null) {

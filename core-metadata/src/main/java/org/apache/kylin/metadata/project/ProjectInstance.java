@@ -40,6 +40,7 @@ import com.google.common.collect.Lists;
 
 /**
  * Project is a concept in Kylin similar to schema in DBMS
+ * 表示一个project对象
  */
 @SuppressWarnings("serial")
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
@@ -47,27 +48,33 @@ public class ProjectInstance extends RootPersistentEntity {
 
     public static final String DEFAULT_PROJECT_NAME = "DEFAULT";
 
+    //项目名称
     @JsonProperty("name")
     private String name;
 
-    @JsonProperty("tables")
-    private Set<String> tables = new TreeSet<String>();
-
+    //创建人
     @JsonProperty("owner")
     private String owner;
 
+    //项目存在状态
     @JsonProperty("status")
     private ProjectStatusEnum status;
 
+    //创建时间
     @JsonProperty("create_time_utc")
     private long createTimeUTC;
 
+    //修改时间
     @JsonProperty("last_update_time")
     // FIXME why not RootPersistentEntity.lastModified??
     private String lastUpdateTime;
 
+    //项目描述
     @JsonProperty("description")
     private String description;
+
+    @JsonProperty("tables")
+    private Set<String> tables = new TreeSet<String>();
 
     @JsonProperty("realizations")
     private List<RealizationEntry> realizationEntries;
@@ -78,6 +85,7 @@ public class ProjectInstance extends RootPersistentEntity {
     @JsonProperty("ext_filters")
     private Set<String> extFilters = new TreeSet<String>();
 
+    //返回项目存储的全路径
     public String getResourcePath() {
         return concatResourcePath(name);
     }
@@ -93,6 +101,7 @@ public class ProjectInstance extends RootPersistentEntity {
         return project.toUpperCase();
     }
 
+    //创建一个项目
     public static ProjectInstance create(String name, String owner, String description, List<RealizationEntry> realizationEntries, List<String> models) {
         ProjectInstance projectInstance = new ProjectInstance();
 
@@ -101,7 +110,7 @@ public class ProjectInstance extends RootPersistentEntity {
         projectInstance.setOwner(owner);
         projectInstance.setDescription(description);
         projectInstance.setStatus(ProjectStatusEnum.ENABLED);
-        projectInstance.setCreateTimeUTC(System.currentTimeMillis());
+        projectInstance.setCreateTimeUTC(System.currentTimeMillis());//创建时间
         if (realizationEntries != null)
             projectInstance.setRealizationEntries(realizationEntries);
         else

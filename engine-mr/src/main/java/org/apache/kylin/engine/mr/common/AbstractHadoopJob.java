@@ -84,7 +84,7 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
     protected static final Option OPTION_SEGMENT_ID = OptionBuilder.withArgName(BatchConstants.ARG_SEGMENT_ID).hasArg().isRequired(true).withDescription("Cube segment id").create(BatchConstants.ARG_SEGMENT_ID);
     protected static final Option OPTION_INPUT_PATH = OptionBuilder.withArgName(BatchConstants.ARG_INPUT).hasArg().isRequired(true).withDescription("Input path").create(BatchConstants.ARG_INPUT);
     protected static final Option OPTION_INPUT_FORMAT = OptionBuilder.withArgName(BatchConstants.ARG_INPUT_FORMAT).hasArg().isRequired(false).withDescription("Input format").create(BatchConstants.ARG_INPUT_FORMAT);
-    protected static final Option OPTION_OUTPUT_PATH = OptionBuilder.withArgName(BatchConstants.ARG_OUTPUT).hasArg().isRequired(true).withDescription("Output path").create(BatchConstants.ARG_OUTPUT);
+    protected static final Option OPTION_OUTPUT_PATH = OptionBuilder.withArgName(BatchConstants.ARG_OUTPUT).hasArg().isRequired(true).withDescription("Output path").create(BatchConstants.ARG_OUTPUT);//输出目录
     protected static final Option OPTION_NCUBOID_LEVEL = OptionBuilder.withArgName(BatchConstants.ARG_LEVEL).hasArg().isRequired(true).withDescription("N-Cuboid build level, e.g. 1, 2, 3...").create(BatchConstants.ARG_LEVEL);
     protected static final Option OPTION_PARTITION_FILE_PATH = OptionBuilder.withArgName(BatchConstants.ARG_PARTITION).hasArg().isRequired(true).withDescription("Partition file path.").create(BatchConstants.ARG_PARTITION);
     protected static final Option OPTION_HTABLE_NAME = OptionBuilder.withArgName(BatchConstants.ARG_HTABLE_NAME).hasArg().isRequired(true).withDescription("HTable name").create(BatchConstants.ARG_HTABLE_NAME);
@@ -95,6 +95,7 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
 
     private static final String MAP_REDUCE_CLASSPATH = "mapreduce.application.classpath";
 
+    //kylin依赖的hive的jar包
     private static final String KYLIN_HIVE_DEPENDENCY_JARS = "[^,]*hive-exec[0-9.-]+[^,]*?\\.jar" + "|" + "[^,]*hive-metastore[0-9.-]+[^,]*?\\.jar" + "|" + "[^,]*hive-hcatalog-core[0-9.-]+[^,]*?\\.jar";
 
     protected static void runJob(Tool job, String[] args) {
@@ -143,6 +144,7 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
         return optionsHelper.hasOption(option);
     }
 
+    //提交job
     protected int waitForCompletion(Job job) throws IOException, InterruptedException, ClassNotFoundException {
         int retVal = 0;
         long start = System.nanoTime();
@@ -156,16 +158,18 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
         return retVal;
     }
 
+    //添加classpath信息
     protected void setJobClasspath(Job job, KylinConfig kylinConf) {
-        String jarPath = kylinConf.getKylinJobJarPath();
+        String jarPath = kylinConf.getKylinJobJarPath();//设置job启动的主要jar
         File jarFile = new File(jarPath);
         if (jarFile.exists()) {
-            job.setJar(jarPath);
+            job.setJar(jarPath);//设置主jar
             logger.info("append job jar: " + jarPath);
         } else {
             job.setJarByClass(this.getClass());
         }
 
+        //三个依赖路径
         String kylinHiveDependency = System.getProperty("kylin.hive.dependency");
         String kylinHBaseDependency = System.getProperty("kylin.hbase.dependency");
         String kylinKafkaDependency = System.getProperty("kylin.kafka.dependency");
@@ -173,7 +177,7 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
 
         Configuration jobConf = job.getConfiguration();
         String classpath = jobConf.get(MAP_REDUCE_CLASSPATH);
-        if (classpath == null || classpath.length() == 0) {
+        if (classpath == null || classpath.length() == 0) {//设置mr依赖路径
             logger.info("Didn't find " + MAP_REDUCE_CLASSPATH + " in job configuration, will run 'mapred classpath' to get the default value.");
             classpath = getDefaultMapRedClasspath();
             logger.info("The default mapred classpath is: " + classpath);
@@ -267,12 +271,14 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
         overrideJobConfig(job.getConfiguration(), kylinConf.getMRConfigOverride());
     }
 
+    //覆盖Configuration的配置信息
     private void overrideJobConfig(Configuration jobConf, Map<String, String> override) {
         for (Entry<String, String> entry : override.entrySet()) {
             jobConf.set(entry.getKey(), entry.getValue());
         }
     }
 
+    //过滤hive的jar包路径集合
     private String filterKylinHiveDependency(String kylinHiveDependency) {
         if (StringUtils.isBlank(kylinHiveDependency))
             return "";
@@ -291,6 +297,7 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
         return jarList.toString();
     }
 
+    //将kylinDependency按照逗号拆分后,是一组路径集合,循环每一个路径,得到子子孙孙的file和jar包.添加到临时文件中
     private void setJobTmpJarsAndFiles(Job job, String kylinDependency) {
         if (StringUtils.isBlank(kylinDependency))
             return;
@@ -324,6 +331,7 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
         }
     }
 
+    //解析tmpDir目录下所有子子孙孙文件,将文件加入到appendTmpFiles方法中,将jar包加入到appendTmpJars方法中
     private void appendTmpDir(Job job, String tmpDir) {
         if (StringUtils.isBlank(tmpDir))
             return;
@@ -357,6 +365,7 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
         }
     }
 
+    //向job追加jar文件
     private void appendTmpJars(String jarList, Configuration conf) {
         if (StringUtils.isBlank(jarList))
             return;
@@ -371,6 +380,7 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
         logger.info("Job 'tmpjars' updated -- " + tmpJars);
     }
 
+    //追加tmpfiles临时文件内容,表示临时文件又增多了
     private void appendTmpFiles(String fileList, Configuration conf) {
         if (StringUtils.isBlank(fileList))
             return;
@@ -385,13 +395,14 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
         logger.info("Job 'tmpfiles' updated -- " + tmpFiles);
     }
 
+    //返回mr的classpath
     private String getDefaultMapRedClasspath() {
 
         String classpath = "";
         try {
             CliCommandExecutor executor = KylinConfig.getInstanceFromEnv().getCliCommandExecutor();
-            String output = executor.execute("mapred classpath").getSecond();
-            classpath = output.trim().replace(':', ',');
+            String output = executor.execute("mapred classpath").getSecond();//执行命令/bin/bash -c mapred classpath 返回输入内容
+            classpath = output.trim().replace(':', ',');//输入内容用:转换成,
         } catch (IOException e) {
             logger.error("Failed to run: 'mapred classpath'.", e);
         }
@@ -399,12 +410,20 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
         return classpath;
     }
 
+    //向job中添加输入源,
     public static int addInputDirs(String input, Job job) throws IOException {
         int folderNum = addInputDirs(StringSplitter.split(input, ","), job);
         logger.info("Number of added folders:" + folderNum);
         return folderNum;
     }
 
+    /**
+     * 向job中添加输入源,
+     * @param inputs 可以是绝对路径,也可以是/*代表的通配符,这个不够好,不如hadoop的通配符好
+     * @param job
+     * @return
+     * @throws IOException
+     */
     public static int addInputDirs(String[] inputs, Job job) throws IOException {
         int ret = 0;//return number of added folders
         for (String inp : inputs) {
@@ -419,7 +438,7 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
                     continue;
                 }
 
-                FileStatus[] fileStatuses = fs.listStatus(path);
+                FileStatus[] fileStatuses = fs.listStatus(path);//文件下所有文件
                 boolean hasDir = false;
                 for (FileStatus stat : fileStatuses) {
                     if (stat.isDirectory() && !stat.getPath().getName().startsWith("_")) {
@@ -480,21 +499,30 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
         attachKylinPropsAndMetadata(dumpList, cube.getConfig(), conf);
     }
 
+    /**
+     * 1.将KylinConfig配置内容在本地生成文件
+     * 2.下载dumpList路径集合对应的资源
+     * 3.追加tmpfiles配置文件内容,表示临时文件又增多了
+     * @param dumpList
+     * @param kylinConfig 配置内容
+     * @param conf
+     * @throws IOException
+     */
     protected void attachKylinPropsAndMetadata(ArrayList<String> dumpList, KylinConfig kylinConfig, Configuration conf) throws IOException {
-        File tmp = File.createTempFile("kylin_job_meta", "");
-        FileUtils.forceDelete(tmp); // we need a directory, so delete the file first
+        File tmp = File.createTempFile("kylin_job_meta", "");//创建文件
+        FileUtils.forceDelete(tmp); // we need a directory, so delete the file first 先删除
 
-        File metaDir = new File(tmp, "meta");
+        File metaDir = new File(tmp, "meta");//创建目录
         metaDir.mkdirs();
 
         // write kylin.properties
-        File kylinPropsFile = new File(metaDir, "kylin.properties");
-        kylinConfig.writeProperties(kylinPropsFile);
+        File kylinPropsFile = new File(metaDir, "kylin.properties");//创建kylin.properties文件
+        kylinConfig.writeProperties(kylinPropsFile);//将所有的配置信息写入到file中
 
-        // write resources
+        // write resources 下载资源
         dumpResources(kylinConfig, metaDir, dumpList);
 
-        // hadoop distributed cache
+        // hadoop distributed cache 追加tmpfiles配置文件内容,表示临时文件又增多了
         String hdfsMetaDir = OptionsHelper.convertToFileURL(metaDir.getAbsolutePath());
         if (hdfsMetaDir.startsWith("/")) // note Path on windows is like "d:/../..."
             hdfsMetaDir = "file://" + hdfsMetaDir;
@@ -505,6 +533,7 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
         appendTmpFiles(hdfsMetaDir, conf);
     }
 
+    //删除临时文件
     protected void cleanupTempConfFile(Configuration conf) {
         String tempMetaFileString = conf.get("tmpfiles");
         logger.info("tempMetaFileString is : " + tempMetaFileString);
@@ -528,9 +557,16 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
         }
     }
 
+    /**
+     * 相当于下载资源服务功能
+     * @param kylinConfig 远程服务器
+     * @param metaDir 本地获取KylinConfig对象方式
+     * @param dumpList 要在本地下载下来的文件
+     * @throws IOException
+     */
     private void dumpResources(KylinConfig kylinConfig, File metaDir, ArrayList<String> dumpList) throws IOException {
         ResourceStore from = ResourceStore.getStore(kylinConfig);
-        KylinConfig localConfig = KylinConfig.createInstanceFromUri(metaDir.getAbsolutePath());
+        KylinConfig localConfig = KylinConfig.createInstanceFromUri(metaDir.getAbsolutePath());//获取KylinConfig对象
         ResourceStore to = ResourceStore.getStore(localConfig);
         for (String path : dumpList) {
             RawResource res = from.getResource(path);
@@ -541,16 +577,20 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
         }
     }
 
+    //删除path路径内容
     protected void deletePath(Configuration conf, Path path) throws IOException {
         HadoopUtil.deletePath(conf, path);
     }
 
+    //返回输入源一共有多少M数据
     protected double getTotalMapInputMB() throws ClassNotFoundException, IOException, InterruptedException, JobException {
         if (job == null) {
             throw new JobException("Job is null");
         }
 
-        long mapInputBytes = 0;
+        long mapInputBytes = 0;//计算每一个split数据字节总和
+
+        //对数据源进行拆分,计算每一个split数据字节总和
         InputFormat<?, ?> input = ReflectionUtils.newInstance(job.getInputFormatClass(), job.getConfiguration());
         for (InputSplit split : input.getSplits(job)) {
             mapInputBytes += split.getLength();
@@ -558,10 +598,13 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
         if (mapInputBytes == 0) {
             throw new IllegalArgumentException("Map input splits are 0 bytes, something is wrong!");
         }
+
+        //将字节转换成M
         double totalMapInputMB = (double) mapInputBytes / 1024 / 1024;
         return totalMapInputMB;
     }
 
+    //返回该输入源对应的job能有多少个数据块
     protected int getMapInputSplitCount() throws ClassNotFoundException, JobException, IOException, InterruptedException {
         if (job == null) {
             throw new JobException("Job is null");
@@ -596,6 +639,7 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
         }
     }
 
+    //获取hadoop的计数器对象
     public Counters getCounters() throws JobException {
         if (job != null) {
             try {

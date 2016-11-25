@@ -20,28 +20,33 @@ package org.apache.kylin.metadata;
 
 /**
  * Constances to describe metadata and it's change.
- * 
+ * 用于存储元数据参数信息的key
  */
 public interface MetadataConstants {
 
     public static final String FILE_SURFIX = ".json";
 
     // Extended attribute keys
+    public static final String TABLE_EXD_TABLENAME = "tableName";//hive的表名字
+    public static final String TABLE_EXD_LOCATION = "location";//hive的Location,hdfs://host:port/log/stat/path
+    public static final String TABLE_EXD_IF = "inputformat";//hive的输入格式化类org.apache.hadoop.mapred.TextInputFormat
+    public static final String TABLE_EXD_OF = "outputformat";//hive的输出格式化类org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat
+
+    public static final String TABLE_EXD_COLUMN = "columns";
+    public static final String TABLE_EXD_PC = "partitionColumns";//表的分区信息,多个分区字段用逗号拆分,比如column1,column2
+    public static final String TABLE_EXD_PARTITIONED = "partitioned";//表是否包含分区
+
+
     public static final String TABLE_EXD_STATUS_KEY = "EXD_STATUS";
     public static final String TABLE_EXD_MINFS = "minFileSize";
-    public static final String TABLE_EXD_TNF = "totalNumberFiles";
-    public static final String TABLE_EXD_LOCATION = "location";
-    public static final String TABLE_EXD_LUT = "lastUpdateTime";
-    public static final String TABLE_EXD_LAT = "lastAccessTime";
-    public static final String TABLE_EXD_COLUMN = "columns";
-    public static final String TABLE_EXD_PC = "partitionColumns";
     public static final String TABLE_EXD_MAXFS = "maxFileSize";
-    public static final String TABLE_EXD_IF = "inputformat";
-    public static final String TABLE_EXD_PARTITIONED = "partitioned";
-    public static final String TABLE_EXD_TABLENAME = "tableName";
-    public static final String TABLE_EXD_OWNER = "owner";
-    public static final String TABLE_EXD_TFS = "totalFileSize";
-    public static final String TABLE_EXD_OF = "outputformat";
+
+    public static final String TABLE_EXD_LUT = "lastUpdateTime";
+    public static final String TABLE_EXD_LAT = "lastAccessTime";//表的最后访问时间
+    public static final String TABLE_EXD_TNF = "totalNumberFiles";//表此时的文件数量
+    public static final String TABLE_EXD_TFS = "totalFileSize";//表此时的大小
+    public static final String TABLE_EXD_OWNER = "owner";//表的所有者
+
     /**
      * The value is an array
      */

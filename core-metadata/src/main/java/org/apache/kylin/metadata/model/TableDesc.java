@@ -31,26 +31,28 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 
 /**
  * Table Metadata from Source. All name should be uppercase.
+ * 在hive的HiveSourceTableLoader中创建的该对象
  */
 @SuppressWarnings("serial")
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
 public class TableDesc extends RootPersistentEntity implements ISourceAware {
 
     public static final String TABLE_TYPE_VIRTUAL_VIEW = "VIRTUAL_VIEW";
+
+    private DatabaseDesc database = new DatabaseDesc();//表示hive的一个数据库name
+
     @JsonProperty("name")
-    private String name;
+    private String name;//table名字,仅仅是table名字,不包含数据库名字
     @JsonProperty("columns")
-    private ColumnDesc[] columns;
+    private ColumnDesc[] columns; //设置该表的所有列信息
     @JsonProperty("source_type")
-    private int sourceType = ISourceAware.ID_HIVE;
+    private int sourceType = ISourceAware.ID_HIVE;//数据来源于哪里
     @JsonProperty("table_type")
-    private String tableType;
+    private String tableType;//是内部表还是外部表
 
     private static final String materializedTableNamePrefix = "kylin_intermediate_";
 
-    private DatabaseDesc database = new DatabaseDesc();
-
-    private String identity = null;
+    private String identity = null;//唯一标识符,用database.table表示
 
     public TableDesc() {
     }
@@ -90,6 +92,7 @@ public class TableDesc extends RootPersistentEntity implements ISourceAware {
         return concatResourcePath(name);
     }
 
+    //唯一标识符,用database.table表示
     public String getIdentity() {
         if (identity == null) {
             identity = String.format("%s.%s", this.getDatabase().toUpperCase(), this.getName()).toUpperCase();

@@ -36,6 +36,7 @@ import com.google.common.hash.Hashing;
  * - GZIP compression ratio is around 41%-46%, very slow
  * 
  * @author yangli9
+ * 估算计数器
  */
 @SuppressWarnings("serial")
 public class HyperLogLogPlusCounter implements Serializable, Comparable<HyperLogLogPlusCounter> {

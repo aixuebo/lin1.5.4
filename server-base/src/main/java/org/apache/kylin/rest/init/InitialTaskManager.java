@@ -27,6 +27,7 @@ import org.springframework.beans.factory.InitializingBean;
 
 /**
  * Created by dongli on 3/16/16.
+ * 当spring加载完成后,执行该方法,用于启动自定义的一组InitialTask,用于自定义的初始化一些操作
  */
 public class InitialTaskManager implements InitializingBean {
 
@@ -45,6 +46,7 @@ public class InitialTaskManager implements InitializingBean {
         
         KylinConfig kylinConfig = KylinConfig.getInstanceFromEnv();
         String initTasks = kylinConfig.getInitTasks();
+        //任务集合用逗号拆分,以此执行execute方法,该方式为外界提供开发接口
         if (!StringUtils.isEmpty(initTasks)) {
             String[] taskClasses = initTasks.split(",");
             for (String taskClass : taskClasses) {

@@ -105,7 +105,8 @@ public class MetadataManager {
     private KylinConfig config;
     // table name ==> SourceTable
     private CaseInsensitiveStringCache<TableDesc> srcTableMap;
-    // name => value
+
+    // name => value 存放该table的元数据参数信息,key是database.table,value是一个key-value的键值对信息
     private CaseInsensitiveStringCache<Map<String, String>> srcTableExdMap;
     // name => DataModelDesc
     private CaseInsensitiveStringCache<DataModelDesc> dataModelDescMap;
@@ -194,8 +195,9 @@ public class MetadataManager {
     /**
      * Get table extended info. Keys are defined in {@link MetadataConstants}
      * 
-     * @param tableName
+     * @param tableName 唯一标识符,用database.table表示
      * @return
+     * 存放该table的元数据参数信息
      */
     public Map<String, String> getTableDescExd(String tableName) {
         String tableIdentity = tableName;

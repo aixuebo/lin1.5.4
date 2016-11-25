@@ -19,6 +19,7 @@
 package org.apache.kylin.rest.request;
 
 /**
+ * 描述一个project
  */
 public class CreateProjectRequest {
     private String name;

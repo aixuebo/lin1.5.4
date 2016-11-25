@@ -26,21 +26,30 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * 如何读取一个table数据的接口
  */
 public interface ReadableTable {
 
-    /** Returns a reader to read the table. */
+    /** Returns a reader to read the table. 返回一个读取table的对象*/
     public TableReader getReader() throws IOException;
 
-    /** Used to detect table modifications mainly. Return null in case table does not exist. */
+    /** Used to detect table modifications mainly. Return null in case table does not exist.
+     * 被使用去检测table修改情况
+     * 返回null,说明table不存在
+     **/
     public TableSignature getSignature() throws IOException;
 
+    //如何读取table的接口
     public interface TableReader extends Closeable {
 
-        /** Move to the next row, return false if no more record. */
+        /** Move to the next row, return false if no more record.
+         * 一行一行移动,如果返回false,说明没有数据了
+         **/
         public boolean next() throws IOException;
 
-        /** Get the current row. */
+        /** Get the current row.
+         * 获取当前行的数据集合
+         **/
         public String[] getRow();
 
     }

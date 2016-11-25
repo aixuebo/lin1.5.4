@@ -28,6 +28,7 @@ import org.apache.kylin.metadata.filter.IFilterCodeSystem;
  * A simple code system where all values are dictionary IDs (fixed length bytes) encoded as ISO-8859-1 strings.
  *
  * @author yangli9
+ * 对字符串进行序列化 反序列化
  */
 public class DictCodeSystem implements IFilterCodeSystem<String> {
 
@@ -43,6 +44,7 @@ public class DictCodeSystem implements IFilterCodeSystem<String> {
             return true;
 
         String v = value;
+        //索要查找的字节中有不是null的就是非空,即false
         for (int i = 0, n = v.length(); i < n; i++) {
             if ((byte) v.charAt(i) != DimensionEncoding.NULL)
                 return false;
@@ -55,12 +57,13 @@ public class DictCodeSystem implements IFilterCodeSystem<String> {
         return tupleValue.compareTo(constValue);
     }
 
-    //TODO: should use ISO-8859-1 rather than UTF8
+    //TODO: should use ISO-8859-1 rather than UTF8 将内容序列化到ByteBuffer中
     @Override
     public void serialize(String value, ByteBuffer buffer) {
         BytesUtil.writeUTFString(value, buffer);
     }
 
+    //从buffer中范序列化
     @Override
     public String deserialize(ByteBuffer buffer) {
         return BytesUtil.readUTFString(buffer);

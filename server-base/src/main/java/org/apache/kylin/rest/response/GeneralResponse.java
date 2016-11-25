@@ -22,7 +22,7 @@ import java.util.Properties;
 
 /**
  * @author xduo
- * 
+ * 继承Properties的一个空对象,称之为一般response,即该对象可以有put和get功能,相当于map,让respnse可以向里面存储各种数据
  */
 public class GeneralResponse extends Properties {
 

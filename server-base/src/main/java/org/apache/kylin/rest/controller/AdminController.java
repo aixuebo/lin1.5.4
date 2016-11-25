@@ -47,26 +47,38 @@ public class AdminController extends BasicController {
     @Autowired
     private CubeService cubeMgmtService;
 
+    /**
+     * 获取java的环境变量 System.getenv();和System.getProperties(); 内容
+     */
     @RequestMapping(value = "/env", method = { RequestMethod.GET })
     @ResponseBody
     public GeneralResponse getEnv() {
         String env = adminService.getEnv();
 
         GeneralResponse envRes = new GeneralResponse();
-        envRes.put("env", env);
+        envRes.put("env", env);//存放一个env信息
 
         return envRes;
     }
 
+    /**
+     * 将所有配置信息组织成字符串返回给客户端
+     */
     @RequestMapping(value = "/config", method = { RequestMethod.GET })
     @ResponseBody
     public GeneralResponse getConfig() {
         String config = adminService.getConfigAsString();
 
         GeneralResponse configRes = new GeneralResponse();
-        configRes.put("config", config);
+        configRes.put("config", config);//存放配置信息
 
         return configRes;
+    }
+
+    //设置一个key-value值
+    @RequestMapping(value = "/config", method = { RequestMethod.PUT })
+    public void updateKylinConfig(@RequestBody UpdateConfigRequest updateConfigRequest) {
+        KylinConfig.getInstanceFromEnv().setProperty(updateConfigRequest.getKey(), updateConfigRequest.getValue());
     }
 
     @RequestMapping(value = "/metrics/cubes", method = { RequestMethod.GET })
@@ -81,10 +93,6 @@ public class AdminController extends BasicController {
         adminService.cleanupStorage();
     }
 
-    @RequestMapping(value = "/config", method = { RequestMethod.PUT })
-    public void updateKylinConfig(@RequestBody UpdateConfigRequest updateConfigRequest) {
-        KylinConfig.getInstanceFromEnv().setProperty(updateConfigRequest.getKey(), updateConfigRequest.getValue());
-    }
 
     public void setAdminService(AdminService adminService) {
         this.adminService = adminService;

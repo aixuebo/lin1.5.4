@@ -18,6 +18,7 @@
 
 package org.apache.kylin.dict;
 
+//将泛型对象与byte数组之间转换
 public interface BytesConverter<T> {
 
     public byte[] convertToBytes(T v);

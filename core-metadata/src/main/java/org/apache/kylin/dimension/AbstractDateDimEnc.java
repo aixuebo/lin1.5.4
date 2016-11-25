@@ -34,9 +34,9 @@ public class AbstractDateDimEnc extends DimensionEncoding {
     private static final long serialVersionUID = 1L;
 
     interface IMillisCodec extends Serializable {
-        long millisToCode(long millis);
+        long millisToCode(long millis);//将时间戳转换成天或者xxx
 
-        long codeToMillis(long code);
+        long codeToMillis(long code);//将天或者xxx转换成时间戳
     }
 
     // ============================================================================

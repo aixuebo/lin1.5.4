@@ -36,8 +36,9 @@ public abstract class DimensionEncoding implements Externalizable {
     private static final long serialVersionUID = 1L;
 
     // it's convention that all 0xff means NULL
-    public static final byte NULL = (byte) 0xff;
+    public static final byte NULL = (byte) 0xff;//10进制 255
 
+    //索要查找的字节中有不是null的就是非空,即false
     public static boolean isNull(byte[] bytes, int offset, int length) {
         // all 0xFF is NULL
         if (length == 0) {
