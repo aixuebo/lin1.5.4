@@ -42,13 +42,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 /**
+ * 表示一个任务
  */
 public abstract class AbstractExecutable implements Executable, Idempotent {
 
     protected static final String SUBMITTER = "submitter";
     protected static final String NOTIFY_LIST = "notify_list";
-    protected static final String START_TIME = "startTime";
-    protected static final String END_TIME = "endTime";
+    protected static final String START_TIME = "startTime";//任务执行开始时间
+    protected static final String END_TIME = "endTime";//任务的完成时间
 
     protected static final Logger logger = LoggerFactory.getLogger(AbstractExecutable.class);
     protected int retry = 0;
@@ -60,22 +61,24 @@ public abstract class AbstractExecutable implements Executable, Idempotent {
     protected static ExecutableManager executableManager = ExecutableManager.getInstance(KylinConfig.getInstanceFromEnv());
 
     public AbstractExecutable() {
-        setId(UUID.randomUUID().toString());
+        setId(UUID.randomUUID().toString());//设置唯一ID
     }
 
+    //任务要执行
     protected void onExecuteStart(ExecutableContext executableContext) {
         Map<String, String> info = Maps.newHashMap();
         info.put(START_TIME, Long.toString(System.currentTimeMillis()));
-        executableManager.updateJobOutput(getId(), ExecutableState.RUNNING, info, null);
+        executableManager.updateJobOutput(getId(), ExecutableState.RUNNING, info, null);//更新该任务的状态内容
     }
 
+    //任务执行完成
     protected void onExecuteFinished(ExecuteResult result, ExecutableContext executableContext) {
         setEndTime(System.currentTimeMillis());
         if (!isDiscarded()) {
             if (result.succeed()) {
-                executableManager.updateJobOutput(getId(), ExecutableState.SUCCEED, null, result.output());
+                executableManager.updateJobOutput(getId(), ExecutableState.SUCCEED, null, result.output());//成功
             } else {
-                executableManager.updateJobOutput(getId(), ExecutableState.ERROR, null, result.output());
+                executableManager.updateJobOutput(getId(), ExecutableState.ERROR, null, result.output());//非成功完成
             }
         }
     }
@@ -101,16 +104,16 @@ public abstract class AbstractExecutable implements Executable, Idempotent {
         Preconditions.checkArgument(executableContext instanceof DefaultContext);
         ExecuteResult result = null;
         try {
-            onExecuteStart(executableContext);
+            onExecuteStart(executableContext);//初始化一个job
             Throwable exception;
             do {
                 if (retry > 0) {
                     logger.info("Retry " + retry);
                 }
-                exception = null;
+                exception = null;//每一次尝试,都将异常设置为null
                 result = null;
                 try {
-                    result = doWork(executableContext);
+                    result = doWork(executableContext);//真正去执行job
                 } catch (Throwable e) {
                     logger.error("error running Executable: " + this.toString());
                     exception = e;
@@ -118,11 +121,12 @@ public abstract class AbstractExecutable implements Executable, Idempotent {
                 retry++;
             } while (((result != null && result.succeed() == false) || exception != null) && needRetry() == true);
 
-            if (exception != null) {
+            if (exception != null) {//有异常说明有问题
                 onExecuteError(exception, executableContext);
                 throw new ExecuteException(exception);
             }
 
+            //执行任务完成命令
             onExecuteFinished(result, executableContext);
         } catch (Exception e) {
             if (isMetaDataPersistException(e)) {
@@ -363,7 +367,7 @@ public abstract class AbstractExecutable implements Executable, Idempotent {
 
     /*
     * discarded is triggered by JobService, the Scheduler is not awake of that
-    *
+    * 是否丢弃该任务
     * */
     protected final boolean isDiscarded() {
         final ExecutableState status = executableManager.getOutput(getId()).getState();

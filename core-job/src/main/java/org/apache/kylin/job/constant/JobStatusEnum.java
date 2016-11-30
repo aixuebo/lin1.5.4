@@ -18,9 +18,11 @@
 
 package org.apache.kylin.job.constant;
 
+//一个job的状态
 public enum JobStatusEnum {
 
-    NEW(0), PENDING(1), RUNNING(2), FINISHED(4), ERROR(8), DISCARDED(16);
+    NEW(0), PENDING(1), RUNNING(2), FINISHED(4), ERROR(8),
+    DISCARDED(16);//丢弃
 
     private final int code;
 

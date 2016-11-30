@@ -21,11 +21,12 @@ package org.apache.kylin.job.execution;
 import java.util.List;
 
 /**
+ * 可以添加一组task任务,用于执行一组task任务
  */
 public interface ChainedExecutable extends Executable {
 
-    List<? extends AbstractExecutable> getTasks();
+    List<? extends AbstractExecutable> getTasks();//该任务里面存在的一组任务集合
 
-    void addTask(AbstractExecutable executable);
+    void addTask(AbstractExecutable executable);//添加一个任务到集合中
 
 }

@@ -35,12 +35,13 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Maps;
 
 /**
+ * shell的执行引擎
  */
 public class ShellExecutable extends AbstractExecutable {
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(ShellExecutable.class);
 
-    private static final String CMD = "cmd";
+    private static final String CMD = "cmd";//要执行的命令
 
     public ShellExecutable() {
         super();
@@ -51,9 +52,9 @@ public class ShellExecutable extends AbstractExecutable {
         try {
             logger.info("executing:" + getCmd());
             final ShellExecutableLogger logger = new ShellExecutableLogger();
-            final Pair<Integer, String> result = context.getConfig().getCliCommandExecutor().execute(getCmd(), logger);
-            executableManager.addJobInfo(getId(), logger.getInfo());
-            return new ExecuteResult(result.getFirst() == 0 ? ExecuteResult.State.SUCCEED : ExecuteResult.State.FAILED, result.getSecond());
+            final Pair<Integer, String> result = context.getConfig().getCliCommandExecutor().execute(getCmd(), logger);//去执行命令,返回状态码以及输出内容
+            executableManager.addJobInfo(getId(), logger.getInfo());//将该任务获取的数据信息存储到任务磁盘上
+            return new ExecuteResult(result.getFirst() == 0 ? ExecuteResult.State.SUCCEED : ExecuteResult.State.FAILED, result.getSecond());//返回是否执行成功
         } catch (IOException e) {
             logger.error("job:" + getId() + " execute finished with exception", e);
             return new ExecuteResult(ExecuteResult.State.ERROR, e.getLocalizedMessage());
@@ -70,18 +71,23 @@ public class ShellExecutable extends AbstractExecutable {
 
     private static class ShellExecutableLogger implements Logger {
 
-        private final Map<String, String> info = Maps.newHashMap();
+        private final Map<String, String> info = Maps.newHashMap();//存储日志的信息内容
 
-        private static final Pattern PATTERN_APP_ID = Pattern.compile("Submitted application (.*?) to ResourceManager");
-        private static final Pattern PATTERN_APP_URL = Pattern.compile("The url to track the job: (.*)");
-        private static final Pattern PATTERN_JOB_ID = Pattern.compile("Running job: (.*)");
-        private static final Pattern PATTERN_HDFS_BYTES_WRITTEN = Pattern.compile("(?:HD|MAPR)FS: Number of bytes written=(\\d+)");
-        private static final Pattern PATTERN_SOURCE_RECORDS_COUNT = Pattern.compile("Map input records=(\\d+)");
-        private static final Pattern PATTERN_SOURCE_RECORDS_SIZE = Pattern.compile("(?:HD|MAPR)FS Read: (\\d+) HDFS Write");
+
+        private static final Pattern PATTERN_JOB_ID = Pattern.compile("Running job: (.*)");//存储mr的jobid
+
+
+        private static final Pattern PATTERN_APP_ID = Pattern.compile("Submitted application (.*?) to ResourceManager");//解析日志提交哪个应用id到ResourceManager
+        private static final Pattern PATTERN_APP_URL = Pattern.compile("The url to track the job: (.*)");//yarn上app的url
+
+
+        private static final Pattern PATTERN_HDFS_BYTES_WRITTEN = Pattern.compile("(?:HD|MAPR)FS: Number of bytes written=(\\d+)");//匹配写入多少数据到HDFS
+        private static final Pattern PATTERN_SOURCE_RECORDS_COUNT = Pattern.compile("Map input records=(\\d+)");//匹配输入源有多少行数据
+        private static final Pattern PATTERN_SOURCE_RECORDS_SIZE = Pattern.compile("(?:HD|MAPR)FS Read: (\\d+) HDFS Write");//匹配输入源读取多少字节数据
 
         // hive
-        private static final Pattern PATTERN_HIVE_APP_ID_URL = Pattern.compile("Starting Job = (.*?), Tracking URL = (.*)");
-        private static final Pattern PATTERN_HIVE_BYTES_WRITTEN = Pattern.compile("(?:HD|MAPR)FS Read: (\\d+) HDFS Write: (\\d+) SUCCESS");
+        private static final Pattern PATTERN_HIVE_APP_ID_URL = Pattern.compile("Starting Job = (.*?), Tracking URL = (.*)");//hive的输出,比如Starting Job = job_1477918604929_15950, Tracking URL = http://path:8088/proxy/application_1477918604929_15950/
+        private static final Pattern PATTERN_HIVE_BYTES_WRITTEN = Pattern.compile("(?:HD|MAPR)FS Read: (\\d+) HDFS Write: (\\d+) SUCCESS"); //hive读了多少个字节  写入多少个字节到hdfs
 
         @Override
         public void log(String message) {

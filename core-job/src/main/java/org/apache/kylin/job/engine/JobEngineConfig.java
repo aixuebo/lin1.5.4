@@ -29,14 +29,25 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author ysong1
+ * 用于获取配置文件信息以及获取配置属性
  */
 public class JobEngineConfig {
     private static final Logger logger = LoggerFactory.getLogger(JobEngineConfig.class);
+
+    /**
+     * home/conf下内容
+     * kylin_job_conf_inmem.xml
+     * kylin_job_conf.xml
+     * kylin_hive_conf.xml
+     * kylin.properties
+     * kylin-server-log4j.properties
+     */
     public static final String HADOOP_JOB_CONF_FILENAME = "kylin_job_conf";
     public static final String HIVE_CONF_FILENAME = "kylin_hive_conf";
     public static final String DEFAUL_JOB_CONF_SUFFIX = "";
     public static final String IN_MEM_JOB_CONF_SUFFIX = "inmem";
 
+    //在home下获取一个配置文件,参数是文件名
     private static File getJobConfig(String fileName) {
         String path = System.getProperty(KylinConfig.KYLIN_CONF);
         if (StringUtils.isNotEmpty(path)) {
@@ -50,6 +61,7 @@ public class JobEngineConfig {
         return null;
     }
 
+    //获取kylin_job_conf文件路径
     private String getHadoopJobConfFilePath(String suffix, boolean appendSuffix) throws IOException {
         String hadoopJobConfFile;
         if (suffix != null && appendSuffix) {
@@ -58,7 +70,7 @@ public class JobEngineConfig {
             hadoopJobConfFile = (HADOOP_JOB_CONF_FILENAME + ".xml");
         }
 
-        File jobConfig = getJobConfig(hadoopJobConfFile);
+        File jobConfig = getJobConfig(hadoopJobConfFile);//找到对应的文件
         if (jobConfig == null || !jobConfig.exists()) {
             logger.warn("fail to locate " + hadoopJobConfFile + ", trying to locate " + HADOOP_JOB_CONF_FILENAME + ".xml");
             jobConfig = getJobConfig(HADOOP_JOB_CONF_FILENAME + ".xml");
@@ -72,7 +84,7 @@ public class JobEngineConfig {
 
     /**
      *
-     * @param suffix job config file suffix name; if be null, will use the default job conf
+     * @param jobType job config file suffix name; if be null, will use the default job conf
      * @return the job config file path
      * @throws IOException
      */
@@ -96,6 +108,7 @@ public class JobEngineConfig {
         return path;
     }
 
+    //获取hive配置文件
     public String getHiveConfFilePath() throws IOException {
         String hiveConfFile = (HIVE_CONF_FILENAME + ".xml");
 

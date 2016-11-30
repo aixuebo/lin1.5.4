@@ -27,19 +27,20 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Maps;
 
 /**
+ * 描述一个任务的输出
  */
 @SuppressWarnings("serial")
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.NONE, getterVisibility = JsonAutoDetect.Visibility.NONE, isGetterVisibility = JsonAutoDetect.Visibility.NONE, setterVisibility = JsonAutoDetect.Visibility.NONE)
 public class ExecutableOutputPO extends RootPersistentEntity {
 
     @JsonProperty("content")
-    private String content;
+    private String content;//任务输出的内容
 
     @JsonProperty("status")
-    private String status = "READY";
+    private String status = "READY";//任务输出的状态
 
     @JsonProperty("info")
-    private Map<String, String> info = Maps.newHashMap();
+    private Map<String, String> info = Maps.newHashMap();//任务的一些信息
 
     public String getContent() {
         return content;

@@ -24,11 +24,11 @@ import java.util.Map;
  */
 public interface Output {
 
-    Map<String, String> getExtra();
+    Map<String, String> getExtra();//任务的额外输出内容,键值对形式的内容
 
-    String getVerboseMsg();
+    String getVerboseMsg();//任务的字符串形式的输出内容
 
-    ExecutableState getState();
+    ExecutableState getState();//任务执行的状态
 
-    long getLastModified();
+    long getLastModified();//任务最后修改的时间
 }

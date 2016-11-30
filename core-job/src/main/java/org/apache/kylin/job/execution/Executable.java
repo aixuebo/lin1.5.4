@@ -23,20 +23,21 @@ import java.util.Map;
 import org.apache.kylin.job.exception.ExecuteException;
 
 /**
+ * 表示每一个要执行的任务job
  */
 public interface Executable {
 
-    String getId();
+    String getId();//任务的唯一ID
 
-    String getName();
+    String getName();//任务的名字
 
-    ExecuteResult execute(ExecutableContext executableContext) throws ExecuteException;
+    ExecuteResult execute(ExecutableContext executableContext) throws ExecuteException;//去执行一个job,传递一个上下文对象,返回执行结果对象
 
-    ExecutableState getStatus();
+    ExecutableState getStatus();//job运行中的状态机
 
-    Output getOutput();
+    Output getOutput();//任务的输出对象
 
-    boolean isRunnable();
+    boolean isRunnable();//任务是否在运行中
 
-    Map<String, String> getParams();
+    Map<String, String> getParams();//任务的执行参数集合
 }

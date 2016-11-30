@@ -21,10 +21,11 @@ package org.apache.kylin.job.execution;
 import org.apache.kylin.common.KylinConfig;
 
 /**
+ * 执行一个job的上下文对象
  */
 public interface ExecutableContext {
 
     Object getSchedulerContext();
 
-    KylinConfig getConfig();
+    KylinConfig getConfig();//整个任务持有一个配置对象
 }

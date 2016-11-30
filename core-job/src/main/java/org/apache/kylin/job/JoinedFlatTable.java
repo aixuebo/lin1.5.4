@@ -51,6 +51,8 @@ public class JoinedFlatTable {
         return storageDfsDir + "/" + intermediateTableDesc.getTableName();
     }
 
+    //解析hive的配置文件,该文件是xml,因此组装成字符串,SET命令,
+    //即SET name=value;\n name=value;形式
     public static String generateHiveSetStatements(JobEngineConfig engineConfig) {
         StringBuilder buffer = new StringBuilder();
 
@@ -78,6 +80,12 @@ public class JoinedFlatTable {
         return buffer.toString();
     }
 
+    /**
+     * 产生hive的创建表语句
+     * @param flatDesc
+     * @param storageDfsDir
+     * @return
+     */
     public static String generateCreateTableStatement(IJoinedFlatTableDesc flatDesc, String storageDfsDir) {
         StringBuilder ddl = new StringBuilder();
 
@@ -93,7 +101,7 @@ public class JoinedFlatTable {
         }
         ddl.append(")" + "\n");
 
-        ddl.append("ROW FORMAT DELIMITED FIELDS TERMINATED BY '\\177'" + "\n");
+        ddl.append("ROW FORMAT DELIMITED FIELDS TERMINATED BY '\\177'" + "\n");//使用177进行拆分
         ddl.append("STORED AS SEQUENCEFILE" + "\n");
         ddl.append("LOCATION '" + getTableDir(flatDesc, storageDfsDir) + "';").append("\n");
         // ddl.append("TBLPROPERTIES ('serialization.null.format'='\\\\N')" +
@@ -101,6 +109,7 @@ public class JoinedFlatTable {
         return ddl.toString();
     }
 
+    //删除一个表
     public static String generateDropTableStatement(IJoinedFlatTableDesc intermediateTableDesc) {
         StringBuilder ddl = new StringBuilder();
         ddl.append("DROP TABLE IF EXISTS " + intermediateTableDesc.getTableName() + ";").append("\n");
@@ -236,6 +245,7 @@ public class JoinedFlatTable {
         return result;
     }
 
+    //向sql中追加DISTRIBUTE BY语法
     private static void appendDistributeStatement(StringBuilder sql, String redistributeCol) {
         if (redistributeCol != null) {
             sql.append(" DISTRIBUTE BY ").append(redistributeCol).append(";\n");
@@ -292,13 +302,14 @@ public class JoinedFlatTable {
         return sql.toString();
     }
 
+    //使用DISTRIBUTE BY语法
     public static String generateRedistributeFlatTableStatement(IJoinedFlatTableDesc intermediateTableDesc) {
         final String tableName = intermediateTableDesc.getTableName();
         StringBuilder sql = new StringBuilder();
         sql.append("INSERT OVERWRITE TABLE " + tableName + " SELECT * FROM " + tableName);
 
         String redistributeCol = null;
-        TblColRef distDcol = intermediateTableDesc.getDistributedBy();
+        TblColRef distDcol = intermediateTableDesc.getDistributedBy();//hive的Distributed by对应的字段
         if (distDcol != null) {
             redistributeCol = colName(distDcol.getCanonicalName());
         }

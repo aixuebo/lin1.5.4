@@ -24,6 +24,8 @@ import org.apache.kylin.job.execution.Executable;
 import org.apache.kylin.job.lock.JobLock;
 
 /**
+ * 任务的调度器
+ * 实现类org.apache.kylin.job.impl.threadpool.DefaultScheduler
  */
 public interface Scheduler<T extends Executable> {
 
@@ -33,6 +35,7 @@ public interface Scheduler<T extends Executable> {
 
     boolean stop(T executable) throws SchedulerException;
 
+    //任务是否开启
     boolean hasStarted();
 
 }

@@ -23,13 +23,14 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 
 /**
+ * 描述一个任务的输出信息
  */
 public class DefaultOutput implements Output {
 
-    private ExecutableState state;
-    private Map<String, String> extra;
-    private String verboseMsg;
-    private long lastModified;
+    private ExecutableState state;//输出执行的状态
+    private Map<String, String> extra;//输出的额外信息
+    private String verboseMsg;//输出内容
+    private long lastModified;//最后修改时间
 
     @Override
     public Map<String, String> getExtra() {

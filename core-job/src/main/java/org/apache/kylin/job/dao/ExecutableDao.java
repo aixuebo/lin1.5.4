@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Lists;
 
 /**
+ * 用于将任务的执行内容存储到磁盘上
  */
 public class ExecutableDao {
 
@@ -69,26 +70,30 @@ public class ExecutableDao {
         this.store = MetadataManager.getInstance(config).getStore();
     }
 
+    //获取该任务uuid对应的信息存储路径
     private String pathOfJob(ExecutablePO job) {
         return pathOfJob(job.getUuid());
     }
-
     public static String pathOfJob(String uuid) {
-        return ResourceStore.EXECUTE_RESOURCE_ROOT + "/" + uuid;
+        return ResourceStore.EXECUTE_RESOURCE_ROOT + "/" + uuid; //execute
     }
 
+    ///存放每一个job任务的执行的输出信息
     public static String pathOfJobOutput(String uuid) {
-        return ResourceStore.EXECUTE_OUTPUT_RESOURCE_ROOT + "/" + uuid;
+        return ResourceStore.EXECUTE_OUTPUT_RESOURCE_ROOT + "/" + uuid;//execute_output
     }
 
+    //将path对应的内容,按照json的解析方式,反序列化成ExecutablePO对象
     private ExecutablePO readJobResource(String path) throws IOException {
         return store.getResource(path, ExecutablePO.class, JOB_SERIALIZER);
     }
 
+    //将job对象使用json方式序列化到path路径下
     private void writeJobResource(String path, ExecutablePO job) throws IOException {
         store.putResource(path, job, JOB_SERIALIZER);
     }
 
+    //序列化与反序列化输出对象
     private ExecutableOutputPO readJobOutputResource(String path) throws IOException {
         return store.getResource(path, ExecutableOutputPO.class, JOB_OUTPUT_SERIALIZER);
     }
@@ -97,6 +102,7 @@ public class ExecutableDao {
         return store.putResource(path, output, JOB_OUTPUT_SERIALIZER);
     }
 
+    //获取所有的任务内容集合
     public List<ExecutableOutputPO> getJobOutputs() throws PersistentException {
         try {
             return store.getAllResources(ResourceStore.EXECUTE_OUTPUT_RESOURCE_ROOT, ExecutableOutputPO.class, JOB_OUTPUT_SERIALIZER);
@@ -106,6 +112,7 @@ public class ExecutableDao {
         }
     }
 
+    //获取任务的所有输出内容集合
     public List<ExecutableOutputPO> getJobOutputs(long timeStart, long timeEndExclusive) throws PersistentException {
         try {
             return store.getAllResources(ResourceStore.EXECUTE_OUTPUT_RESOURCE_ROOT, timeStart, timeEndExclusive, ExecutableOutputPO.class, JOB_OUTPUT_SERIALIZER);
@@ -115,6 +122,7 @@ public class ExecutableDao {
         }
     }
 
+    //获取所有任务
     public List<ExecutablePO> getJobs() throws PersistentException {
         try {
             return store.getAllResources(ResourceStore.EXECUTE_RESOURCE_ROOT, ExecutablePO.class, JOB_SERIALIZER);
@@ -124,6 +132,7 @@ public class ExecutableDao {
         }
     }
 
+    //获取所有任务
     public List<ExecutablePO> getJobs(long timeStart, long timeEndExclusive) throws PersistentException {
         try {
             return store.getAllResources(ResourceStore.EXECUTE_RESOURCE_ROOT, timeStart, timeEndExclusive, ExecutablePO.class, JOB_SERIALIZER);
@@ -133,6 +142,7 @@ public class ExecutableDao {
         }
     }
 
+    //获取所有job的uuid集合
     public List<String> getJobIds() throws PersistentException {
         try {
             NavigableSet<String> resources = store.listResources(ResourceStore.EXECUTE_RESOURCE_ROOT);
@@ -150,6 +160,7 @@ public class ExecutableDao {
         }
     }
 
+    //获取某一个任务对象
     public ExecutablePO getJob(String uuid) throws PersistentException {
         try {
             return readJobResource(pathOfJob(uuid));
@@ -159,6 +170,7 @@ public class ExecutableDao {
         }
     }
 
+    //添加一个任务
     public ExecutablePO addJob(ExecutablePO job) throws PersistentException {
         try {
             if (getJob(job.getUuid()) != null) {
@@ -172,6 +184,7 @@ public class ExecutableDao {
         }
     }
 
+    //删除一个任务内容
     public void deleteJob(String uuid) throws PersistentException {
         try {
             store.deleteResource(pathOfJob(uuid));
@@ -181,6 +194,17 @@ public class ExecutableDao {
         }
     }
 
+    //删除一个任务输出
+    public void deleteJobOutput(String uuid) throws PersistentException {
+        try {
+            store.deleteResource(pathOfJobOutput(uuid));
+        } catch (IOException e) {
+            logger.error("error delete job:" + uuid, e);
+            throw new PersistentException(e);
+        }
+    }
+
+    //获取一个输出对象
     public ExecutableOutputPO getJobOutput(String uuid) throws PersistentException {
         try {
             ExecutableOutputPO result = readJobOutputResource(pathOfJobOutput(uuid));
@@ -196,6 +220,7 @@ public class ExecutableDao {
         }
     }
 
+    //每一个任务有一个输出
     public void addJobOutput(ExecutableOutputPO output) throws PersistentException {
         try {
             output.setLastModified(0);
@@ -206,6 +231,7 @@ public class ExecutableDao {
         }
     }
 
+    //重新输出内容
     public void updateJobOutput(ExecutableOutputPO output) throws PersistentException {
         try {
             final long ts = writeJobOutputResource(pathOfJobOutput(output.getUuid()), output);
@@ -216,12 +242,4 @@ public class ExecutableDao {
         }
     }
 
-    public void deleteJobOutput(String uuid) throws PersistentException {
-        try {
-            store.deleteResource(pathOfJobOutput(uuid));
-        } catch (IOException e) {
-            logger.error("error delete job:" + uuid, e);
-            throw new PersistentException(e);
-        }
-    }
 }

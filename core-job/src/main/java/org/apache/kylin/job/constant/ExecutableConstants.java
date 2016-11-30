@@ -25,12 +25,16 @@ public final class ExecutableConstants {
     private ExecutableConstants() {
     }
 
-    public static final String YARN_APP_ID = "yarn_application_id";
-    public static final String YARN_APP_URL = "yarn_application_tracking_url";
-    public static final String MR_JOB_ID = "mr_job_id";
-    public static final String HDFS_BYTES_WRITTEN = "hdfs_bytes_written";
-    public static final String SOURCE_RECORDS_COUNT = "source_records_count";
-    public static final String SOURCE_RECORDS_SIZE = "source_records_size";
+    public static final String MR_JOB_ID = "mr_job_id";//存储mr的jobid
+
+
+    public static final String YARN_APP_ID = "yarn_application_id";//yarn上产生的application_id
+    public static final String YARN_APP_URL = "yarn_application_tracking_url";//yarn上app的url,比如hive的输出,Starting Job = job_1477918604929_15950, Tracking URL = http://path:8088/proxy/application_1477918604929_15950/
+
+
+    public static final String HDFS_BYTES_WRITTEN = "hdfs_bytes_written";//hive写入多少个字节到hdfs
+    public static final String SOURCE_RECORDS_COUNT = "source_records_count";//匹配输入源有多少行数据
+    public static final String SOURCE_RECORDS_SIZE = "source_records_size";//匹配输入源读取多少字节数据
 
     public static final int DEFAULT_SCHEDULER_INTERVAL_SECONDS = 60;
 

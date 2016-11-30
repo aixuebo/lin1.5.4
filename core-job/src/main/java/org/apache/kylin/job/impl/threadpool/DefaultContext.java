@@ -30,6 +30,7 @@ import org.apache.kylin.job.execution.ExecutableContext;
  */
 public class DefaultContext implements ExecutableContext {
 
+    //表示真正运行中的job集合,key是Executable的id,value是Executable对象
     private final ConcurrentMap<String, Executable> runningJobs;
     private final KylinConfig kylinConfig;
 
@@ -48,14 +49,17 @@ public class DefaultContext implements ExecutableContext {
         return kylinConfig;
     }
 
+    //添加一个job
     void addRunningJob(Executable executable) {
         runningJobs.put(executable.getId(), executable);
     }
 
+    //移除一个job
     void removeRunningJob(Executable executable) {
         runningJobs.remove(executable.getId());
     }
 
+    //返回运行中的job集合
     public Map<String, Executable> getRunningJobs() {
         return Collections.unmodifiableMap(runningJobs);
     }

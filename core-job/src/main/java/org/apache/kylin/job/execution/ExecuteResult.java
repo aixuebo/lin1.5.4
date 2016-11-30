@@ -25,12 +25,14 @@ import com.google.common.base.Preconditions;
  */
 public final class ExecuteResult {
 
-    public static enum State {
-        SUCCEED, FAILED, ERROR, DISCARDED, STOPPED
+    public static enum State {//执行结果的状态
+        SUCCEED, FAILED, ERROR,
+        DISCARDED,//丢弃
+        STOPPED
     }
 
     private final State state;
-    private final String output;
+    private final String output;//输出的内容,异常的时候输出的是堆栈的字符串信息
 
     public ExecuteResult(State state) {
         this(state, "");
@@ -46,6 +48,7 @@ public final class ExecuteResult {
         return state;
     }
 
+    //表示成功执行完成
     public boolean succeed() {
         return state == State.SUCCEED;
     }

@@ -78,6 +78,7 @@ public class ExecutableManager {
         this.executableDao = ExecutableDao.getInstance(config);
     }
 
+    //添加一个任务
     public void addJob(AbstractExecutable executable) {
         try {
             executableDao.addJob(parse(executable));
@@ -88,11 +89,12 @@ public class ExecutableManager {
         }
     }
 
+    //为一个任务添加输出
     private void addJobOutput(AbstractExecutable executable) throws PersistentException {
         ExecutableOutputPO executableOutputPO = new ExecutableOutputPO();
         executableOutputPO.setUuid(executable.getId());
         executableDao.addJobOutput(executableOutputPO);
-        if (executable instanceof DefaultChainedExecutable) {
+        if (executable instanceof DefaultChainedExecutable) {//可能由于多个任务组成,因此要为每一个子任务添加输出
             for (AbstractExecutable subTask : ((DefaultChainedExecutable) executable).getTasks()) {
                 addJobOutput(subTask);
             }
@@ -109,6 +111,7 @@ public class ExecutableManager {
         }
     }
 
+    //获取一个任务对象
     public AbstractExecutable getJob(String uuid) {
         try {
             return parseTo(executableDao.getJob(uuid));
@@ -202,6 +205,7 @@ public class ExecutableManager {
         }
     }
 
+    //获取所有任务的uuid集合
     public List<String> getAllJobIds() {
         try {
             return executableDao.getJobIds();
@@ -211,6 +215,7 @@ public class ExecutableManager {
         }
     }
 
+    //将所有running状态的任务设置为error状态
     public void updateAllRunningJobsToError() {
         try {
             final List<ExecutableOutputPO> jobOutputs = executableDao.getJobOutputs();
@@ -226,6 +231,7 @@ public class ExecutableManager {
         }
     }
 
+    //将所有runing状态的任务设置成READY状态
     public void resumeAllRunningJobs() {
         try {
             final List<ExecutableOutputPO> jobOutputs = executableDao.getJobOutputs();
@@ -241,6 +247,7 @@ public class ExecutableManager {
         }
     }
 
+    //为job设置成READY状态
     public void resumeJob(String jobId) {
         AbstractExecutable job = getJob(jobId);
         if (job == null) {
@@ -258,6 +265,7 @@ public class ExecutableManager {
         updateJobOutput(jobId, ExecutableState.READY, null, null);
     }
 
+    //为job设置成DISCARDED丢弃状态
     public void discardJob(String jobId) {
         AbstractExecutable job = getJob(jobId);
         if (job instanceof DefaultChainedExecutable) {
@@ -271,24 +279,25 @@ public class ExecutableManager {
         updateJobOutput(jobId, ExecutableState.DISCARDED, null, null);
     }
 
+    //更新一个任务的所有信息
     public void updateJobOutput(String jobId, ExecutableState newStatus, Map<String, String> info, String output) {
         try {
-            final ExecutableOutputPO jobOutput = executableDao.getJobOutput(jobId);
+            final ExecutableOutputPO jobOutput = executableDao.getJobOutput(jobId);//获取该任务
             Preconditions.checkArgument(jobOutput != null, "there is no related output for job id:" + jobId);
-            ExecutableState oldStatus = ExecutableState.valueOf(jobOutput.getStatus());
-            if (newStatus != null && oldStatus != newStatus) {
+            ExecutableState oldStatus = ExecutableState.valueOf(jobOutput.getStatus());//以前的状态
+            if (newStatus != null && oldStatus != newStatus) {//如果状态不同,要进行校验事件流是否正常流转
                 if (!ExecutableState.isValidStateTransfer(oldStatus, newStatus)) {
                     throw new IllegalStateTranferException("there is no valid state transfer from:" + oldStatus + " to:" + newStatus);
                 }
-                jobOutput.setStatus(newStatus.toString());
+                jobOutput.setStatus(newStatus.toString());//设置新的状态
             }
-            if (info != null) {
+            if (info != null) {//设置新的额外信息
                 jobOutput.setInfo(info);
             }
-            if (output != null) {
+            if (output != null) {//设置新的输出
                 jobOutput.setContent(output);
             }
-            executableDao.updateJobOutput(jobOutput);
+            executableDao.updateJobOutput(jobOutput);//重新存储
             logger.info("job id:" + jobId + " from " + oldStatus + " to " + newStatus);
         } catch (PersistentException e) {
             logger.error("error change job:" + jobId + " to " + newStatus.toString());
@@ -298,6 +307,7 @@ public class ExecutableManager {
 
     //for migration only
     //TODO delete when migration finished
+    //重新为该job设置任务和输出内容
     public void resetJobOutput(String jobId, ExecutableState state, String output) {
         try {
             final ExecutableOutputPO jobOutput = executableDao.getJobOutput(jobId);
@@ -311,27 +321,40 @@ public class ExecutableManager {
         }
     }
 
+    /**
+     * 为一个任务添加额外信息
+     * @param id 任务的uuid
+     * @param info 要追加的信息
+     */
     public void addJobInfo(String id, Map<String, String> info) {
         if (info == null) {
             return;
         }
         try {
+            //获取该任务的输出内容
             ExecutableOutputPO output = executableDao.getJobOutput(id);
             Preconditions.checkArgument(output != null, "there is no related output for job id:" + id);
-            output.getInfo().putAll(info);
-            executableDao.updateJobOutput(output);
+            output.getInfo().putAll(info);//追加信息
+            executableDao.updateJobOutput(output);//重新将内容写入到磁盘
         } catch (PersistentException e) {
             logger.error("error update job info, id:" + id + "  info:" + info.toString());
             throw new RuntimeException(e);
         }
     }
 
+    /**
+     * 为任务uuid 追加key-value信息
+     * @param id 任务的uuid
+     * @param key 要追加的key
+     * @param value 要追加的value
+     */
     public void addJobInfo(String id, String key, String value) {
         Map<String, String> info = Maps.newHashMap();
         info.put(key, value);
         addJobInfo(id, info);
     }
 
+    //解析一个任务,转换成简单的对象
     private static ExecutablePO parse(AbstractExecutable executable) {
         ExecutablePO result = new ExecutablePO();
         result.setName(executable.getName());
@@ -348,14 +371,15 @@ public class ExecutableManager {
         return result;
     }
 
+    //是上一个方法parse的逆方法
     private static AbstractExecutable parseTo(ExecutablePO executablePO) {
         if (executablePO == null) {
             logger.warn("executablePO is null");
             return null;
         }
-        String type = executablePO.getType();
+        String type = executablePO.getType();//获取执行器的class
         try {
-            Class<? extends AbstractExecutable> clazz = ClassUtil.forName(type, AbstractExecutable.class);
+            Class<? extends AbstractExecutable> clazz = ClassUtil.forName(type, AbstractExecutable.class);//反射构建该对象
             Constructor<? extends AbstractExecutable> constructor = clazz.getConstructor();
             AbstractExecutable result = constructor.newInstance();
             result.setId(executablePO.getUuid());

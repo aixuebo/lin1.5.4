@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 任务调度器的工厂类
  */
 public class SchedulerFactory {
 
@@ -36,6 +37,7 @@ public class SchedulerFactory {
         schedulers = new ImplementationSwitch<Scheduler>(impls, Scheduler.class);
     }
 
+    //根据int类型的调度器类型,返回对应的调度器
     public static Scheduler scheduler(int schedulerType) {
         return schedulers.get(schedulerType);
     }

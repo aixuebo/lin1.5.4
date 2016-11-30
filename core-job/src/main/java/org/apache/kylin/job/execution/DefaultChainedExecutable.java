@@ -29,11 +29,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 /**
+ * 表示可以执行一组任务
  */
 public class DefaultChainedExecutable extends AbstractExecutable implements ChainedExecutable {
 
+    //存储job集合
     private final List<AbstractExecutable> subTasks = Lists.newArrayList();
 
+    //管理job的对象
     protected final ExecutableManager jobService = ExecutableManager.getInstance(KylinConfig.getInstanceFromEnv());
 
     public DefaultChainedExecutable() {
@@ -85,9 +88,9 @@ public class DefaultChainedExecutable extends AbstractExecutable implements Chai
             notifyUserStatusChange(executableContext, ExecutableState.DISCARDED);
         } else if (result.succeed()) {
             List<? extends Executable> jobs = getTasks();
-            boolean allSucceed = true;
-            boolean hasError = false;
-            boolean hasRunning = false;
+            boolean allSucceed = true;//表示是否所有的任务都成功了
+            boolean hasError = false;//表示是否有任务失败
+            boolean hasRunning = false;//表示是否有任务还在进行中
             for (Executable task : jobs) {
                 final ExecutableState status = task.getStatus();
                 if (status == ExecutableState.ERROR) {
@@ -120,6 +123,7 @@ public class DefaultChainedExecutable extends AbstractExecutable implements Chai
         }
     }
 
+    //返回全部的job
     @Override
     public List<AbstractExecutable> getTasks() {
         return subTasks;
@@ -130,6 +134,7 @@ public class DefaultChainedExecutable extends AbstractExecutable implements Chai
         return false;
     }
 
+    //用name找到一个job
     public final AbstractExecutable getTaskByName(String name) {
         for (AbstractExecutable task : subTasks) {
             if (task.getName() != null && task.getName().equalsIgnoreCase(name)) {
@@ -139,9 +144,10 @@ public class DefaultChainedExecutable extends AbstractExecutable implements Chai
         return null;
     }
 
+    //添加一个job
     @Override
     public void addTask(AbstractExecutable executable) {
-        executable.setId(getId() + "-" + String.format("%02d", subTasks.size()));
+        executable.setId(getId() + "-" + String.format("%02d", subTasks.size()));//用ID表示第几个job
         this.subTasks.add(executable);
     }
 }

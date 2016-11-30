@@ -46,19 +46,21 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Maps;
 
 /**
+ * 任务的调度器
  */
 public class DefaultScheduler implements Scheduler<AbstractExecutable>, ConnectionStateListener {
 
-    private JobLock jobLock;
-    private ExecutableManager executableManager;
+    private JobLock jobLock;//锁对象
+    private ExecutableManager executableManager;//存储job的执行信息在磁盘上
+
     private FetcherRunner fetcher;
-    private ScheduledExecutorService fetcherPool;
-    private ExecutorService jobPool;
-    private DefaultContext context;
+    private ScheduledExecutorService fetcherPool;//抓去任务的线程池
+    private ExecutorService jobPool;//任务执行的线程池
+    private DefaultContext context;//上下文对象
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultScheduler.class);
-    private volatile boolean initialized = false;
-    private volatile boolean hasStarted = false;
+    private volatile boolean initialized = false;//是否已经初始化完成
+    private volatile boolean hasStarted = false;//是否已经开启了调度器
     private JobEngineConfig jobEngineConfig;
 
     private static DefaultScheduler INSTANCE = null;
@@ -75,14 +77,15 @@ public class DefaultScheduler implements Scheduler<AbstractExecutable>, Connecti
         synchronized public void run() {
             try {
                 // logger.debug("Job Fetcher is running...");
-                Map<String, Executable> runningJobs = context.getRunningJobs();
-                if (runningJobs.size() >= jobEngineConfig.getMaxConcurrentJobLimit()) {
+                Map<String, Executable> runningJobs = context.getRunningJobs();//所有正在执行的job集合,key是Executable的id,value是Executable对象
+                if (runningJobs.size() >= jobEngineConfig.getMaxConcurrentJobLimit()) {//已经超过伐值了
                     logger.warn("There are too many jobs running, Job Fetch will wait until next schedule time");
                     return;
                 }
 
+                //分别表示正在运行中    准备中的  其他未知类型  异常的  丢失的 成功的job数量
                 int nRunning = 0, nReady = 0, nOthers = 0, nError = 0, nDiscarded = 0, nSUCCEED = 0;
-                for (final String id : executableManager.getAllJobIds()) {
+                for (final String id : executableManager.getAllJobIds()) {//循环所有的job
                     if (runningJobs.containsKey(id)) {
                         // logger.debug("Job id:" + id + " is already running");
                         nRunning++;
@@ -105,10 +108,10 @@ public class DefaultScheduler implements Scheduler<AbstractExecutable>, Connecti
                     nReady++;
                     AbstractExecutable executable = executableManager.getJob(id);
                     String jobDesc = executable.toString();
-                    logger.info(jobDesc + " prepare to schedule");
+                    logger.info(jobDesc + " prepare to schedule");//打印描述内容
                     try {
-                        context.addRunningJob(executable);
-                        jobPool.execute(new JobRunner(executable));
+                        context.addRunningJob(executable);//添加该job到上下文
+                        jobPool.execute(new JobRunner(executable));//执行该job
                         logger.info(jobDesc + " scheduled");
                     } catch (Exception ex) {
                         context.removeRunningJob(executable);
@@ -122,6 +125,7 @@ public class DefaultScheduler implements Scheduler<AbstractExecutable>, Connecti
         }
     }
 
+    //表示一个执行的job
     private class JobRunner implements Runnable {
 
         private final AbstractExecutable executable;
@@ -133,15 +137,15 @@ public class DefaultScheduler implements Scheduler<AbstractExecutable>, Connecti
         @Override
         public void run() {
             try {
-                executable.execute(context);
-                // trigger the next step asap
+                executable.execute(context);//去执行该任务
+                // trigger the next step asap 接下来做什么,继续调度fetcher的run线程方法
                 fetcherPool.schedule(fetcher, 0, TimeUnit.SECONDS);
             } catch (ExecuteException e) {
                 logger.error("ExecuteException job:" + executable.getId(), e);
             } catch (Exception e) {
                 logger.error("unknown error execute job:" + executable.getId(), e);
             } finally {
-                context.removeRunningJob(executable);
+                context.removeRunningJob(executable);//移除该任务
             }
         }
     }
@@ -184,8 +188,8 @@ public class DefaultScheduler implements Scheduler<AbstractExecutable>, Connecti
     public synchronized void init(JobEngineConfig jobEngineConfig, final JobLock jobLock) throws SchedulerException {
         this.jobLock = jobLock;
         
-        String serverMode = jobEngineConfig.getConfig().getServerMode();
-        if (!("job".equals(serverMode.toLowerCase()) || "all".equals(serverMode.toLowerCase()))) {
+        String serverMode = jobEngineConfig.getConfig().getServerMode();//获取模式
+        if (!("job".equals(serverMode.toLowerCase()) || "all".equals(serverMode.toLowerCase()))) {//只能是job和all两种模式
             logger.info("server mode: " + serverMode + ", no need to run job scheduler");
             return;
         }
@@ -203,13 +207,18 @@ public class DefaultScheduler implements Scheduler<AbstractExecutable>, Connecti
             throw new IllegalStateException("Cannot start job scheduler due to lack of job lock");
         }
 
+        //存储job的执行信息在磁盘上
         executableManager = ExecutableManager.getInstance(jobEngineConfig.getConfig());
         //load all executable, set them to a consistent status
-        fetcherPool = Executors.newScheduledThreadPool(1);
-        int corePoolSize = jobEngineConfig.getMaxConcurrentJobLimit();
+        fetcherPool = Executors.newScheduledThreadPool(1);//抓去任务的线程池
+
+        int corePoolSize = jobEngineConfig.getMaxConcurrentJobLimit();//最大job数量
+
+        //任务执行的线程池
         jobPool = new ThreadPoolExecutor(corePoolSize, corePoolSize, Long.MAX_VALUE, TimeUnit.DAYS, new SynchronousQueue<Runnable>());
         context = new DefaultContext(Maps.<String, Executable> newConcurrentMap(), jobEngineConfig.getConfig());
 
+        //将所有runing状态的任务设置成READY状态
         executableManager.resumeAllRunningJobs();
 
         fetcher = new FetcherRunner();

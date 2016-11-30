@@ -31,8 +31,11 @@ import com.google.common.collect.Multimaps;
  */
 public enum ExecutableState {
 
-    READY, RUNNING, ERROR, STOPPED, DISCARDED, SUCCEED;
+    READY, RUNNING, ERROR, STOPPED,
+    DISCARDED,//丢弃
+    SUCCEED;
 
+    //定义状态机
     private static Multimap<ExecutableState, ExecutableState> VALID_STATE_TRANSFER;
 
     static {
@@ -49,6 +52,8 @@ public enum ExecutableState {
         //user
         VALID_STATE_TRANSFER.put(ExecutableState.READY, ExecutableState.DISCARDED);
 
+
+
         //job
         VALID_STATE_TRANSFER.put(ExecutableState.RUNNING, ExecutableState.READY);
         //job
@@ -58,8 +63,12 @@ public enum ExecutableState {
         //scheduler,job
         VALID_STATE_TRANSFER.put(ExecutableState.RUNNING, ExecutableState.ERROR);
 
+
+
         VALID_STATE_TRANSFER.put(ExecutableState.STOPPED, ExecutableState.DISCARDED);
         VALID_STATE_TRANSFER.put(ExecutableState.STOPPED, ExecutableState.READY);
+
+
 
         VALID_STATE_TRANSFER.put(ExecutableState.ERROR, ExecutableState.DISCARDED);
         VALID_STATE_TRANSFER.put(ExecutableState.ERROR, ExecutableState.READY);

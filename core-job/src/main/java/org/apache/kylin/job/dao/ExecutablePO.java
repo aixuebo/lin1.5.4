@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Maps;
 
 /**
+ * 简单的描述一个任务AbstractExecutable
  */
 @SuppressWarnings("serial")
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.NONE, getterVisibility = JsonAutoDetect.Visibility.NONE, isGetterVisibility = JsonAutoDetect.Visibility.NONE, setterVisibility = JsonAutoDetect.Visibility.NONE)
@@ -37,13 +38,13 @@ public class ExecutablePO extends RootPersistentEntity {
     private String name;
 
     @JsonProperty("tasks")
-    private List<ExecutablePO> tasks;
+    private List<ExecutablePO> tasks;//如果该AbstractExecutable是一个ChainedExecutable任务,因此会包含多个子任务,这个集合就是存储子任务的
 
     @JsonProperty("type")
-    private String type;
+    private String type;//AbstractExecutable对应的class全路径
 
     @JsonProperty("params")
-    private Map<String, String> params = Maps.newHashMap();
+    private Map<String, String> params = Maps.newHashMap();//任务的执行命令参数集合
 
     public String getName() {
         return name;
