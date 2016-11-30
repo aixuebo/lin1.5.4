@@ -39,8 +39,8 @@ public class ModelDescController extends BasicController {
 
     /**
      * Get detail information of the "Model ID"
-     * 
-     * @param modelDescName
+     * 获取指定model的详细信息
+     * @param model_name
      *            Model ID
      * @return
      * @throws IOException

@@ -24,11 +24,11 @@ import java.util.List;
  */
 public interface IJoinedFlatTableDesc {
 
-    String getTableName();
+    String getTableName();//表名字
 
     DataModelDesc getDataModel();
     
-    List<TblColRef> getAllColumns();
+    List<TblColRef> getAllColumns();//所有的列对象
     
     int getColumnIndex(TblColRef colRef);
 
@@ -36,5 +36,5 @@ public interface IJoinedFlatTableDesc {
     
     long getSourceOffsetEnd();
     
-    TblColRef getDistributedBy();
+    TblColRef getDistributedBy();//hive的Distributed by对应的字段
 }

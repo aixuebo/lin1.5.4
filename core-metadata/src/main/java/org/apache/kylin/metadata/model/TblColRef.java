@@ -24,6 +24,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.kylin.metadata.datatype.DataType;
 
 /**
+ * 表对应的列集合
  */
 @SuppressWarnings("serial")
 public class TblColRef implements Serializable {
@@ -63,7 +64,7 @@ public class TblColRef implements Serializable {
 
     // ============================================================================
 
-    private ColumnDesc column;
+    private ColumnDesc column;//对应的列对象
 
     TblColRef(ColumnDesc column) {
         this.column = column;
@@ -77,10 +78,12 @@ public class TblColRef implements Serializable {
         this.column = column;
     }
 
+    //对应列的属性名称
     public String getName() {
         return column.getName();
     }
 
+    //列对应的table
     public String getTable() {
         if (column.getTable() == null) {
             return null;
@@ -88,17 +91,19 @@ public class TblColRef implements Serializable {
         return column.getTable().getIdentity();
     }
 
+    //表名.列名
     public String getCanonicalName() {
         return getTable() + "." + getName();
     }
 
+    //列对应的字段类型
     public String getDatatype() {
         return column.getDatatype();
     }
-
     public DataType getType() {
         return column.getType();
     }
+
 
     public void markInnerColumn(InnerDataTypeEnum dataType) {
         this.column.setDatatype(dataType.getDataType());

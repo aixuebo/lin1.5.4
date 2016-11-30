@@ -44,6 +44,17 @@ public class ModelService extends BasicService {
     @Autowired
     private AccessService accessService;
 
+    /**
+     * 查找project下该modelName对应的DataModelDesc集合
+     *
+     * 注意
+     * 1.如果modelName设置为null或者"",则返回所有匹配的DataModelDesc集合
+     * 2.如果projectName为null,则返回所有的DataModelDesc集合,不与project相互匹配
+     * @param modelName
+     * @param projectName
+     * @return
+     * @throws IOException
+     */
     @PostFilter(Constant.ACCESS_POST_FILTER_READ)
     public List<DataModelDesc> listAllModels(final String modelName, final String projectName) throws IOException {
         List<DataModelDesc> models;
@@ -67,6 +78,7 @@ public class ModelService extends BasicService {
         return filterModels;
     }
 
+    //获取集合中一部分DataModelDesc,即类似用于分页
     public List<DataModelDesc> getModels(final String modelName, final String projectName, final Integer limit, final Integer offset) throws IOException {
 
         List<DataModelDesc> modelDescs = listAllModels(modelName, projectName);
@@ -119,6 +131,7 @@ public class ModelService extends BasicService {
         accessService.clean(desc, true);
     }
 
+    //false表示任何一个model都没有使用该表
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN + " or hasPermission(#desc, 'ADMINISTRATION') or hasPermission(#desc, 'MANAGEMENT')")
     public boolean isTableInAnyModel(String tableName) {
         String[] dbTableName = HadoopUtil.parseHiveTableName(tableName);
@@ -126,10 +139,11 @@ public class ModelService extends BasicService {
         return getMetadataManager().isTableInAnyModel(tableName);
     }
 
+    //返回是否project下某一model使用了该表
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN + " or hasPermission(#desc, 'ADMINISTRATION') or hasPermission(#desc, 'MANAGEMENT')")
     public boolean isTableInModel(String tableName, String projectName) throws IOException {
         String[] dbTableName = HadoopUtil.parseHiveTableName(tableName);
         tableName = dbTableName[0] + "." + dbTableName[1];
-        return getMetadataManager().isTableInModel(tableName, projectName);
+        return getMetadataManager().isTableInModel(tableName, projectName);//是否project下某一model使用了该表
     }
 }

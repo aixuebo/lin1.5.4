@@ -64,6 +64,7 @@ public class TableDesc extends RootPersistentEntity implements ISourceAware {
         this.tableType = other.getTableType();
     }
 
+    //找到该表中的某一个列对象
     public ColumnDesc findColumnByName(String name) {
         //ignore the db name and table name if exists
         int lastIndexOfDot = name.lastIndexOf(".");
@@ -100,6 +101,7 @@ public class TableDesc extends RootPersistentEntity implements ISourceAware {
         return identity;
     }
 
+    //table的保存路径
     public static String concatResourcePath(String tableIdentity) {
         return ResourceStore.TABLE_RESOURCE_ROOT + "/" + tableIdentity + ".json";
     }

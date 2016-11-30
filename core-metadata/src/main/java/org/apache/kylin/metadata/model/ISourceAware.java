@@ -22,7 +22,7 @@ package org.apache.kylin.metadata.model;
 public interface ISourceAware {
 
     public static final int ID_HIVE = 0;//来源于hive
-    public static final int ID_STREAMING = 1;
+    public static final int ID_STREAMING = 1;//streaming,比如kafka
     public static final int ID_SPARKSQL = 5;
     public static final int ID_EXTERNAL = 7;
 

@@ -26,13 +26,14 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * 描述factTable和LookupDesc中的哪些列用于做维度,进行group by操作
  */
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.NONE, getterVisibility = JsonAutoDetect.Visibility.NONE, isGetterVisibility = JsonAutoDetect.Visibility.NONE, setterVisibility = JsonAutoDetect.Visibility.NONE)
 public class ModelDimensionDesc {
     @JsonProperty("table")
-    private String table;
+    private String table;//表名
     @JsonProperty("columns")
-    private String[] columns;
+    private String[] columns;//使用该表要做维度的列集合
 
     public String getTable() {
         return table;
@@ -50,17 +51,19 @@ public class ModelDimensionDesc {
         this.columns = columns;
     }
 
+    //去大写字母
     public static void capicalizeStrings(List<ModelDimensionDesc> dimensions) {
         if (dimensions != null) {
             for (ModelDimensionDesc modelDimensionDesc : dimensions) {
-                modelDimensionDesc.setTable(modelDimensionDesc.getTable().toUpperCase());
+                modelDimensionDesc.setTable(modelDimensionDesc.getTable().toUpperCase());//table的name进行大写字母处理
                 if (modelDimensionDesc.getColumns() != null) {
-                    StringUtil.toUpperCaseArray(modelDimensionDesc.getColumns(), modelDimensionDesc.getColumns());
+                    StringUtil.toUpperCaseArray(modelDimensionDesc.getColumns(), modelDimensionDesc.getColumns());//列名字进行大写字母处理
                 }
             }
         }
     }
 
+    //计算总共多少个维度要去被观察
     public static int getColumnCount(List<ModelDimensionDesc> modelDimensionDescs) {
         int count = 0;
         for (ModelDimensionDesc modelDimensionDesc : modelDimensionDescs) {

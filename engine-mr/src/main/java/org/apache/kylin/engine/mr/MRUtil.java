@@ -73,6 +73,7 @@ public class MRUtil {
 
     // use this method instead of ToolRunner.run() because ToolRunner.run() is not thread-sale
     // Refer to: http://stackoverflow.com/questions/22462665/is-hadoops-toorunner-thread-safe
+    //设置mr的job的启动参数以及执行job main class的run方法
     public static int runMRJob(Tool tool, String[] args) throws Exception {
         Configuration conf = tool.getConf();
         if (conf == null) {

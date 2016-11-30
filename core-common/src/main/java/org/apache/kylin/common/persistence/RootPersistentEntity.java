@@ -59,7 +59,7 @@ abstract public class RootPersistentEntity implements AclEntity, Serializable {
     protected String uuid;
 
     @JsonProperty("last_modified")
-    protected long lastModified;
+    protected long lastModified;//最后修改时间
 
     /**
      * Metadata model version

@@ -22,7 +22,7 @@ public class ModelRequest {
 
     private String uuid;
     private String modelName;//model名称
-    private String modelDescData;//描述
+    private String modelDescData;//描述,用于描述DataModelDesc对象的所有内容,该描述内容是一个json
     private boolean successful;
     private String message;
     private String project;//所属project

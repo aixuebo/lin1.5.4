@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
  * This job will update save the cardinality result into Kylin table metadata store.
  *
  * @author shaoshi
+ * 向kylin的map数据结构中存储该hive的table每一列有多少个不同的元素
  */
 public class HiveColumnCardinalityUpdateJob extends AbstractHadoopJob {
     public static final String JOB_TITLE = "Kylin Hive Column Cardinality Update Job";
@@ -104,13 +105,14 @@ public class HiveColumnCardinalityUpdateJob extends AbstractHadoopJob {
         Iterator<String> it = columns.iterator();
         while (it.hasNext()) {
             String string = (String) it.next();
+            //每一行信息是两个元素组成,一个是列号,一个是列有多少个不同的元素
             String[] ss = StringUtils.split(string, "\t");
 
             if (ss.length != 2) {
                 logger.info("The hadoop cardinality value is not valid " + string);
                 continue;
             }
-            cardi.append(ss[1]);
+            cardi.append(ss[1]);//获取不同的元素数量
             cardi.append(",");
         }
         String scardi = cardi.toString();

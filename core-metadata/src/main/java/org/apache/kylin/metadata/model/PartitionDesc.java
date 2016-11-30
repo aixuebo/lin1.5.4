@@ -38,33 +38,32 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class PartitionDesc {
 
     public static enum PartitionType {
-        APPEND, //
-        UPDATE_INSERT // not used since 0.7.1
+        APPEND, //追加
+        UPDATE_INSERT // not used since 0.7.1 更新 和 新增
     }
 
     @JsonProperty("partition_date_column")
-    private String partitionDateColumn;
+    private String partitionDateColumn;//日期列  database.table.column组成格式
+    private TblColRef partitionDateColumnRef;//partitionDateColumn 日期列对应的对象
 
     @JsonProperty("partition_time_column")
-    private String partitionTimeColumn;
+    private String partitionTimeColumn;//时间列
 
     @JsonProperty("partition_date_start")
     private long partitionDateStart = 0L;//Deprecated
 
     @JsonProperty("partition_date_format")
-    private String partitionDateFormat = DateFormat.DEFAULT_DATE_PATTERN;
+    private String partitionDateFormat = DateFormat.DEFAULT_DATE_PATTERN;//yyyy-MM-dd
 
     @JsonProperty("partition_time_format")
-    private String partitionTimeFormat = DateFormat.DEFAULT_TIME_PATTERN;
+    private String partitionTimeFormat = DateFormat.DEFAULT_TIME_PATTERN;//HH:mm:ss
 
     @JsonProperty("partition_type")
-    private PartitionType partitionType = PartitionType.APPEND;
+    private PartitionType partitionType = PartitionType.APPEND;//追加
 
     @JsonProperty("partition_condition_builder")
     private String partitionConditionBuilderClz = DefaultPartitionConditionBuilder.class.getName();
-
-    private TblColRef partitionDateColumnRef;
-    private IPartitionConditionBuilder partitionConditionBuilder;
+    private IPartitionConditionBuilder partitionConditionBuilder;//partitionConditionBuilderClz对应的class的实例类
 
     public void init(Map<String, TableDesc> tables) {
         if (StringUtils.isEmpty(partitionDateColumn))
@@ -77,7 +76,7 @@ public class PartitionDesc {
         if (null != columns && columns.length == 3) {
             String tableName = columns[0].toUpperCase() + "." + columns[1].toUpperCase();
 
-            TableDesc table = tables.get(tableName);
+            TableDesc table = tables.get(tableName);//列所属表
             ColumnDesc col = table.findColumnByName(columns[2]);
             if (col != null) {
                 partitionDateColumnRef = new TblColRef(col);
@@ -88,9 +87,10 @@ public class PartitionDesc {
             throw new IllegalStateException("The 'partition_date_column' format is invalid: " + partitionDateColumn + ", it should be {db}.{table}.{column}.");
         }
 
-        partitionConditionBuilder = (IPartitionConditionBuilder) ClassUtil.newInstance(partitionConditionBuilderClz);
+        partitionConditionBuilder = (IPartitionConditionBuilder) ClassUtil.newInstance(partitionConditionBuilderClz);//实例化
     }
 
+    //判断是否是整数类型 ymd
     public boolean partitionColumnIsYmdInt() {
         if (partitionDateColumnRef == null)
             return false;
@@ -99,6 +99,7 @@ public class PartitionDesc {
         return type.isInt();
     }
 
+    //判断是否是bigint类型
     public boolean partitionColumnIsTimeMillis() {
         if (partitionDateColumnRef == null)
             return false;
@@ -200,12 +201,13 @@ public class PartitionDesc {
 
         /**
          * Convert to use table alias
+         * 使用别名替换columnName的表名
          */
         private static String replaceColumnNameWithAlias(String columnName, Map<String, String> tableAlias) {
             int indexOfDot = columnName.lastIndexOf(".");
             if (indexOfDot > 0) {
-                String partitionTableName = columnName.substring(0, indexOfDot);
-                if (tableAlias != null && tableAlias.containsKey(partitionTableName))
+                String partitionTableName = columnName.substring(0, indexOfDot);//获取表名字
+                if (tableAlias != null && tableAlias.containsKey(partitionTableName))//替换别名
                     columnName = tableAlias.get(partitionTableName) + columnName.substring(indexOfDot);
             }
             return columnName;
@@ -229,6 +231,7 @@ public class PartitionDesc {
             builder.append(partitionColumnName + " < " + DateFormat.formatToDateStr(endExclusive, DateFormat.COMPACT_DATE_PATTERN));
         }
 
+        //定义了日期格式partitionColumnDateFormat
         private static void buildSingleColumnRangeCondition(StringBuilder builder, String partitionColumnName, long startInclusive, long endExclusive, String partitionColumnDateFormat, Map<String, String> tableAlias) {
             partitionColumnName = replaceColumnNameWithAlias(partitionColumnName, tableAlias);
             if (startInclusive > 0) {

@@ -48,12 +48,14 @@ abstract public class ResourceStore {
     public static final String DICT_RESOURCE_ROOT = "/dict";
     public static final String PROJECT_RESOURCE_ROOT = "/project";//存储project内容,将该project对象序列化成json对象,存储到/project/projectName.json文件中
     public static final String SNAPSHOT_RESOURCE_ROOT = "/table_snapshot";
-    public static final String TABLE_EXD_RESOURCE_ROOT = "/table_exd";
-    public static final String TABLE_RESOURCE_ROOT = "/table";
+    public static final String TABLE_EXD_RESOURCE_ROOT = "/table_exd";//存储table的额外的key-value信息
+    public static final String TABLE_RESOURCE_ROOT = "/table";//保存table元数据信息
     public static final String EXTERNAL_FILTER_RESOURCE_ROOT = "/ext_filter";
     public static final String HYBRID_RESOURCE_ROOT = "/hybrid";
-    public static final String EXECUTE_RESOURCE_ROOT = "/execute";
-    public static final String EXECUTE_OUTPUT_RESOURCE_ROOT = "/execute_output";
+
+    public static final String EXECUTE_RESOURCE_ROOT = "/execute";//存放每一个job任务的执行信息
+    public static final String EXECUTE_OUTPUT_RESOURCE_ROOT = "/execute_output";//存放每一个job任务的执行的输出信息
+
     public static final String STREAMING_RESOURCE_ROOT = "/streaming";
     public static final String KAFKA_RESOURCE_ROOT = "/kafka";
     public static final String STREAMING_OUTPUT_RESOURCE_ROOT = "/streaming_output";

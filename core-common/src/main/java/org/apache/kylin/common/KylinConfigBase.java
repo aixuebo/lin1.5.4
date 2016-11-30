@@ -168,6 +168,7 @@ abstract public class KylinConfigBase implements Serializable {
         }
     }
 
+    //只能是job和all两种模式
     public String getServerMode() {
         return this.getOptional("kylin.server.mode", "all");
     }
@@ -750,6 +751,7 @@ abstract public class KylinConfigBase implements Serializable {
         return Integer.parseInt(getOptional("kylin.default.cube.engine", "2"));
     }
 
+    //所有任务的调度实现集合
     public Map<Integer, String> getSchedulers() {
         Map<Integer, String> r = convertKeyToInteger(getPropertiesByPrefix("kylin.scheduler."));
         r.put(0, "org.apache.kylin.job.impl.threadpool.DefaultScheduler");

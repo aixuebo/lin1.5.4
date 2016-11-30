@@ -461,15 +461,15 @@ public class CubeService extends BasicService {
     /**
      * Generate cardinality for table This will trigger a hadoop job
      * The result will be merged into table exd info
-     *
+     * 计算该hive的每一个列存在多少个不同内容的值
      * @param tableName
      */
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_MODELER + " or " + Constant.ACCESS_HAS_ROLE_ADMIN)
     public void calculateCardinality(String tableName, String submitter) {
         String[] dbTableName = HadoopUtil.parseHiveTableName(tableName);
         tableName = dbTableName[0] + "." + dbTableName[1];
-        TableDesc table = getMetadataManager().getTableDesc(tableName);
-        final Map<String, String> tableExd = getMetadataManager().getTableDescExd(tableName);
+        TableDesc table = getMetadataManager().getTableDesc(tableName);//获取table的元数据内容
+        final Map<String, String> tableExd = getMetadataManager().getTableDescExd(tableName);//获取元数据的key-value形式数据
         if (tableExd == null || table == null) {
             IllegalArgumentException e = new IllegalArgumentException("Cannot find table descirptor " + tableName);
             logger.error("Cannot find table descirptor " + tableName, e);
@@ -480,8 +480,8 @@ public class CubeService extends BasicService {
         job.setName("Hive Column Cardinality calculation for table '" + tableName + "'");
         job.setSubmitter(submitter);
 
-        String outPath = HiveColumnCardinalityJob.OUTPUT_PATH + "/" + tableName;
-        String param = "-table " + tableName + " -output " + outPath;
+        String outPath = HiveColumnCardinalityJob.OUTPUT_PATH + "/" + tableName;//输出目录
+        String param = "-table " + tableName + " -output " + outPath;//执行命令的输入参数
 
         MapReduceExecutable step1 = new MapReduceExecutable();
 
@@ -574,11 +574,13 @@ public class CubeService extends BasicService {
         HiveSourceTableLoader.unLoadHiveTable(tableName.toUpperCase());
     }
 
+    //将table添加到project中
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN)
     public void syncTableToProject(String[] tables, String project) throws IOException {
         getProjectManager().addTableDescToProject(tables, project);
     }
 
+    //删除该project下的一个table
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN)
     public void removeTableFromProject(String tableName, String projectName) throws IOException {
         String[] dbTableName = HadoopUtil.parseHiveTableName(tableName);
@@ -586,6 +588,7 @@ public class CubeService extends BasicService {
         getProjectManager().removeTableDescFromProject(tableName, projectName);
     }
 
+    //计算该hive的每一个列存在多少个不同内容的值
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_MODELER + " or " + Constant.ACCESS_HAS_ROLE_ADMIN)
     public void calculateCardinalityIfNotPresent(String[] tables, String submitter) throws IOException {
         MetadataManager metaMgr = getMetadataManager();

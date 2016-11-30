@@ -33,9 +33,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class TableDescResponse extends TableDesc {
     @JsonProperty("exd")
-    Map<String, String> descExd = new HashMap<String, String>();
+    Map<String, String> descExd = new HashMap<String, String>();//该表的元数据key-value集合
     @JsonProperty("cardinality")
-    Map<String, Long> cardinality = new HashMap<String, Long>();
+    Map<String, Long> cardinality = new HashMap<String, Long>();//该表每一列对应的不同值的个数
 
     /**
      * @return the cardinality

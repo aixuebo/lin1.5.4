@@ -94,7 +94,7 @@ public class JobService extends BasicService {
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(new Date());
         long currentTimeMillis = calendar.getTimeInMillis();
-        long timeStartInMillis = getTimeStartInMillis(calendar, timeFilter);
+        long timeStartInMillis = getTimeStartInMillis(calendar, timeFilter);//计算开始时间
         return listCubeJobInstance(cubeName, projectName, statusList, timeStartInMillis, currentTimeMillis);
     }
 

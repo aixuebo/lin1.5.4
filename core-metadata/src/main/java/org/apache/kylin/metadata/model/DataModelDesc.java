@@ -40,6 +40,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+/**
+ * 代表一个模型,即事实表和维度表的join组合,
+ * 一个model可以被多个cube重复使用
+ */
 @SuppressWarnings("serial")
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
 public class DataModelDesc extends RootPersistentEntity {
@@ -50,6 +54,7 @@ public class DataModelDesc extends RootPersistentEntity {
     
     private KylinConfig config;
 
+    //第一页添加的数据
     @JsonProperty("name")
     private String name;
 
@@ -59,14 +64,21 @@ public class DataModelDesc extends RootPersistentEntity {
     @JsonProperty("description")
     private String description;
 
+    //第二页添加事实表以及关联的lookup表
+    //lookup表可以对事实表进行扩展属性,事实表引用lookup表的主键
     @JsonProperty("fact_table")
     private String factTable;
 
+    //可以看到，kylin提供了两种join的方式：left join和inner join，本案例采用的是inner join的方式。以及关联条件
     @JsonProperty("lookups")
     private LookupDesc[] lookups;
 
+    //第三页面添加数据
+    //factTable表和LookupDesc表数量集合,比如有5个表join,则在这个页面会出现5行内容,每一个表对应一行数据,可以选择该表的一些属性,组装成总维度,即按照这些维度进行group by操作
     @JsonProperty("dimensions")
     private List<ModelDimensionDesc> dimensions;
+
+    //第四个页面 选择度量的列集合
 
     @JsonProperty("metrics")
     private String[] metrics;
@@ -74,14 +86,16 @@ public class DataModelDesc extends RootPersistentEntity {
     @JsonProperty("filter_condition")
     private String filterCondition;
 
+    //如何分区,查询不同日期区间的数据
     @JsonProperty("partition_desc")
     PartitionDesc partitionDesc;
 
     @JsonProperty("capacity")
     private RealizationCapacity capacity = RealizationCapacity.MEDIUM;
 
-    private TableDesc factTableDesc;
+    private TableDesc factTableDesc;//事实表的元数据对象
 
+    //添加lookup表的元数据对象
     private List<TableDesc> lookupTableDescs = Lists.newArrayList();
 
     /**
@@ -177,6 +191,12 @@ public class DataModelDesc extends RootPersistentEntity {
         this.capacity = capacity;
     }
 
+    /**
+     * 通过事实表的外键,找到该外键对应哪个lookup表的主键
+     * @param fk 事实表的外键
+     * @param joinType join类型
+     * @return
+     */
     public TblColRef findPKByFK(TblColRef fk, String joinType) {
         assert isFactTable(fk.getTable());
 
@@ -203,16 +223,17 @@ public class DataModelDesc extends RootPersistentEntity {
     }
 
     // TODO let this replace CubeDesc.buildColumnNameAbbreviation()
+    //找到列对应的列对象
     public ColumnDesc findColumn(String column) {
         ColumnDesc colDesc = null;
 
-        int cut = column.lastIndexOf('.');
+        int cut = column.lastIndexOf('.');//找到该类所属table
         if (cut > 0) {
             // table specified
-            String table = column.substring(0, cut);
+            String table = column.substring(0, cut);//找到table名字
             TableDesc tableDesc = findTable(table);
             colDesc = tableDesc.findColumnByName(column.substring(cut + 1));
-        } else {
+        } else {//只是有列名,没有列所在table信息,就全部遍历了
             // table not specified, try each table
             colDesc = factTableDesc.findColumnByName(column);
             if (colDesc == null) {
@@ -230,6 +251,7 @@ public class DataModelDesc extends RootPersistentEntity {
         return colDesc;
     }
 
+    //找到table信息
     public TableDesc findTable(String table) {
         if (factTableDesc.getName().equalsIgnoreCase(table) || factTableDesc.getIdentity().equalsIgnoreCase(table))
             return factTableDesc;
@@ -242,6 +264,7 @@ public class DataModelDesc extends RootPersistentEntity {
         throw new IllegalArgumentException("Table not found by " + table);
     }
 
+    //初始化该model
     public void init(KylinConfig config, Map<String, TableDesc> tables) {
         this.config = config;
         this.factTable = this.factTable.toUpperCase();
@@ -250,16 +273,18 @@ public class DataModelDesc extends RootPersistentEntity {
             throw new IllegalStateException("Fact table does not exist:" + this.factTable);
         }
 
-        initJoinColumns(tables);
-        ModelDimensionDesc.capicalizeStrings(dimensions);
-        initPartitionDesc(tables);
+        initJoinColumns(tables);//初始化join的列属性信息
+        ModelDimensionDesc.capicalizeStrings(dimensions);//去大写字母
+        initPartitionDesc(tables);//初始化分区信息
     }
 
+    //初始化分区信息
     private void initPartitionDesc(Map<String, TableDesc> tables) {
         if (this.partitionDesc != null)
             this.partitionDesc.init(tables);
     }
 
+    //初始化join的列属性信息
     private void initJoinColumns(Map<String, TableDesc> tables) {
         // join columns may or may not present in cube;
         // here we don't modify 'allColumns' and 'dimensionColumns';
@@ -280,11 +305,11 @@ public class DataModelDesc extends RootPersistentEntity {
             StringUtil.toUpperCaseArray(join.getForeignKey(), join.getForeignKey());
             StringUtil.toUpperCaseArray(join.getPrimaryKey(), join.getPrimaryKey());
 
-            // primary key
+            // primary key 设置主键信息
             String[] pks = join.getPrimaryKey();
-            TblColRef[] pkCols = new TblColRef[pks.length];
+            TblColRef[] pkCols = new TblColRef[pks.length];//每一个列转换成TblColRef对象
             for (int i = 0; i < pks.length; i++) {
-                ColumnDesc col = dimTable.findColumnByName(pks[i]);
+                ColumnDesc col = dimTable.findColumnByName(pks[i]);//从lookup表中找到对应的列对象
                 if (col == null) {
                     throw new IllegalStateException("Can't find column " + pks[i] + " in table " + dimTable.getIdentity());
                 }
@@ -294,10 +319,10 @@ public class DataModelDesc extends RootPersistentEntity {
             }
             join.setPrimaryKeyColumns(pkCols);
 
-            // foreign key
+            // foreign key 设置外键信息
             String[] fks = join.getForeignKey();
             TblColRef[] fkCols = new TblColRef[fks.length];
-            for (int i = 0; i < fks.length; i++) {
+            for (int i = 0; i < fks.length; i++) {//从事实表中查找列对象
                 ColumnDesc col = factTableDesc.findColumnByName(fks[i]);
                 if (col == null) {
                     throw new IllegalStateException("Can't find column " + fks[i] + " in table " + this.getFactTable());
@@ -312,6 +337,8 @@ public class DataModelDesc extends RootPersistentEntity {
             if (pkCols.length != fkCols.length) {
                 throw new IllegalStateException("Primary keys(" + lookup.getTable() + ")" + Arrays.toString(pks) + " are not consistent with Foreign keys(" + this.getFactTable() + ") " + Arrays.toString(fks));
             }
+
+            //校验列的类型要一致,否则打印警告日志
             for (int i = 0; i < fkCols.length; i++) {
                 if (!fkCols[i].getDatatype().equals(pkCols[i].getDatatype())) {
                     logger.warn("Primary key " + lookup.getTable() + "." + pkCols[i].getName() + "." + pkCols[i].getDatatype() + " are not consistent with Foreign key " + this.getFactTable() + "." + fkCols[i].getName() + "." + fkCols[i].getDatatype());

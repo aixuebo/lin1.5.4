@@ -87,6 +87,8 @@ public class TableController extends BasicController {
      *
      * @return Table metadata array
      * @throws IOException
+     * withExt属性用于表示是否显示数据库表的key-value形式的元数据信息
+     * 获取指定project下所有表信息
      */
     @RequestMapping(value = "", method = { RequestMethod.GET })
     @ResponseBody
@@ -114,6 +116,7 @@ public class TableController extends BasicController {
      *
      * @return Table metadata array
      * @throws IOException
+     * 获取一个hive表的元数据信息
      */
     @RequestMapping(value = "/{tableName:.+}", method = { RequestMethod.GET })
     @ResponseBody
@@ -141,21 +144,31 @@ public class TableController extends BasicController {
         return "ok";
     }
 
+    /**
+     *
+     * @param tables 一组要加载的table集合,用逗号拆分
+     * @param project 该table所属的project
+     * @param request
+     * @return
+     * @throws IOException
+     */
     @RequestMapping(value = "/{tables}/{project}", method = { RequestMethod.POST })
     @ResponseBody
     public Map<String, String[]> loadHiveTable(@PathVariable String tables, @PathVariable String project, @RequestBody HiveTableRequest request) throws IOException {
         String submitter = SecurityContextHolder.getContext().getAuthentication().getName();
-        String[] loaded = cubeMgmtService.reloadHiveTable(tables);//加载书
-        if (request.isCalculate()) {
+        String[] loaded = cubeMgmtService.reloadHiveTable(tables);//加载数据
+        if (request.isCalculate()) {//计算该hive的每一个列存在多少个不同内容的值
             cubeMgmtService.calculateCardinalityIfNotPresent(loaded, submitter);
         }
+
         cubeMgmtService.syncTableToProject(loaded, project);
         Map<String, String[]> result = new HashMap<String, String[]>();
-        result.put("result.loaded", loaded);
+        result.put("result.loaded", loaded);//返回加载了哪些表
         result.put("result.unloaded", new String[] {});
         return result;
     }
 
+    //卸载一些table
     @RequestMapping(value = "/{tables}/{project}", method = { RequestMethod.DELETE })
     @ResponseBody
     public Map<String, String[]> unLoadHiveTables(@PathVariable String tables, @PathVariable String project) {
@@ -175,11 +188,15 @@ public class TableController extends BasicController {
     }
 
     /**
+     * 该表可以被多个project引用
      * table may referenced by several projects, and kylin only keep one copy of meta for each table,
      * that's why we have two if statement here.
      * @param tableName
      * @param project
      * @return
+     * 卸载一个project下的某一个table
+     *
+     * 返回是否删除成功
      */
     private boolean unLoadHiveTable(String tableName, String project) {
         boolean rtn = false;
@@ -190,20 +207,25 @@ public class TableController extends BasicController {
         tableName = dbTableName[0] + "." + dbTableName[1];
         TableDesc desc = cubeMgmtService.getMetadataManager().getTableDesc(tableName);
         if(desc == null)
-            return false;
-        tableType = desc.getSourceType();
+            return false;//说明表不存在
+        tableType = desc.getSourceType();//表的来源
 
         try {
-            if (!modelService.isTableInModel(tableName, project)) {
-                cubeMgmtService.removeTableFromProject(tableName, project);
+            if (!modelService.isTableInModel(tableName, project)) {//是否project下某一model使用了该表
+                cubeMgmtService.removeTableFromProject(tableName, project);//因为没有引用该table,因此删除该table
                 rtn = true;
             }
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
         }
+
+        /**
+         * projectService.isTableInAnyProject(tableName)  表示 是否包含该table
+         * modelService.isTableInAnyModel(tableName) false表示任何一个model都没有使用该表
+         */
         if (!projectService.isTableInAnyProject(tableName) && !modelService.isTableInAnyModel(tableName)) {
             try {
-                cubeMgmtService.unLoadHiveTable(tableName);
+                cubeMgmtService.unLoadHiveTable(tableName);//直接删除该表
                 rtn = true;
             } catch (IOException e) {
                 logger.error(e.getMessage(), e);
@@ -211,6 +233,7 @@ public class TableController extends BasicController {
             }
         }
 
+        //针对streaming来源的表进行处理,比如kafka
         if (tableType == 1 && !projectService.isTableInAnyProject(tableName) && !modelService.isTableInAnyModel(tableName)) {
             StreamingConfig config = null;
             KafkaConfig kafkaConfig = null;
@@ -247,6 +270,7 @@ public class TableController extends BasicController {
      *
      * @return Table metadata array
      * @throws IOException
+     * 对一些列表进行列的预估值统计
      */
     @RequestMapping(value = "/{tableNames}/cardinality", method = { RequestMethod.PUT })
     @ResponseBody
@@ -262,6 +286,7 @@ public class TableController extends BasicController {
     /**
      * @param tables
      * @return
+     * 返回表的详细信息给用户
      */
     private List<TableDesc> cloneTableDesc(List<TableDesc> tables) {
         if (null == tables) {
@@ -272,14 +297,14 @@ public class TableController extends BasicController {
         Iterator<TableDesc> it = tables.iterator();
         while (it.hasNext()) {
             TableDesc table = it.next();
-            Map<String, String> exd = cubeMgmtService.getMetadataManager().getTableDescExd(table.getIdentity());
+            Map<String, String> exd = cubeMgmtService.getMetadataManager().getTableDescExd(table.getIdentity());//数据库的key-value元数据集合
             if (exd == null) {
                 descs.add(table);
             } else {
                 // Clone TableDesc
                 TableDescResponse rtableDesc = new TableDescResponse(table);
                 rtableDesc.setDescExd(exd);
-                if (exd.containsKey(MetadataConstants.TABLE_EXD_CARDINALITY)) {
+                if (exd.containsKey(MetadataConstants.TABLE_EXD_CARDINALITY)) {//统计了列的不同值苏慧伦
                     Map<String, Long> cardinality = new HashMap<String, Long>();
                     String scard = exd.get(MetadataConstants.TABLE_EXD_CARDINALITY);
                     if (!StringUtils.isEmpty(scard)) {

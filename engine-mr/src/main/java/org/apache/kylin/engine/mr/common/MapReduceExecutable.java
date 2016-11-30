@@ -47,12 +47,13 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 
 /**
+ * 一个mr任务
  */
 public class MapReduceExecutable extends AbstractExecutable {
 
     public static final String MAP_REDUCE_WAIT_TIME = "mapReduceWaitTime";
-    private static final String KEY_MR_JOB = "MR_JOB_CLASS";
-    private static final String KEY_PARAMS = "MR_JOB_PARAMS";
+    private static final String KEY_MR_JOB = "MR_JOB_CLASS";//该job的main class
+    private static final String KEY_PARAMS = "MR_JOB_PARAMS";//执行job的输入参数集合,比如-table xxx -output xxx
     private static final String KEY_COUNTER_SAVEAS = "MR_COUNTER_SAVEAS";
 
     protected static final Logger logger = LoggerFactory.getLogger(MapReduceExecutable.class);
@@ -65,14 +66,14 @@ public class MapReduceExecutable extends AbstractExecutable {
     protected void onExecuteStart(ExecutableContext executableContext) {
         final Output output = executableManager.getOutput(getId());
         if (output.getExtra().containsKey(START_TIME)) {
-            final String mrJobId = output.getExtra().get(ExecutableConstants.MR_JOB_ID);
+            final String mrJobId = output.getExtra().get(ExecutableConstants.MR_JOB_ID);//获取存储mr的jobid
             if (mrJobId == null) {
                 executableManager.updateJobOutput(getId(), ExecutableState.RUNNING, null, null);
                 return;
             }
             try {
                 Configuration conf = HadoopUtil.getCurrentConfiguration();
-                Job job = new Cluster(conf).getJob(JobID.forName(mrJobId));
+                Job job = new Cluster(conf).getJob(JobID.forName(mrJobId));//获得mr的一个job
                 if (job == null || job.getJobState() == JobStatus.State.FAILED) {
                     //remove previous mr job info
                     super.onExecuteStart(executableContext);
@@ -93,30 +94,32 @@ public class MapReduceExecutable extends AbstractExecutable {
 
     @Override
     protected ExecuteResult doWork(ExecutableContext context) throws ExecuteException {
-        final String mapReduceJobClass = getMapReduceJobClass();
-        String params = getMapReduceParams();
+        final String mapReduceJobClass = getMapReduceJobClass();//该job的main class
+        String params = getMapReduceParams();//执行参数集合
         Preconditions.checkNotNull(mapReduceJobClass);
         Preconditions.checkNotNull(params);
         try {
             Job job;
-            final Map<String, String> extra = executableManager.getOutput(getId()).getExtra();
-            if (extra.containsKey(ExecutableConstants.MR_JOB_ID)) {
+            final Map<String, String> extra = executableManager.getOutput(getId()).getExtra();//获取额外的配置集合
+            if (extra.containsKey(ExecutableConstants.MR_JOB_ID)) {//已经有mr的jobid
                 Configuration conf = HadoopUtil.getCurrentConfiguration();
-                job = new Cluster(conf).getJob(JobID.forName(extra.get(ExecutableConstants.MR_JOB_ID)));
+                job = new Cluster(conf).getJob(JobID.forName(extra.get(ExecutableConstants.MR_JOB_ID)));//获取对应的job对象
                 logger.info("mr_job_id:" + extra.get(ExecutableConstants.MR_JOB_ID) + " resumed");
             } else {
+                //通过反射构建一个mr的job类,构造的是无参数的构造器
                 final Constructor<? extends AbstractHadoopJob> constructor = ClassUtil.forName(mapReduceJobClass, AbstractHadoopJob.class).getConstructor();
                 final AbstractHadoopJob hadoopJob = constructor.newInstance();
-                hadoopJob.setConf(HadoopUtil.getCurrentConfiguration());
+                hadoopJob.setConf(HadoopUtil.getCurrentConfiguration());//设置一个配置对象
                 hadoopJob.setAsync(true); // so the ToolRunner.run() returns right away
                 logger.info("parameters of the MapReduceExecutable:");
                 logger.info(params);
-                String[] args = params.trim().split("\\s+");
+                String[] args = params.trim().split("\\s+");//按照空格拆分数据
                 try {
                     //for async mr job, ToolRunner just return 0;
 
                     // use this method instead of ToolRunner.run() because ToolRunner.run() is not thread-sale
                     // Refer to: http://stackoverflow.com/questions/22462665/is-hadoops-toorunner-thread-safe
+                    //设置mr的job的启动参数以及执行job main class的run方法
                     MRUtil.runMRJob(hadoopJob, args);
 
                     if (hadoopJob.isSkipped()) {
@@ -133,6 +136,8 @@ public class MapReduceExecutable extends AbstractExecutable {
                 }
                 job = hadoopJob.getJob();
             }
+
+
             final StringBuilder output = new StringBuilder();
             final HadoopCmdOutput hadoopCmdOutput = new HadoopCmdOutput(job, output);
 
@@ -145,7 +150,7 @@ public class MapReduceExecutable extends AbstractExecutable {
             //            boolean useKerberosAuth = context.getConfig().isGetJobStatusWithKerberos();
             //            HadoopStatusChecker statusChecker = new HadoopStatusChecker(restStatusCheckUrl, mrJobId, output, useKerberosAuth);
             JobStepStatusEnum status = JobStepStatusEnum.NEW;
-            while (!isDiscarded()) {
+            while (!isDiscarded()) {//只要不是丢弃,就不断循环
 
                 JobStepStatusEnum newStatus = HadoopJobStatusChecker.checkStatus(job, output);
                 if (status == JobStepStatusEnum.KILLED) {
@@ -173,7 +178,7 @@ public class MapReduceExecutable extends AbstractExecutable {
             }
 
             // try to kill running map-reduce job to release resources.
-            if (job != null) {
+            if (job != null) {//说明该job已经被丢弃了
                 try {
                     job.killJob();
                 } catch (Exception e) {
@@ -216,23 +221,23 @@ public class MapReduceExecutable extends AbstractExecutable {
     public long getMapReduceWaitTime() {
         return getExtraInfoAsLong(MAP_REDUCE_WAIT_TIME, 0L);
     }
-
     public void setMapReduceWaitTime(long t) {
         addExtraInfo(MAP_REDUCE_WAIT_TIME, t + "");
     }
 
+
+    //该job的main class
     public String getMapReduceJobClass() throws ExecuteException {
         return getParam(KEY_MR_JOB);
     }
-
     public void setMapReduceJobClass(Class<? extends AbstractHadoopJob> clazzName) {
         setParam(KEY_MR_JOB, clazzName.getName());
     }
 
+    //该job的执行参数集合,用逗号拆分
     public String getMapReduceParams() {
         return getParam(KEY_PARAMS);
     }
-
     public void setMapReduceParams(String param) {
         setParam(KEY_PARAMS, param);
     }
@@ -240,7 +245,6 @@ public class MapReduceExecutable extends AbstractExecutable {
     public String getCounterSaveAs() {
         return getParam(KEY_COUNTER_SAVEAS);
     }
-
     public void setCounterSaveAs(String value) {
         setParam(KEY_COUNTER_SAVEAS, value);
     }

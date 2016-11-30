@@ -114,12 +114,18 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
     private KylinConfigExt config;
     private DataModelDesc model;
 
+    //第一个页面 添加cube的名字以及描述  在哪个model上建立cube  邮件通知事件 以及通知列表
     @JsonProperty("name")
     private String name;
-    @JsonProperty("model_name")
-    private String modelName;
     @JsonProperty("description")
     private String description;
+    @JsonProperty("model_name")
+    private String modelName;//该cube所属model
+    @JsonProperty("notify_list")
+    private List<String> notifyList;
+    @JsonProperty("status_need_notify")
+    private List<String> statusNeedNotify = Collections.emptyList();
+
     @JsonProperty("null_string")
     private String[] nullStrings;
     @JsonProperty("dimensions")
@@ -137,10 +143,6 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
     private List<AggregationGroup> aggregationGroups;
     @JsonProperty("signature")
     private String signature;
-    @JsonProperty("notify_list")
-    private List<String> notifyList;
-    @JsonProperty("status_need_notify")
-    private List<String> statusNeedNotify = Collections.emptyList();
 
     @JsonProperty("partition_date_start")
     private long partitionDateStart = 0L;

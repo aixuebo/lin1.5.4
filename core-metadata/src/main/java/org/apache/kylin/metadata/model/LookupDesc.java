@@ -26,13 +26,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class LookupDesc {
 
     @JsonProperty("table")
-    private String table;
+    private String table;//与主表关联的lookup表名字
 
     @JsonProperty("join")
-    private JoinDesc join;
-    
-    private TableDesc tableDesc;
+    private JoinDesc join;//join的条件
 
+    private TableDesc tableDesc;//与主表关联的lookup表内存元数据
+    
     public String getTable() {
         return table;
     }

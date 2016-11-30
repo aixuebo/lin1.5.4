@@ -26,7 +26,7 @@ public class HiveTableRequest {
 
     }
 
-    private boolean calculate = true;
+    private boolean calculate = true;//默认是true,表示要去计算hive的每一个列的内容不同值的数量
 
     public boolean isCalculate() {
         return calculate;

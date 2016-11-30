@@ -24,7 +24,7 @@ package org.apache.kylin.metadata;
  */
 public interface MetadataConstants {
 
-    public static final String FILE_SURFIX = ".json";
+    public static final String FILE_SURFIX = ".json";//文件后缀
 
     // Extended attribute keys
     public static final String TABLE_EXD_TABLENAME = "tableName";//hive的表名字
@@ -37,7 +37,6 @@ public interface MetadataConstants {
     public static final String TABLE_EXD_PARTITIONED = "partitioned";//表是否包含分区
 
 
-    public static final String TABLE_EXD_STATUS_KEY = "EXD_STATUS";
     public static final String TABLE_EXD_MINFS = "minFileSize";
     public static final String TABLE_EXD_MAXFS = "maxFileSize";
 
@@ -50,8 +49,10 @@ public interface MetadataConstants {
     /**
      * The value is an array
      */
-    public static final String TABLE_EXD_CARDINALITY = "cardinality";
+    public static final String TABLE_EXD_CARDINALITY = "cardinality";//标识为hive的每一列计算不同值数量,例如有5列,那么这个值是五个值,用逗号拆分组成的数组
     public static final String TABLE_EXD_DELIM = "delim";
     public static final String TABLE_EXD_DEFAULT_VALUE = "unknown";
+
+    public static final String TABLE_EXD_STATUS_KEY = "EXD_STATUS";//true表示该table有key-value的属性信息存在,false表示不存在
 
 }

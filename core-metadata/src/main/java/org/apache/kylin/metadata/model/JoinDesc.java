@@ -25,21 +25,23 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * 用于描绘两个表之间如何关联
  */
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
 public class JoinDesc {
 
     // inner, left, right, outer...
     @JsonProperty("type")
-    private String type;
+    private String type;//inner 还是left
     @JsonProperty("primary_key")
-    private String[] primaryKey;
+    private String[] primaryKey;//主键
     @JsonProperty("foreign_key")
-    private String[] foreignKey;
+    private String[] foreignKey;//外键
 
-    private TblColRef[] primaryKeyColumns;
-    private TblColRef[] foreignKeyColumns;
+    private TblColRef[] primaryKeyColumns;//主键表对应的列集合,该属性来自于lookup表
+    private TblColRef[] foreignKeyColumns;//该字段来自于事实表的某些列
 
+    //切换主外键
     public void swapPKFK() {
         String[] t = primaryKey;
         primaryKey = foreignKey;

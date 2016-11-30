@@ -59,11 +59,13 @@ import com.google.common.collect.Maps;
  * Metadata is serialized as JSON and stored in ResourceStore.
  * 
  * @author yangli9
+ * 用于提供所有的元数据信息
  */
 public class MetadataManager {
 
     private static final Logger logger = LoggerFactory.getLogger(MetadataManager.class);
 
+    //三种结构如何序列化
     public static final Serializer<TableDesc> TABLE_SERIALIZER = new JsonSerializer<TableDesc>(TableDesc.class);
     public static final Serializer<DataModelDesc> MODELDESC_SERIALIZER = new JsonSerializer<DataModelDesc>(DataModelDesc.class);
     public static final Serializer<ExternalFilterDesc> EXTERNAL_FILTER_DESC_SERIALIZER = new JsonSerializer<ExternalFilterDesc>(ExternalFilterDesc.class);
@@ -104,12 +106,12 @@ public class MetadataManager {
 
     private KylinConfig config;
     // table name ==> SourceTable
-    private CaseInsensitiveStringCache<TableDesc> srcTableMap;
+    private CaseInsensitiveStringCache<TableDesc> srcTableMap;//存储所有的hive中加载的table信息
 
     // name => value 存放该table的元数据参数信息,key是database.table,value是一个key-value的键值对信息
     private CaseInsensitiveStringCache<Map<String, String>> srcTableExdMap;
     // name => DataModelDesc
-    private CaseInsensitiveStringCache<DataModelDesc> dataModelDescMap;
+    private CaseInsensitiveStringCache<DataModelDesc> dataModelDescMap;//存储所有的model信息
     // name => External Filter Desc
     private CaseInsensitiveStringCache<ExternalFilterDesc> extFilterMap;
 
@@ -124,6 +126,7 @@ public class MetadataManager {
      * 
      * @return
      * @throws IOException
+     * 重新从存储器上加载json文件,加载到内存中
      */
     public void reload() {
         clearCache();
@@ -160,6 +163,8 @@ public class MetadataManager {
 
     /**
      * Get ColumnDesc by name, like "table.column"
+     * 参数demo:table.column
+     * 用于获取某一个列的信息
      */
     public ColumnDesc getColumnDesc(String tableDotColumnName) {
         int cut = tableDotColumnName.lastIndexOf('.');
@@ -178,6 +183,7 @@ public class MetadataManager {
 
     /**
      * Get TableDesc by name
+     * 通过表名字获取一个表对象
      */
     public TableDesc getTableDesc(String tableName) {
         if (tableName.indexOf(".") < 0)
@@ -197,7 +203,7 @@ public class MetadataManager {
      * 
      * @param tableName 唯一标识符,用database.table表示
      * @return
-     * 存放该table的元数据参数信息
+     * 获取该table的元数据参数信息
      */
     public Map<String, String> getTableDescExd(String tableName) {
         String tableIdentity = tableName;
@@ -209,30 +215,33 @@ public class MetadataManager {
                 Entry<String, String> entry = it.next();
                 result.put(entry.getKey(), entry.getValue());
             }
-            result.put(MetadataConstants.TABLE_EXD_STATUS_KEY, "true");
+            result.put(MetadataConstants.TABLE_EXD_STATUS_KEY, "true");//true表示该table有key-value的属性信息存在,false表示不存在
         } else {
-            result.put(MetadataConstants.TABLE_EXD_STATUS_KEY, "false");
+            result.put(MetadataConstants.TABLE_EXD_STATUS_KEY, "false");//true表示该table有key-value的属性信息存在,false表示不存在
         }
         return result;
     }
 
+    //保存一个table
     public void saveSourceTable(TableDesc srcTable) throws IOException {
         if (srcTable.getUuid() == null || srcTable.getIdentity() == null) {
             throw new IllegalArgumentException();
         }
 
+        //对table进行初始化
         srcTable.init();
 
-        String path = srcTable.getResourcePath();
-        getStore().putResource(path, srcTable, TABLE_SERIALIZER);
+        String path = srcTable.getResourcePath();//table的保存路径
+        getStore().putResource(path, srcTable, TABLE_SERIALIZER);//用json的方式将table信息存储到path路径下
 
         srcTableMap.put(srcTable.getIdentity(), srcTable);
     }
 
+    //删除table的元和数据文件
     public void removeSourceTable(String tableIdentity) throws IOException {
-        String path = TableDesc.concatResourcePath(tableIdentity);
-        getStore().deleteResource(path);
-        srcTableMap.remove(tableIdentity);
+        String path = TableDesc.concatResourcePath(tableIdentity);//table的保存路径
+        getStore().deleteResource(path);//删除该路径对应的文件
+        srcTableMap.remove(tableIdentity);//内存映射删除
     }
 
     public void saveExternalFilter(ExternalFilterDesc desc) throws IOException {
@@ -253,6 +262,7 @@ public class MetadataManager {
 
     }
 
+    //重新从存储器上加载json文件,加载到内存中
     private void init(KylinConfig config) throws IOException {
         this.config = config;
         this.srcTableMap = new CaseInsensitiveStringCache<>(config, Broadcaster.TYPE.TABLE);
@@ -266,6 +276,7 @@ public class MetadataManager {
         reloadAllExternalFilter();
     }
 
+    //从存储器上加载table的额外的key-value信息
     private void reloadAllSourceTableExd() throws IOException {
         ResourceStore store = getStore();
         logger.debug("Reloading SourceTable exd info from folder " + store.getReadableResourcePath(ResourceStore.TABLE_EXD_RESOURCE_ROOT));
@@ -274,12 +285,13 @@ public class MetadataManager {
 
         List<String> paths = store.collectResourceRecursively(ResourceStore.TABLE_EXD_RESOURCE_ROOT, MetadataConstants.FILE_SURFIX);
         for (String path : paths) {
-            reloadSourceTableExdAt(path);
+            reloadSourceTableExdAt(path);//加载一个table的key-value文件到内存中
         }
 
         logger.debug("Loaded " + srcTableExdMap.size() + " SourceTable EXD(s)");
     }
 
+    //加载一个table的key-value文件到内存中
     @SuppressWarnings("unchecked")
     private Map<String, String> reloadSourceTableExdAt(String path) throws IOException {
         Map<String, String> attrs = Maps.newHashMap();
@@ -408,6 +420,7 @@ public class MetadataManager {
         return new ArrayList<>(ret);
     }
 
+    //是否project下某一model使用了该表
     public boolean isTableInModel(String tableName, String projectName) throws IOException {
         for (DataModelDesc modelDesc : getModels(projectName)) {
             if (modelDesc.getAllTables().contains(tableName.toUpperCase())) {
@@ -417,6 +430,7 @@ public class MetadataManager {
         return false;
     }
 
+    //false表示任何一个model都没有使用该表
     public boolean isTableInAnyModel(String tableName) {
         for (DataModelDesc modelDesc : getModels()) {
             if (modelDesc.getAllTables().contains(tableName.toUpperCase())) {

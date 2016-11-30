@@ -298,6 +298,7 @@ public class ProjectManager {
         return projectInstance;
     }
 
+    //删除该project下的一个table
     public void removeTableDescFromProject(String tableIdentities, String projectName) throws IOException {
         MetadataManager metaMgr = getMetadataManager();
         ProjectInstance projectInstance = getProject(projectName);

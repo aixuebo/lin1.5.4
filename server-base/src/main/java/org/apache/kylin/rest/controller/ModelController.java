@@ -113,7 +113,7 @@ public class ModelController extends BasicController {
     @RequestMapping(value = "", method = { RequestMethod.PUT })
     @ResponseBody
     public ModelRequest updateModelDesc(@RequestBody ModelRequest modelRequest) throws JsonProcessingException {
-        DataModelDesc modelDesc = deserializeDataModelDesc(modelRequest);
+        DataModelDesc modelDesc = deserializeDataModelDesc(modelRequest);//转换成DataModelDesc对象
         if (modelDesc == null) {
             return modelRequest;
         }
