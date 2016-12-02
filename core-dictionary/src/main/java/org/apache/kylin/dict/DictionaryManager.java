@@ -274,17 +274,26 @@ public class DictionaryManager {
         return buildDictionary(model, col, factTableValueProvider, null);
     }
 
+    /**
+     * 为该模型的某一列构建字典
+     * @param model 模型
+     * @param col 模型的某一个列
+     * @param factTableValueProvider
+     * @param builderClass 构建字典的class类
+     * @return
+     * @throws IOException
+     */
     public DictionaryInfo buildDictionary(DataModelDesc model, TblColRef col, DistinctColumnValuesProvider factTableValueProvider, String builderClass) throws IOException {
 
         logger.info("building dictionary for " + col);
 
-        TblColRef srcCol = decideSourceData(model, col);
-        String srcTable = srcCol.getTable();
-        String srcColName = srcCol.getName();
+        TblColRef srcCol = decideSourceData(model, col);//如果col是fact表中字段,要转换成lookup表中字段
+        String srcTable = srcCol.getTable();//列对应表
+        String srcColName = srcCol.getName();//列名
         int srcColIdx = srcCol.getColumnDesc().getZeroBasedIndex();
 
         ReadableTable inpTable;
-        if (model.isFactTable(srcTable)) {
+        if (model.isFactTable(srcTable)) {//是否是事实表
             inpTable = factTableValueProvider.getDistinctValuesFor(srcCol);
         } else {
             MetadataManager metadataManager = MetadataManager.getInstance(config);
@@ -333,12 +342,13 @@ public class DictionaryManager {
 
     /**
      * Decide a dictionary's source data, leverage PK-FK relationship.
+     * 如果col是fact表中字段,要转换成lookup表中字段
      */
     public TblColRef decideSourceData(DataModelDesc model, TblColRef col) throws IOException {
         // Note FK on fact table is supported by scan the related PK on lookup table
         // FK on fact table and join type is inner, use PK from lookup instead
-        if (model.isFactTable(col.getTable())) {
-            TblColRef pkCol = model.findPKByFK(col, "inner");
+        if (model.isFactTable(col.getTable())) {//该列是事实表的列
+            TblColRef pkCol = model.findPKByFK(col, "inner");//通过fact表外键,找到关联的lookup表主键
             if (pkCol != null)
                 col = pkCol; // scan the counterparty PK on lookup table instead
         }

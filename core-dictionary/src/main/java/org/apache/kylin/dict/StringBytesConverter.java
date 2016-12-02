@@ -21,7 +21,7 @@ package org.apache.kylin.dict;
 import org.apache.kylin.common.util.Bytes;
 
 /**
- * 字符画和字节相互转换
+ * 字符串和字节相互转换
  */
 public class StringBytesConverter implements BytesConverter<String> {
 

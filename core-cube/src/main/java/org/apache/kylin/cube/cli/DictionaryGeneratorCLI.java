@@ -45,9 +45,9 @@ public class DictionaryGeneratorCLI {
         CubeManager cubeMgr = CubeManager.getInstance(config);
 
         // dictionary
-        for (TblColRef col : cubeSeg.getCubeDesc().getAllColumnsNeedDictionaryBuilt()) {
+        for (TblColRef col : cubeSeg.getCubeDesc().getAllColumnsNeedDictionaryBuilt()) {//获取需要构建字典的列的集合,并且循环
             logger.info("Building dictionary for " + col);
-            cubeMgr.buildDictionary(cubeSeg, col, factTableValueProvider);
+            cubeMgr.buildDictionary(cubeSeg, col, factTableValueProvider);//构建该列的字典
         }
 
         for (DimensionDesc dim : cubeSeg.getCubeDesc().getDimensions()) {

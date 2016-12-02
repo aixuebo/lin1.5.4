@@ -175,13 +175,17 @@ public class CubeManager implements IRealizationProvider {
         return result;
     }
 
+    /**
+     * 为某一个cube的CubeSegment的某一列构建字典
+     */
     public DictionaryInfo buildDictionary(CubeSegment cubeSeg, TblColRef col, DistinctColumnValuesProvider factTableValueProvider) throws IOException {
         CubeDesc cubeDesc = cubeSeg.getCubeDesc();
+        //该列必须是字典列
         if (!cubeDesc.getAllColumnsNeedDictionaryBuilt().contains(col))
             return null;
 
         DictionaryManager dictMgr = getDictionaryManager();
-        String builderClass = cubeDesc.getDictionaryBuilderClass(col);
+        String builderClass = cubeDesc.getDictionaryBuilderClass(col);//返回构建字典的class对象
         DictionaryInfo dictInfo = dictMgr.buildDictionary(cubeDesc.getModel(), col, factTableValueProvider, builderClass);
 
         if (dictInfo != null) {

@@ -28,12 +28,13 @@ import org.apache.kylin.common.util.DateFormat;
 import org.apache.kylin.common.util.Dictionary;
 
 /**
+ * 对日期时间类型的字段设置字典
  */
 @SuppressWarnings("serial")
 public class TimeStrDictionary extends Dictionary<String> {
 
     // Integer.MAX_VALUE - 1 to avoid cardinality (max_id - min_id + 1) overflow
-    private static final int MAX_ID = Integer.MAX_VALUE - 1;
+    private static final int MAX_ID = Integer.MAX_VALUE - 1;//因为一天是86400秒, 一年31536000秒,该范围可以存储68年,因为时间戳从197x年开始计算的,所以68年是可以是正常范围的
     private static final int MAX_LENGTH_OF_POSITIVE_LONG = 19;
 
     @Override
@@ -46,6 +47,7 @@ public class TimeStrDictionary extends Dictionary<String> {
         return MAX_ID;
     }
 
+    //因为一个int最多允许4个字节存储
     @Override
     public int getSizeOfId() {
         return 4;
@@ -56,10 +58,11 @@ public class TimeStrDictionary extends Dictionary<String> {
         return MAX_LENGTH_OF_POSITIVE_LONG;
     }
 
+    //将时间转换成多少秒
     @Override
     protected int getIdFromValueImpl(String value, int roundingFlag) {
-        long millis = DateFormat.stringToMillis(value);
-        long seconds = millis / 1000;
+        long millis = DateFormat.stringToMillis(value);//转换成时间戳
+        long seconds = millis / 1000;//多少秒
 
         if (seconds > MAX_ID) {
             return nullId();
@@ -71,7 +74,7 @@ public class TimeStrDictionary extends Dictionary<String> {
     }
 
     /**
-     *
+     * 反序列化会丢失毫秒的数据,毫秒的数据就变成000
      * @param id
      * @return return like "0000001430812800000"
      */
