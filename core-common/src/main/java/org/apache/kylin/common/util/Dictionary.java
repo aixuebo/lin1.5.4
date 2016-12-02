@@ -48,21 +48,24 @@ abstract public class Dictionary<T> implements Serializable {
     // ID with all bit-1 (0xff e.g.) reserved for NULL value
     public static final int[] NULL_ID = new int[] { 0, 0xff, 0xffff, 0xffffff, 0xffffffff };
 
-    abstract public int getMinId();
+    abstract public int getMinId();//最小值
 
-    abstract public int getMaxId();
+    abstract public int getMaxId();//最大值
 
+    //能容纳多少值
     public int getSize() {
         return getMaxId() - getMinId() + 1;
     }
 
     /**
      * @return the size of an ID in bytes, determined by the cardinality of column
+     * 估算压缩后id占用多少字节
      */
     abstract public int getSizeOfId();
 
     /**
      * @return the (maximum) size of value in bytes, determined by the longest value
+     * key未压缩前占用多少字节
      */
     abstract public int getSizeOfValue();
 
@@ -73,6 +76,7 @@ abstract public class Dictionary<T> implements Serializable {
 
     /**
      * Convenient form of <code>getIdFromValue(value, 0)</code>
+     * 将value进行转换压缩成int
      */
     final public int getIdFromValue(T value) throws IllegalArgumentException {
         return getIdFromValue(value, 0);
@@ -90,6 +94,7 @@ abstract public class Dictionary<T> implements Serializable {
      * @throws IllegalArgumentException
      *             if value is not found in dictionary and rounding is off;
      *             or if rounding cannot find a smaller or bigger ID
+     * 将value进行转换压缩成int
      */
     final public int getIdFromValue(T value, int roundingFlag) throws IllegalArgumentException {
         if (isNullObjectForm(value))
@@ -112,16 +117,19 @@ abstract public class Dictionary<T> implements Serializable {
         }
     }
 
+    //要转换的是否是null
     protected boolean isNullObjectForm(T value) {
         return value == null;
     }
 
+    //将value进行转换压缩成int
     abstract protected int getIdFromValueImpl(T value, int roundingFlag);
 
     /**
      * @return the value corresponds to the given ID
      * @throws IllegalArgumentException
      *             if ID is not found in dictionary
+     * 将int反转成原始value
      */
     final public T getValueFromId(int id) throws IllegalArgumentException {
         if (isNullId(id))
@@ -130,11 +138,13 @@ abstract public class Dictionary<T> implements Serializable {
             return getValueFromIdImpl(id);
     }
 
+    //将int反转成原始value
     abstract protected T getValueFromIdImpl(int id);
 
     /**
      * Convenient form of
      * <code>getIdFromValueBytes(value, offset, len, 0)</code>
+     * 将value进行转换压缩成int,value从字节数组中获取
      */
     final public int getIdFromValueBytes(byte[] value, int offset, int len) throws IllegalArgumentException {
         return getIdFromValueBytes(value, offset, len, 0);
@@ -152,6 +162,7 @@ abstract public class Dictionary<T> implements Serializable {
      * @throws IllegalArgumentException
      *             if value is not found in dictionary and rounding is off;
      *             or if rounding cannot find a smaller or bigger ID
+     * 将value进行转换压缩成int,value从字节数组中获取
      */
     final public int getIdFromValueBytes(byte[] value, int offset, int len, int roundingFlag) throws IllegalArgumentException {
         if (isNullByteForm(value, offset, len))
@@ -168,8 +179,10 @@ abstract public class Dictionary<T> implements Serializable {
         return value == null;
     }
 
+    //将value进行转换压缩成int,value从字节数组中获取
     abstract protected int getIdFromValueBytesImpl(byte[] value, int offset, int len, int roundingFlag);
 
+    //将id转换成原始内容对应的字节数组
     final public byte[] getValueBytesFromId(int id) {
         if (isNullId(id))
             return BytesUtil.EMPTY_BYTE_ARRAY;
@@ -177,6 +190,7 @@ abstract public class Dictionary<T> implements Serializable {
             return getValueBytesFromIdImpl(id);
     }
 
+    //将id转换成原始内容对应的字节数组
     abstract protected byte[] getValueBytesFromIdImpl(int id);
 
     /**
@@ -188,6 +202,7 @@ abstract public class Dictionary<T> implements Serializable {
      *
      * @throws IllegalArgumentException
      *             if ID is not found in dictionary
+     * 将id转换成原始内容对应的字节数组,并且转换后的内容追加到returnValue中,从returnValue的offset位置开始追加
      */
     final public int getValueBytesFromId(int id, byte[] returnValue, int offset) throws IllegalArgumentException {
         if (isNullId(id))
@@ -196,6 +211,7 @@ abstract public class Dictionary<T> implements Serializable {
             return getValueBytesFromIdImpl(id, returnValue, offset);
     }
 
+    //将id转换成原始内容对应的字节数组,并且转换后的内容追加到returnValue中,从returnValue的offset位置开始追加
     abstract protected int getValueBytesFromIdImpl(int id, byte[] returnValue, int offset);
 
     abstract public void dump(PrintStream out);
@@ -214,7 +230,9 @@ abstract public class Dictionary<T> implements Serializable {
         return this;
     }
 
-    /** utility that converts a dictionary ID to string, preserving order */
+    /** utility that converts a dictionary ID to string, preserving order
+     * 从字节数组中获取要转换的value
+     **/
     public static String dictIdToString(byte[] idBytes, int offset, int length) {
         try {
             return new String(idBytes, offset, length, "ISO-8859-1");

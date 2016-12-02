@@ -20,11 +20,12 @@ package org.apache.kylin.cube.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+//同一个维度组里面的列是如何规划的
 public class SelectRule {
     @JsonProperty("hierarchy_dims")
-    public String[][] hierarchy_dims;
+    public String[][] hierarchy_dims;//继承关系的列集合
     @JsonProperty("mandatory_dims")
-    public String[] mandatory_dims;
+    public String[] mandatory_dims;//必须要有的列集合
     @JsonProperty("joint_dims")
-    public String[][] joint_dims;
+    public String[][] joint_dims;//表示这一组列总是一起被查询,即同时出现,这里面的列集合是作为一组,比如有4个维度,表示的是1个可能,而不是2的4次方可能
 }

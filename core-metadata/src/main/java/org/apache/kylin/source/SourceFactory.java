@@ -26,10 +26,12 @@ import org.apache.kylin.common.util.ImplementationSwitch;
 import org.apache.kylin.metadata.model.ISourceAware;
 import org.apache.kylin.metadata.model.TableDesc;
 
+//Source接口的实现类工厂方式
 public class SourceFactory {
 
     private static ImplementationSwitch<ISource> sources;
     static {
+        //输入源引擎默认只有HiveSource引擎
         Map<Integer, String> impls = KylinConfig.getInstanceFromEnv().getSourceEngines();
         sources = new ImplementationSwitch<ISource>(impls, ISource.class);
     }

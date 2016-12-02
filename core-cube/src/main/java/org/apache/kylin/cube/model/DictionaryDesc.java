@@ -39,8 +39,8 @@ public class DictionaryDesc {
     private String builderClass;
 
     // computed content
-    private TblColRef colRef;
-    private TblColRef reuseColRef;
+    private TblColRef colRef;//column对应的列对象
+    private TblColRef reuseColRef;//reuseColumn对应的列对象
 
     void init(CubeDesc cubeDesc) {
         DataModelDesc model = cubeDesc.getModel();

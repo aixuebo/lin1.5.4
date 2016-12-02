@@ -24,7 +24,7 @@ package org.apache.kylin.dimension;
 public class DateDimEnc extends AbstractDateDimEnc {
     private static final long serialVersionUID = 1L;
 
-    public static final int ID_9999_12_31 = 3652426;
+    public static final int ID_9999_12_31 = 3652426;//总共多少天
 
     public static final String ENCODING_NAME = "date";
 

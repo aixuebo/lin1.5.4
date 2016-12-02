@@ -39,14 +39,17 @@ import com.google.common.base.Objects;
 public class RowKeyDesc {
 
     @JsonProperty("rowkey_columns")
-    private RowKeyColDesc[] rowkeyColumns;
+    private RowKeyColDesc[] rowkeyColumns;//存储cube中rowkey的列集合
 
     // computed content
-    private long fullMask;
-    private CubeDesc cubeDesc;
+    private long fullMask;//如果有5列,则最终结果是11111
+    private CubeDesc cubeDesc;//属于哪个cube
+
+    //每一个rowkey的列对象 与 rowkeyColumn的映射
     private Map<TblColRef, RowKeyColDesc> columnMap;
-    private Set<TblColRef> shardByColumns;
-    private int[] columnsNeedIndex;
+
+    private Set<TblColRef> shardByColumns;//分片的列
+    private int[] columnsNeedIndex;//存储需要索引的字段序号
 
     public RowKeyColDesc[] getRowKeyColumns() {
         return rowkeyColumns;
@@ -67,6 +70,7 @@ public class RowKeyDesc {
         return desc;
     }
 
+    //判断该列是否是dict
     public boolean isUseDictionary(TblColRef col) {
         return getColDesc(col).isUsingDictionary();
     }
@@ -78,14 +82,16 @@ public class RowKeyDesc {
     public void init(CubeDesc cubeDesc) {
 
         setCubeDesc(cubeDesc);
+
+        //刨除derived的列,以及额外的列,返回剩余列的集合
         Map<String, TblColRef> colNameAbbr = cubeDesc.buildColumnNameAbbreviation();
 
         buildRowKey(colNameAbbr);
 
-        int[] tmp = new int[100];
-        int x = 0;
+        int[] tmp = new int[100];//存储需要index索引的字段序号
+        int x = 0;//有多少个满足条件的字段
         for (int i = 0, n = rowkeyColumns.length; i < n; i++) {
-            if ("true".equalsIgnoreCase(rowkeyColumns[i].getIndex()) && DictionaryDimEnc.ENCODING_NAME.equalsIgnoreCase(rowkeyColumns[i].getEncoding())) {
+            if ("true".equalsIgnoreCase(rowkeyColumns[i].getIndex()) && DictionaryDimEnc.ENCODING_NAME.equalsIgnoreCase(rowkeyColumns[i].getEncoding())) {//dict
                 tmp[x] = i;
                 x++;
             }
@@ -109,7 +115,7 @@ public class RowKeyDesc {
 
         for (int i = 0; i < rowkeyColumns.length; i++) {
             RowKeyColDesc rowKeyColDesc = rowkeyColumns[i];
-            rowKeyColDesc.init(rowkeyColumns.length - i - 1, colNameAbbr, cubeDesc);
+            rowKeyColDesc.init(rowkeyColumns.length - i - 1, colNameAbbr, cubeDesc);//初始化rowkey的某一列
             columnMap.put(rowKeyColDesc.getColRef(), rowKeyColDesc);
 
             if (rowKeyColDesc.isShardBy()) {

@@ -31,14 +31,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class ParameterDesc {
 
     @JsonProperty("type")
-    private String type;
+    private String type;//是常数还是列
     @JsonProperty("value")
-    private String value;
+    private String value;//该参数值
 
     @JsonProperty("next_parameter")
-    private ParameterDesc nextParameter;
+    private ParameterDesc nextParameter;//参数值对应的下一个参数
 
-    private List<TblColRef> colRefs;
+    private List<TblColRef> colRefs;//参数对应的列集合
 
     public String getType() {
         return type;

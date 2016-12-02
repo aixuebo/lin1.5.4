@@ -51,7 +51,11 @@ abstract public class MeasureType<T> {
 
     /** Although most aggregated object takes only 8 bytes like long or double, 
      * some advanced aggregation like HyperLogLog or TopN can consume more than 10 KB for 
-     * each object, which requires special care on memory allocation. */
+     * each object, which requires special care on memory allocation.
+     * 虽然大多数聚合对象都是仅仅8个字节就可以完成,比如long或者double
+     * 但是一些高级的聚合,比如HyperLogLog or TopN 能够消耗多余10k的内存,
+     * 因此这种函数要内存的方面要小心,因此要返回true
+     **/
     public boolean isMemoryHungry() {
         return false;
     }

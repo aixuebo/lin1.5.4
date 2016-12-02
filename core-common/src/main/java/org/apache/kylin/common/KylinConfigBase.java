@@ -446,6 +446,7 @@ abstract public class KylinConfigBase implements Serializable {
         return Integer.parseInt(getOptional("kylin.cube.aggrgroup.max.size", "12"));
     }
 
+    //配置的最多组合数量,即2的多少次方不能超过该值
     public int getCubeAggrGroupMaxCombination() {
         return Integer.parseInt(getOptional("kylin.cube.aggrgroup.max.combination", "4096"));
     }
@@ -727,6 +728,7 @@ abstract public class KylinConfigBase implements Serializable {
         return r;
     }
 
+    //输入源引擎默认只有HiveSource引擎
     public Map<Integer, String> getSourceEngines() {
         Map<Integer, String> r = convertKeyToInteger(getPropertiesByPrefix("kylin.source.engine."));
         // ref constants in ISourceAware

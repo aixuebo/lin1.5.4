@@ -24,6 +24,7 @@ import java.util.List;
 
 public interface ISource {
 
+    //如何创建ISource接口的实现类
     public <I> I adaptToBuildEngine(Class<I> engineInterface);
 
     //创建如何读取一个表内容

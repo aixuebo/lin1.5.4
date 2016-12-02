@@ -52,6 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 继承链式job任务,可以执行一组job任务
  */
 public class CubingJob extends DefaultChainedExecutable {
 
@@ -69,10 +70,12 @@ public class CubingJob extends DefaultChainedExecutable {
     private static final String DEPLOY_ENV_NAME = "envName";
     private static final String PROJECT_INSTANCE_NAME = "projectName";
 
+    //build一个CubeSegment
     public static CubingJob createBuildJob(CubeSegment seg, String submitter, JobEngineConfig config) {
         return initCubingJob(seg, "BUILD", submitter, config);
     }
 
+    //merge合并一个CubeSegment
     public static CubingJob createMergeJob(CubeSegment seg, String submitter, JobEngineConfig config) {
         return initCubingJob(seg, "MERGE", submitter, config);
     }
@@ -80,6 +83,7 @@ public class CubingJob extends DefaultChainedExecutable {
     private static CubingJob initCubingJob(CubeSegment seg, String jobType, String submitter, JobEngineConfig config) {
         KylinConfig kylinConfig = config.getConfig();
         CubeInstance cube = seg.getCubeInstance();
+        //找到符合该cube的项目,有且只有一个,否则都抛异常
         List<ProjectInstance> projList = ProjectManager.getInstance(kylinConfig).findProjects(cube.getType(), cube.getName());
         if (projList == null || projList.size() == 0) {
             throw new RuntimeException("Cannot find the project containing the cube " + cube.getName() + "!!!");
@@ -143,6 +147,8 @@ public class CubingJob extends DefaultChainedExecutable {
         default:
             return null;
         }
+
+        //替换文件内容
         String content = ExecutableConstants.NOTIFY_EMAIL_TEMPLATE;
         content = content.replaceAll("\\$\\{job_name\\}", getName());
         content = content.replaceAll("\\$\\{result\\}", state.toString());
@@ -158,6 +164,7 @@ public class CubingJob extends DefaultChainedExecutable {
         content = content.replaceAll("\\$\\{error_log\\}", Matcher.quoteReplacement(StringUtil.noBlank(logMsg, "no error message")));
 
         try {
+            //job引擎在哪个ip上执行的
             InetAddress inetAddress = InetAddress.getLocalHost();
             content = content.replaceAll("\\$\\{job_engine\\}", inetAddress.getCanonicalHostName());
         } catch (UnknownHostException e) {

@@ -38,26 +38,27 @@ import com.google.common.base.Preconditions;
 
 /**
  * @author yangli9
- * 
+ * 代表cube的rowkey中的某一个列
  */
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
 public class RowKeyColDesc {
 
     @JsonProperty("column")
-    private String column;
+    private String column;//列名称
     @JsonProperty("encoding")
-    private String encoding;
+    private String encoding;//编码
     @JsonProperty("isShardBy")
-    private boolean isShardBy;//usually it is ultra high cardinality column, shard by such column can reduce the agg cache for each shard
+    private boolean isShardBy;//usually it is ultra high cardinality column, shard by such column can reduce the agg cache for each shard 是否设置了Shard By,用于hbase的切片
     @JsonProperty("index")
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private String index;
+    private String index;//是否需要索引
 
     // computed
     private String encodingName;
     private String[] encodingArgs;
-    private int bitIndex;
-    private TblColRef colRef;
+
+    private int bitIndex;//该列在rowkey的序号
+    private TblColRef colRef;//该列对应的列对象
 
     public void init(int index, Map<String, TblColRef> colNameAbbr, CubeDesc cubeDesc) {
         column = column.toUpperCase();
@@ -78,17 +79,17 @@ public class RowKeyColDesc {
         // convert date/time dictionary on date/time column to DimensionEncoding implicitly
         // however date/time dictionary on varchar column is still required
         DataType type = colRef.getType();
-        if (DictionaryDimEnc.ENCODING_NAME.equals(encodingName)) {
+        if (DictionaryDimEnc.ENCODING_NAME.equals(encodingName)) {//dict
             if (type.isDate()) {
-                encoding = encodingName = DateDimEnc.ENCODING_NAME;
+                encoding = encodingName = DateDimEnc.ENCODING_NAME;//date
             }
             if (type.isTimeFamily()) {
-                encoding = encodingName = TimeDimEnc.ENCODING_NAME;
+                encoding = encodingName = TimeDimEnc.ENCODING_NAME;//time
             }
         }
-        if (DateDimEnc.ENCODING_NAME.equals(encodingName) && type.isDate() == false)
+        if (DateDimEnc.ENCODING_NAME.equals(encodingName) && type.isDate() == false) //date
             throw new IllegalArgumentException(colRef + " type is " + type + " and cannot apply date encoding");
-        if (TimeDimEnc.ENCODING_NAME.equals(encodingName) && type.isTimeFamily() == false)
+        if (TimeDimEnc.ENCODING_NAME.equals(encodingName) && type.isTimeFamily() == false) //time
             throw new IllegalArgumentException(colRef + " type is " + type + " and cannot apply time encoding");
     }
 
@@ -124,6 +125,7 @@ public class RowKeyColDesc {
         return encodingArgs;
     }
 
+    //是否是dict
     public boolean isUsingDictionary() {
         return DictionaryDimEnc.ENCODING_NAME.equals(encodingName);
     }

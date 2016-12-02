@@ -22,6 +22,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.Reducer;
 
 /**
+ * 对reduce进行包装一下,让上下文conf对象存储到本线程中
  */
 public class KylinReducer<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Reducer<KEYIN, VALUEIN, KEYOUT, VALUEOUT> {
     protected void bindCurrentConfiguration(Configuration conf) {

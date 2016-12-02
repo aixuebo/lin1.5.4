@@ -39,7 +39,7 @@ public class HBaseMappingDesc {
     private HBaseColumnFamilyDesc[] columnFamily;
 
     // point to the cube instance which contain this HBaseMappingDesc instance.
-    private CubeDesc cubeRef;
+    private CubeDesc cubeRef;//所属cube
 
     public Collection<HBaseColumnDesc> findHBaseColumnByFunction(FunctionDesc function) {
         Collection<HBaseColumnDesc> result = new LinkedList<HBaseColumnDesc>();
@@ -78,7 +78,7 @@ public class HBaseMappingDesc {
     public void init(CubeDesc cubeDesc) {
         cubeRef = cubeDesc;
 
-        for (HBaseColumnFamilyDesc cf : columnFamily) {
+        for (HBaseColumnFamilyDesc cf : columnFamily) {//循环所有的列族
             cf.setName(cf.getName().toUpperCase());
 
             for (HBaseColumnDesc c : cf.getColumns()) {

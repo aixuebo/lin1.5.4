@@ -38,15 +38,20 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 /**
+ * 对度量函数进行描述
+ * 度量信息,包含函数 参数(字段,常数) 返回值等信息
  */
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
 public class FunctionDesc {
 
+    //支持的度量函数
     public static final String FUNC_SUM = "SUM";
     public static final String FUNC_MIN = "MIN";
     public static final String FUNC_MAX = "MAX";
     public static final String FUNC_COUNT = "COUNT";
     public static final String FUNC_COUNT_DISTINCT = "COUNT_DISTINCT";
+
+    //总支持的函数集合
     public static final Set<String> BUILT_IN_AGGREGATIONS = Sets.newHashSet();
 
     static {
@@ -57,15 +62,16 @@ public class FunctionDesc {
         BUILT_IN_AGGREGATIONS.add(FUNC_COUNT_DISTINCT);
     }
 
+    //度量的内容可以是常量或者是某一个字段  比如count(1)或者count(userid)
     public static final String PARAMETER_TYPE_CONSTANT = "constant";
     public static final String PARAMETER_TYPE_COLUMN = "column";
 
     @JsonProperty("expression")
-    private String expression;
+    private String expression;//表达式,就是上面5个函数,比如MAX
     @JsonProperty("parameter")
     private ParameterDesc parameter;
     @JsonProperty("returntype")
-    private String returnType;
+    private String returnType;//返回值
 
     @JsonProperty("configuration")
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -79,14 +85,16 @@ public class FunctionDesc {
         expression = expression.toUpperCase();
         returnDataType = DataType.getType(returnType);
 
+        //循环每一个参数
         for (ParameterDesc p = parameter; p != null; p = p.getNextParameter()) {
             p.setValue(p.getValue().toUpperCase());
         }
 
-        ArrayList<TblColRef> colRefs = Lists.newArrayList();
+        ArrayList<TblColRef> colRefs = Lists.newArrayList();//参数集合对应的列集合
+
         for (ParameterDesc p = parameter; p != null; p = p.getNextParameter()) {
             if (p.isColumnType()) {
-                ColumnDesc sourceColumn = findColumn(factTable, lookupTables, p.getValue());
+                ColumnDesc sourceColumn = findColumn(factTable, lookupTables, p.getValue());//从星形表中找到列名字对应的列对象
                 TblColRef colRef = new TblColRef(sourceColumn);
                 colRefs.add(colRef);
             }
@@ -95,6 +103,7 @@ public class FunctionDesc {
         parameter.setColRefs(colRefs);
     }
 
+    //从星形表中找到列名字对应的列对象
     private ColumnDesc findColumn(TableDesc factTable, List<TableDesc> lookups, String columnName) {
         ColumnDesc ret = factTable.findColumnByName(columnName);
         if (ret != null) {
@@ -174,6 +183,7 @@ public class FunctionDesc {
         return fakeCol;
     }
 
+    //查看表达式是什么函数
     public boolean isMin() {
         return FUNC_MIN.equalsIgnoreCase(expression);
     }
@@ -196,6 +206,7 @@ public class FunctionDesc {
 
     /**
      * Get Full Expression such as sum(amount), count(1), count(*)...
+     * 获取全部的表达式内容,比如sum(amount)
      */
     public String getFullExpression() {
         StringBuilder sb = new StringBuilder(expression);
@@ -234,6 +245,7 @@ public class FunctionDesc {
         this.parameter = parameter;
     }
 
+    //参数个数
     public int getParameterCount() {
         int count = 0;
         for (ParameterDesc p = parameter; p != null; p = p.getNextParameter()) {

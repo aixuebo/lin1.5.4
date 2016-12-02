@@ -58,7 +58,7 @@ import com.google.common.base.Preconditions;
 public class TrieDictionary<T> extends Dictionary<T> {
     private static final long serialVersionUID = 1L;
 
-    public static final byte[] MAGIC = new byte[] { 0x54, 0x72, 0x69, 0x65, 0x44, 0x69, 0x63, 0x74 }; // "TrieDict"
+    public static final byte[] MAGIC = new byte[] { 0x54, 0x72, 0x69, 0x65, 0x44, 0x69, 0x63, 0x74 }; // "TrieDict" 魔信息
     public static final int MAGIC_SIZE_I = MAGIC.length;
 
     public static final int BIT_IS_LAST_CHILD = 0x80;
@@ -66,7 +66,7 @@ public class TrieDictionary<T> extends Dictionary<T> {
 
     private static final Logger logger = LoggerFactory.getLogger(TrieDictionary.class);
 
-    private byte[] trieBytes;
+    private byte[] trieBytes;//tree需要的全部字节数组,包括header内容
 
     // non-persistent part
     transient private int headSize;
@@ -99,10 +99,12 @@ public class TrieDictionary<T> extends Dictionary<T> {
 
     private void init(byte[] trieBytes) {
         this.trieBytes = trieBytes;
+        //校验模是否正确
         if (BytesUtil.compareBytes(MAGIC, 0, trieBytes, 0, MAGIC.length) != 0)
             throw new IllegalArgumentException("Wrong file type (magic does not match)");
 
         try {
+            //获取head头信息
             DataInputStream headIn = new DataInputStream(//
                     new ByteArrayInputStream(trieBytes, MAGIC_SIZE_I, trieBytes.length - MAGIC_SIZE_I));
             this.headSize = headIn.readShort();

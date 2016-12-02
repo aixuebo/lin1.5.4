@@ -84,7 +84,7 @@ public class CubeDescManager {
     // ============================================================================
 
     private KylinConfig config;
-    // name ==> CubeDesc
+    // name ==> CubeDesc name和cube的内存映射
     private CaseInsensitiveStringCache<CubeDesc> cubeDescMap;
 
     private CubeDescManager(KylinConfig config) throws IOException {

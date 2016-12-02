@@ -43,7 +43,7 @@ public class TrieDictionaryBuilder<T> {
 
     public static class Node {
         public byte[] part;
-        public boolean isEndOfValue;
+        public boolean isEndOfValue;//true表明该node是一个单词的结尾  默认boolean类型返回的是false
         public ArrayList<Node> children;
 
         public int nValuesBeneath; // only present after stats()
@@ -81,14 +81,17 @@ public class TrieDictionaryBuilder<T> {
         this.bytesConverter = bytesConverter;
     }
 
+    //添加一个对象,将对象转换成字节数组再添加
     public void addValue(T value) {
         addValue(bytesConverter.convertToBytes(value));
     }
 
+    //添加一个字节数组
     public void addValue(byte[] value) {
         addValueR(root, value, 0);
     }
 
+    //向一个节点添加一个字节数组
     private void addValueR(Node node, byte[] value, int start) {
         // match the value part of current node
         int i = 0, j = start;
@@ -100,21 +103,22 @@ public class TrieDictionaryBuilder<T> {
                 break;
         }
 
-        if (j == nn) {
+        if (j == nn) {//说明value全部内容都匹配当前node
             // if value fully matched within the current node
-            if (i == n) {
+            if (i == n) {//而当前node节点也被循环完了,说明这两个value是相同的
                 // if equals to current node, just mark end of value
                 node.isEndOfValue = true;
-            } else {
+            } else {//说明此时value是node的一部分
                 // otherwise, split the current node into two
                 Node c = new Node(BytesUtil.subarray(node.part, i, n), node.isEndOfValue, node.children);
-                node.reset(BytesUtil.subarray(node.part, 0, i), true);
+                node.reset(BytesUtil.subarray(node.part, 0, i), true);//0到i的部分,就是匹配到一个单词了,因此该node就是一个单词内容,因此设置成true
                 node.children.add(c);
             }
             return;
         }
 
         // if partially matched the current, split the current node, add the new value, make a 3-way
+        //说明只是匹配了一部分,拆分当前节点,
         if (i < n) {
             Node c1 = new Node(BytesUtil.subarray(node.part, i, n), node.isEndOfValue, node.children);
             Node c2 = new Node(BytesUtil.subarray(value, j, nn), true);
@@ -130,7 +134,9 @@ public class TrieDictionaryBuilder<T> {
         }
 
         // out matched the current, binary search the next byte for a child node to continue
-        byte lookfor = value[j];
+        //说明value比当前node还要大
+        byte lookfor = value[j];//查找value的下一个字节
+        //二分法查找
         int lo = 0;
         int hi = node.children.size() - 1;
         int mid = 0;
@@ -344,22 +350,26 @@ public class TrieDictionaryBuilder<T> {
         byte[] data = new byte[4096];
         int current = 0;
 
+        //追加参数字节数组到data中
         public void append(byte[] part) {
             while (current + part.length > data.length)
-                expand();
+                expand();//扩容
 
             System.arraycopy(part, 0, data, current, part.length);
             current += part.length;
         }
 
+        //丢弃最后若干个字节位置
         public void withdraw(int size) {
             current -= size;
         }
 
+        //获取可用的字节数组
         public byte[] retrieve() {
             return Arrays.copyOf(data, current);
         }
 
+        //扩容
         private void expand() {
             byte[] temp = new byte[2 * data.length];
             System.arraycopy(data, 0, temp, 0, data.length);
@@ -370,16 +380,18 @@ public class TrieDictionaryBuilder<T> {
     // there is a 255 limitation of length for each node's part.
     // we interpolate nodes to satisfy this when a node's part becomes
     // too long(overflow)
+    //限制255是每一个node的字节数组上限,我们篡改这个节点的内容,以满足255的规则
     private void checkOverflowParts(Node node) {
         LinkedList<Node> childrenCopy = new LinkedList<Node>(node.children);
         for (Node child : childrenCopy) {
             if (child.part.length > 255) {
-                byte[] first255 = Arrays.copyOf(child.part, 255);
+                byte[] first255 = Arrays.copyOf(child.part, 255);//选择前面255个字节
 
-                completeParts.append(node.part);
-                completeParts.append(first255);
-                byte[] visited = completeParts.retrieve();
-                this.addValue(visited);
+                completeParts.append(node.part);//因为所有child都与父组合的,因此先组装父亲的part
+                completeParts.append(first255);//在追加儿子的255
+                byte[] visited = completeParts.retrieve();//获取全部信息
+                this.addValue(visited);//重新添加
+                //清空添加的字符内容
                 completeParts.withdraw(255);
                 completeParts.withdraw(node.part.length);
             }
@@ -413,14 +425,14 @@ public class TrieDictionaryBuilder<T> {
     protected byte[] buildTrieBytes(int baseId) {
         checkOverflowParts(this.root);
 
-        Stats stats = stats();
+        Stats stats = stats();//统计
         int sizeNoValuesBeneath = stats.mbpn_sizeNoValueBeneath;
         int sizeChildOffset = stats.mbpn_sizeChildOffset;
         
         if (stats.mbpn_footprint > _2GB)
             throw new RuntimeException("Too big dictionary, dictionary cannot be bigger than 2GB");
 
-        // write head
+        // write head 写入head头信息
         byte[] head;
         try {
             ByteArrayOutputStream byteBuf = new ByteArrayOutputStream();
@@ -440,8 +452,8 @@ public class TrieDictionaryBuilder<T> {
             throw new RuntimeException(e); // shall not happen, as we are writing in memory
         }
 
-        byte[] trieBytes = new byte[(int) stats.mbpn_footprint + head.length];
-        System.arraycopy(head, 0, trieBytes, 0, head.length);
+        byte[] trieBytes = new byte[(int) stats.mbpn_footprint + head.length];//最终要的字节数组
+        System.arraycopy(head, 0, trieBytes, 0, head.length);//先复制header信息
 
         LinkedList<Node> open = new LinkedList<Node>();
         IdentityHashMap<Node, Integer> offsetMap = new IdentityHashMap<Node, Integer>();

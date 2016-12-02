@@ -63,9 +63,9 @@ public class HBaseConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(HBaseConnection.class);
 
-    private static final Map<String, Configuration> configCache = new ConcurrentHashMap<String, Configuration>();
-    private static final Map<String, HConnection> connPool = new ConcurrentHashMap<String, HConnection>();
-    private static final ThreadLocal<Configuration> configThreadLocal = new ThreadLocal<>();
+    private static final Map<String, Configuration> configCache = new ConcurrentHashMap<String, Configuration>();//缓存hbase的配置信息
+    private static final Map<String, HConnection> connPool = new ConcurrentHashMap<String, HConnection>();//hbase的连接池
+    private static final ThreadLocal<Configuration> configThreadLocal = new ThreadLocal<>();//线程持有配置信息
 
     private static ExecutorService coprocessorPool = null;
 
@@ -202,6 +202,7 @@ public class HBaseConnection {
         conf.setStrings(JOB_NAMENODES_TOKEN_RENEWAL_EXCLUDE, nameServices.toArray(new String[0]));
     }
 
+    //格式化当前path
     public static String makeQualifiedPathInHBaseCluster(String path) {
         try {
             FileSystem fs = FileSystem.get(getCurrentHBaseConfiguration());
@@ -214,6 +215,7 @@ public class HBaseConnection {
     // ============================================================================
 
     // returned HConnection can be shared by multiple threads and does not require close()
+    //获取一个hbase的连接
     @SuppressWarnings("resource")
     public static HConnection get(String url) {
         // find configuration
@@ -261,31 +263,34 @@ public class HBaseConnection {
         return tableExists(HBaseConnection.get(hbaseUrl), tableName);
     }
 
+    //为table创建列族
     public static void createHTableIfNeeded(String hbaseUrl, String tableName, String... families) throws IOException {
         createHTableIfNeeded(HBaseConnection.get(hbaseUrl), tableName, families);
     }
 
+    //删除一个table
     public static void deleteTable(String hbaseUrl, String tableName) throws IOException {
         deleteTable(HBaseConnection.get(hbaseUrl), tableName);
     }
 
+    //如果对应的列族不存在,则创建该列族
     public static void createHTableIfNeeded(HConnection conn, String table, String... families) throws IOException {
         HBaseAdmin hbase = new HBaseAdmin(conn);
 
         try {
-            if (tableExists(conn, table)) {
+            if (tableExists(conn, table)) {//说明该table已经存在
                 logger.debug("HTable '" + table + "' already exists");
-                Set<String> existingFamilies = getFamilyNames(hbase.getTableDescriptor(TableName.valueOf(table)));
+                Set<String> existingFamilies = getFamilyNames(hbase.getTableDescriptor(TableName.valueOf(table)));//获取该table的列族集合
                 boolean wait = false;
-                for (String family : families) {
-                    if (existingFamilies.contains(family) == false) {
+                for (String family : families) {//循环要添加的列族
+                    if (existingFamilies.contains(family) == false) {//如果该列族不存在
                         logger.debug("Adding family '" + family + "' to HTable '" + table + "'");
-                        hbase.addColumn(table, newFamilyDescriptor(family));
+                        hbase.addColumn(table, newFamilyDescriptor(family));//添加一个新列族
                         // addColumn() is async, is there a way to wait it finish?
                         wait = true;
                     }
                 }
-                if (wait) {
+                if (wait) {//说明有列族在创建中,因此要等待一下
                     try {
                         Thread.sleep(10000);
                     } catch (InterruptedException e) {
@@ -297,6 +302,7 @@ public class HBaseConnection {
 
             logger.debug("Creating HTable '" + table + "'");
 
+            //说明该table不存在,则创建该table以及对应的列族
             HTableDescriptor desc = new HTableDescriptor(TableName.valueOf(table));
 
             if (null != families && families.length > 0) {
@@ -306,8 +312,8 @@ public class HBaseConnection {
                 }
             }
 
-            desc.setValue(HTABLE_UUID_TAG, UUID.randomUUID().toString());
-            hbase.createTable(desc);
+            desc.setValue(HTABLE_UUID_TAG, UUID.randomUUID().toString());//设置uuid
+            hbase.createTable(desc);//创建table
 
             logger.debug("HTable '" + table + "' created");
         } finally {
@@ -315,6 +321,7 @@ public class HBaseConnection {
         }
     }
 
+    //获取该table的列族集合
     private static Set<String> getFamilyNames(HTableDescriptor desc) {
         HashSet<String> result = Sets.newHashSet();
         for (byte[] bytes : desc.getFamiliesKeys()) {
@@ -327,6 +334,7 @@ public class HBaseConnection {
         return result;
     }
 
+    //创建一个新的列族对象
     private static HColumnDescriptor newFamilyDescriptor(String family) {
         HColumnDescriptor fd = new HColumnDescriptor(family);
         fd.setInMemory(true); // metadata tables are best in memory

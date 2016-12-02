@@ -18,7 +18,7 @@
 
 package org.apache.kylin.metadata.model;
 
-//数据源
+//数据源类型
 public interface ISourceAware {
 
     public static final int ID_HIVE = 0;//来源于hive

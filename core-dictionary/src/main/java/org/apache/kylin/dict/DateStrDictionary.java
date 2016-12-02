@@ -35,13 +35,15 @@ import org.apache.kylin.dimension.DateDimEnc;
 
 /**
  * A dictionary for date string (date only, no time).
- * 
+ * 仅仅是日期,不包含时间
  * Dates are numbered from 0000-1-1 -- 0 for "0000-1-1", 1 for "0000-1-2", 2 for "0000-1-3" and
  * up to 3652426 for "9999-12-31".
  * 
  * Note the implementation is not thread-safe.
- * 
+ * 这个实现不是线程安全的
+ *
  * @author yangli9
+ * 将date形式转换成int天的转换
  */
 @SuppressWarnings("serial")
 public class DateStrDictionary extends Dictionary<String> {
@@ -62,7 +64,7 @@ public class DateStrDictionary extends Dictionary<String> {
     private void init(String datePattern, int baseId) {
         this.pattern = datePattern;
         this.baseId = baseId;
-        this.maxId = baseId + DateDimEnc.ID_9999_12_31;
+        this.maxId = baseId + DateDimEnc.ID_9999_12_31;//总共容纳多少天
     }
 
     @Override
@@ -75,11 +77,13 @@ public class DateStrDictionary extends Dictionary<String> {
         return maxId;
     }
 
+    //估算该id占用多少字节---3个字节是24位,2的24次方=16777216,完全容纳3652426个元素了
     @Override
     public int getSizeOfId() {
         return 3;
     }
 
+    //key未压缩前占用多少字节,即跟匹配模式有关系
     @Override
     public int getSizeOfValue() {
         return pattern.length();
@@ -90,9 +94,16 @@ public class DateStrDictionary extends Dictionary<String> {
         return value == null || len == 0;
     }
 
+    /**
+     * 将日期转换成int
+     * 转换规则是将日期转换成Date,从而知道时间戳,从而到得天数,即int
+     * @param value
+     * @param roundFlag
+     * @return
+     */
     @Override
     final protected int getIdFromValueImpl(String value, int roundFlag) {
-        Date date = stringToDate(value, pattern);
+        Date date = stringToDate(value, pattern);//字符串形式日期转换成Date对象
         int id = calcIdFromSeqNo((int) DateDimEnc.getNumOfDaysSince0000FromMillis(date.getTime()));
         if (id < baseId || id > maxId)
             throw new IllegalArgumentException("'" + value + "' encodes to '" + id + "' which is out of range [" + baseId + "," + maxId + "]");
@@ -100,6 +111,7 @@ public class DateStrDictionary extends Dictionary<String> {
         return id;
     }
 
+    //将天数转换成字符串日期
     @Override
     final protected String getValueFromIdImpl(int id) {
         if (id < baseId || id > maxId)
@@ -108,6 +120,7 @@ public class DateStrDictionary extends Dictionary<String> {
         return dateToString(new Date(millis), pattern);
     }
 
+    //从value字节数组中获取date,转换成int天
     @Override
     final protected int getIdFromValueBytesImpl(byte[] value, int offset, int len, int roundingFlag) {
         try {
@@ -117,6 +130,7 @@ public class DateStrDictionary extends Dictionary<String> {
         }
     }
 
+    //将int转换成date,然后在转换成字节数组
     @Override
     final protected byte[] getValueBytesFromIdImpl(int id) {
         String date = getValueFromId(id);
@@ -129,9 +143,10 @@ public class DateStrDictionary extends Dictionary<String> {
         return bytes;
     }
 
+    //将id的天数转换成String的date对应的字节数组,追加到returnValue里面,从returnValue的offset位置开始追加写
     @Override
     final protected int getValueBytesFromIdImpl(int id, byte[] returnValue, int offset) {
-        byte[] bytes = getValueBytesFromIdImpl(id);
+        byte[] bytes = getValueBytesFromIdImpl(id);//将int转换成date,然后在转换成字节数组
         System.arraycopy(bytes, 0, returnValue, offset, bytes.length);
         return bytes.length;
     }

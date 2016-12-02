@@ -39,13 +39,13 @@ import com.google.common.base.Objects;
 public class DimensionDesc {
 
     @JsonProperty("name")
-    private String name;
+    private String name;//该维度属性名字,一般为库.表.列  或者库.表.derived
     @JsonProperty("table")
-    private String table;
+    private String table;//该维度属于哪个表的一个列
     @JsonProperty("column")
-    private String column;
+    private String column;//对应的列名称
     @JsonProperty("derived")
-    private String[] derived;
+    private String[] derived;//如果是derived的时候,这个是一组列的集合,表示这个维度不是一个单独的列
 
     private TableDesc tableDesc;
     private JoinDesc join;
@@ -99,12 +99,13 @@ public class DimensionDesc {
         if (derived != null) {
             StringUtil.toUpperCaseArray(derived, derived);
         }
-        if (derived != null && join == null) {
+        if (derived != null && join == null) {//derived必须是lookup 表,因此一定有join
             throw new IllegalStateException("Derived can only be defined on lookup table, cube " + cubeDesc + ", " + this);
         }
 
     }
 
+    //是否该维度是derived方式的维度
     public boolean isDerived() {
         return derived != null;
     }

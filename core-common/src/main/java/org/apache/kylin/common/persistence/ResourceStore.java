@@ -42,8 +42,8 @@ abstract public class ResourceStore {
     private static final Logger logger = LoggerFactory.getLogger(ResourceStore.class);
 
     //定义跟目录
-    public static final String CUBE_RESOURCE_ROOT = "/cube";
-    public static final String CUBE_DESC_RESOURCE_ROOT = "/cube_desc";
+    public static final String CUBE_RESOURCE_ROOT = "/cube";//存储cube
+    public static final String CUBE_DESC_RESOURCE_ROOT = "/cube_desc";//存储一个cube是如何描述的
     public static final String DATA_MODEL_DESC_RESOURCE_ROOT = "/model_desc";
     public static final String DICT_RESOURCE_ROOT = "/dict";
     public static final String PROJECT_RESOURCE_ROOT = "/project";//存储project内容,将该project对象序列化成json对象,存储到/project/projectName.json文件中

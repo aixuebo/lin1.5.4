@@ -40,9 +40,9 @@ public class AggregationGroup {
     }
 
     @JsonProperty("includes")
-    private String[] includes;
+    private String[] includes;//该维度组包含哪些列
     @JsonProperty("select_rule")
-    private SelectRule selectRule;
+    private SelectRule selectRule;//维度组内的列是什么方式可以优化
 
     //computed
     private long partialCubeFullMask;
@@ -59,7 +59,7 @@ public class AggregationGroup {
     public void init(CubeDesc cubeDesc, RowKeyDesc rowKeyDesc) {
         this.cubeDesc = cubeDesc;
         this.isMandatoryOnlyValid = cubeDesc.getConfig().getCubeAggrGroupIsMandatoryOnlyValid();
-        Map<String, TblColRef> colNameAbbr = cubeDesc.buildColumnNameAbbreviation();
+        Map<String, TblColRef> colNameAbbr = cubeDesc.buildColumnNameAbbreviation();//刨除derived的列,以及额外的列,返回剩余列的集合
 
         if (this.includes == null || this.includes.length == 0 || this.selectRule == null) {
             throw new IllegalStateException("AggregationGroup incomplete");
@@ -83,7 +83,7 @@ public class AggregationGroup {
         for (String dim : this.includes) {
             TblColRef hColumn = colNameAbbr.get(dim);
             Integer index = rowKeyDesc.getColumnBitIndex(hColumn);
-            long bit = 1L << index;
+            long bit = 1L << index;//2的index次方
             partialCubeFullMask |= bit;
         }
     }

@@ -65,7 +65,7 @@ public class CubeInstance extends RootPersistentEntity implements IRealization, 
         cubeInstance.setCreateTimeUTC(System.currentTimeMillis());
         cubeInstance.setSegments(new ArrayList<CubeSegment>());
         cubeInstance.setStatus(RealizationStatusEnum.DISABLED);
-        cubeInstance.updateRandomUuid();
+        cubeInstance.updateRandomUuid();//设置uuid
 
         return cubeInstance;
     }
@@ -78,12 +78,15 @@ public class CubeInstance extends RootPersistentEntity implements IRealization, 
     private String owner;
     @JsonProperty("descriptor")
     private String descName;
+
+
     // Mark cube priority for query
     @JsonProperty("cost")
     private int cost = 50;
     @JsonProperty("status")
     private RealizationStatusEnum status;
 
+    //属于该cube的全部segment集合
     @JsonManagedReference
     @JsonProperty("segments")
     private List<CubeSegment> segments = new ArrayList<CubeSegment>();
@@ -149,6 +152,7 @@ public class CubeInstance extends RootPersistentEntity implements IRealization, 
         return getStatus() == RealizationStatusEnum.READY;
     }
 
+    //找到该cube的存储路径
     public String getResourcePath() {
         return concatResourcePath(name);
     }
@@ -294,6 +298,7 @@ public class CubeInstance extends RootPersistentEntity implements IRealization, 
         return segments;
     }
 
+    //找到属于参数状态的CubeSegment集合
     public List<CubeSegment> getSegments(SegmentStatusEnum status) {
         List<CubeSegment> result = new ArrayList<CubeSegment>();
 
@@ -306,6 +311,7 @@ public class CubeInstance extends RootPersistentEntity implements IRealization, 
         return result;
     }
 
+    //根据名字和状态查找CubeSegment
     public CubeSegment getSegment(String name, SegmentStatusEnum status) {
         for (CubeSegment segment : segments) {
             if ((null != segment.getName() && segment.getName().equals(name)) && (status == null || segment.getStatus() == status)) {

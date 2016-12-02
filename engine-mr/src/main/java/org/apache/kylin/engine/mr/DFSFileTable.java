@@ -30,10 +30,11 @@ import org.apache.kylin.common.util.Pair;
 import org.apache.kylin.source.ReadableTable;
 
 /**
+ * 读取一个文件,该文件是csv格式或者SequenceFile文件,该文件内容就是table的所有信息
  */
 public class DFSFileTable implements ReadableTable {
 
-    public static final String DELIM_AUTO = "auto";
+    public static final String DELIM_AUTO = "auto";//如果是auto是期望的拆分符号,则可以按照177  |   \t  ,都可以作为拆分符号
     public static final String DELIM_COMMA = ",";
 
     String path;
@@ -54,11 +55,13 @@ public class DFSFileTable implements ReadableTable {
         return delim;
     }
 
+    //如何读取
     @Override
     public TableReader getReader() throws IOException {
         return new DFSFileTableReader(path, delim, nColumns);
     }
 
+    //返回表示该表是否有变化的标志
     @Override
     public TableSignature getSignature() throws IOException {
         try {

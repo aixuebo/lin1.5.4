@@ -25,15 +25,15 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * 描述一个度量信息
  */
-
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
 public class MeasureDesc {
 
     @JsonProperty("name")
-    private String name;
+    private String name;//为该度量设置一个别名
     @JsonProperty("function")
-    private FunctionDesc function;
+    private FunctionDesc function;//真正的度量信息,包含函数 参数(字段,常数) 返回值等信息
     @JsonProperty("dependent_measure_ref")
     private String dependentMeasureRef;
 
