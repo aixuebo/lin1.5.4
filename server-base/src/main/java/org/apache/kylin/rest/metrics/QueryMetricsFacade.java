@@ -36,12 +36,13 @@ public class QueryMetricsFacade {
 
     private static final Logger logger = LoggerFactory.getLogger(QueryMetricsFacade.class);
 
-    private static boolean enabled = false;
+    private static boolean enabled = false;//是否开启
     private static ConcurrentHashMap<String, QueryMetrics> metricsMap = new ConcurrentHashMap<String, QueryMetrics>();
-    
+
+    //静态方法,初始化该对象
     public static void init() {
         enabled = KylinConfig.getInstanceFromEnv().getQueryMetricsEnabled();
-        if (!enabled)
+        if (!enabled) //没有开启,则返回
             return;
         
         DefaultMetricsSystem.initialize("Kylin");
@@ -95,7 +96,7 @@ public class QueryMetricsFacade {
 
     private static QueryMetrics getQueryMetrics(String name, ConcurrentHashMap<String, QueryMetrics> metricsMap) {
         KylinConfig config = KylinConfig.getInstanceFromEnv();
-        int[] intervals = config.getQueryMetricsPercentilesIntervals();
+        int[] intervals = config.getQueryMetricsPercentilesIntervals();//解析数组
 
         if (metricsMap.containsKey(name)) {
             return metricsMap.get(name);

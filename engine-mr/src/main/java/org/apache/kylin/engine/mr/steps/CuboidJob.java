@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory;
 public class CuboidJob extends AbstractHadoopJob {
 
     protected static final Logger logger = LoggerFactory.getLogger(CuboidJob.class);
-    private static final String MAPRED_REDUCE_TASKS = "mapred.reduce.tasks";
+    private static final String MAPRED_REDUCE_TASKS = "mapred.reduce.tasks";//设置reduce的数量
 
     @SuppressWarnings("rawtypes")
     private Class<? extends Mapper> mapperClass;
@@ -83,19 +83,22 @@ public class CuboidJob extends AbstractHadoopJob {
         Options options = new Options();
 
         try {
-            options.addOption(OPTION_JOB_NAME);
-            options.addOption(OPTION_CUBE_NAME);
-            options.addOption(OPTION_SEGMENT_ID);
+            options.addOption(OPTION_JOB_NAME);//设置job在yarn上的name
+            options.addOption(OPTION_CUBE_NAME);//cubeName
+            options.addOption(OPTION_SEGMENT_ID);//segmentID
+            //输入路径以及输入的格式
             options.addOption(OPTION_INPUT_PATH);
-            options.addOption(OPTION_OUTPUT_PATH);
-            options.addOption(OPTION_NCUBOID_LEVEL);
             options.addOption(OPTION_INPUT_FORMAT);
+            //输出路径
+            options.addOption(OPTION_OUTPUT_PATH);
+
+            options.addOption(OPTION_NCUBOID_LEVEL);
             options.addOption(OPTION_CUBING_JOB_ID);
             parseOptions(options, args);
 
             Path output = new Path(getOptionValue(OPTION_OUTPUT_PATH));
             String cubeName = getOptionValue(OPTION_CUBE_NAME).toUpperCase();
-            int nCuboidLevel = Integer.parseInt(getOptionValue(OPTION_NCUBOID_LEVEL));
+            int nCuboidLevel = Integer.parseInt(getOptionValue(OPTION_NCUBOID_LEVEL)); //level级别,内容是整数数字
             String segmentID = getOptionValue(OPTION_SEGMENT_ID);
             String cubingJobId = getOptionValue(OPTION_CUBING_JOB_ID);
 
@@ -114,7 +117,7 @@ public class CuboidJob extends AbstractHadoopJob {
             setJobClasspath(job, cube.getConfig());
 
             // Mapper
-            configureMapperInputFormat(cube.getSegmentById(segmentID));
+            configureMapperInputFormat(cube.getSegmentById(segmentID));//设置input路径以及输入文件格式
             job.setMapperClass(this.mapperClass);
             job.setMapOutputKeyClass(Text.class);
             job.setMapOutputValueClass(Text.class);
@@ -135,9 +138,10 @@ public class CuboidJob extends AbstractHadoopJob {
             // add metadata to distributed cache
             attachKylinPropsAndMetadata(cube, job.getConfiguration());
 
+            //设置reduce的数量
             setReduceTaskNum(job, cube.getDescriptor(), nCuboidLevel);
 
-            this.deletePath(job.getConfiguration(), output);
+            this.deletePath(job.getConfiguration(), output);//如果输出目录有内容,则删除
 
             return waitForCompletion(job);
         } catch (Exception e) {
@@ -150,10 +154,11 @@ public class CuboidJob extends AbstractHadoopJob {
         }
     }
 
+    //设置input路径以及输入文件格式
     private void configureMapperInputFormat(CubeSegment cubeSeg) throws IOException {
         String input = getOptionValue(OPTION_INPUT_PATH);
 
-        if ("FLAT_TABLE".equals(input)) {
+        if ("FLAT_TABLE".equals(input)) {//输入路径固定死是FLAT_TABLE字符串
             // base cuboid case
             IMRTableInputFormat flatTableInputFormat = MRUtil.getBatchCubingInputSide(cubeSeg).getFlatTableInputFormat();
             flatTableInputFormat.configureJob(job);
@@ -168,6 +173,12 @@ public class CuboidJob extends AbstractHadoopJob {
         }
     }
 
+    /**
+     * @param job hadoop的job任务
+     * @param cubeDesc cube的描述信息
+     * @param level level级别,内容是整数数字
+     * 设置reduce的数量
+     */
     protected void setReduceTaskNum(Job job, CubeDesc cubeDesc, int level) throws ClassNotFoundException, IOException, InterruptedException, JobException {
         Configuration jobConf = job.getConfiguration();
         KylinConfig kylinConfig = cubeDesc.getConfig();
@@ -176,7 +187,7 @@ public class CuboidJob extends AbstractHadoopJob {
         double reduceCountRatio = kylinConfig.getDefaultHadoopJobReducerCountRatio();
 
         // total map input MB
-        double totalMapInputMB = this.getTotalMapInputMB();
+        double totalMapInputMB = this.getTotalMapInputMB();//返回输入源一共有多少M数据
 
         // output / input ratio
         int preLevelCuboids, thisLevelCuboids;
@@ -204,12 +215,13 @@ public class CuboidJob extends AbstractHadoopJob {
         // no more than 500 reducer by default
         numReduceTasks = Math.min(kylinConfig.getHadoopJobMaxReducerNumber(), numReduceTasks);
 
+        //设置reduce的数量
         jobConf.setInt(MAPRED_REDUCE_TASKS, numReduceTasks);
 
-        logger.info("Having total map input MB " + Math.round(totalMapInputMB));
+        logger.info("Having total map input MB " + Math.round(totalMapInputMB));//打印输入源一共有多少M数据
         logger.info("Having level " + level + ", pre-level cuboids " + preLevelCuboids + ", this level cuboids " + thisLevelCuboids);
         logger.info("Having per reduce MB " + perReduceInputMB + ", reduce count ratio " + reduceCountRatio);
-        logger.info("Setting " + MAPRED_REDUCE_TASKS + "=" + numReduceTasks);
+        logger.info("Setting " + MAPRED_REDUCE_TASKS + "=" + numReduceTasks);//设置reduce多少个
     }
 
     /**

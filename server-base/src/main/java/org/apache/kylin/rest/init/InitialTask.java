@@ -20,6 +20,7 @@ package org.apache.kylin.rest.init;
 
 /**
  * Created by dongli on 3/16/16.
+ * 初始化任务的接口,自己实现即可,在启动spring的时候就会先执行每一个实现类的execute方法
  */
 public abstract class InitialTask {
     public abstract void execute();

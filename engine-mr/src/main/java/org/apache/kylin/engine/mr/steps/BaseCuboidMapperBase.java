@@ -57,27 +57,34 @@ import com.google.common.collect.Lists;
  */
 public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VALUEIN, Text, Text> {
     protected static final Logger logger = LoggerFactory.getLogger(BaseCuboidMapperBase.class);
-    public static final byte[] HIVE_NULL = Bytes.toBytes("\\N");
-    public static final byte[] ONE = Bytes.toBytes("1");
+    public static final byte[] HIVE_NULL = Bytes.toBytes("\\N");//hive的\N字节数组
+    public static final byte[] ONE = Bytes.toBytes("1");//1对应的byte字节数组
+
     protected String cubeName;
     protected String segmentID;
     protected Cuboid baseCuboid;
     protected CubeInstance cube;
     protected CubeDesc cubeDesc;
     protected CubeSegment cubeSegment;
-    protected List<byte[]> nullBytes;
+
+    protected List<byte[]> nullBytes;//存储所有的null对应的字节数组
     protected CubeJoinedFlatTableEnrich intermediateTableDesc;
+
+    //分隔符对应的字符串以及字节
     protected String intermediateTableRowDelimiter;
     protected byte byteRowDelimiter;
+
     protected int counter;
     protected MeasureIngester<?>[] aggrIngesters;
     protected Map<TblColRef, Dictionary<String>> dictionaryMap;
     protected Object[] measures;
     protected byte[][] keyBytesBuf;
-    protected BytesSplitter bytesSplitter;
+    protected BytesSplitter bytesSplitter;//代表如何将一行数据拆分成多列
     protected AbstractRowKeyEncoder rowKeyEncoder;
     protected BufferedMeasureEncoder measureCodec;
-    private int errorRecordCounter;
+    private int errorRecordCounter;//记录失败的行数
+
+    //存储key和value的对象
     protected Text outputKey = new Text();
     protected Text outputValue = new Text();
 
@@ -88,7 +95,7 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
         cubeName = context.getConfiguration().get(BatchConstants.CFG_CUBE_NAME).toUpperCase();
         segmentID = context.getConfiguration().get(BatchConstants.CFG_CUBE_SEGMENT_ID);
         intermediateTableRowDelimiter = context.getConfiguration().get(BatchConstants.CFG_CUBE_INTERMEDIATE_TABLE_ROW_DELIMITER, Character.toString(BatchConstants.INTERMEDIATE_TABLE_ROW_DELIMITER));
-        if (Bytes.toBytes(intermediateTableRowDelimiter).length > 1) {
+        if (Bytes.toBytes(intermediateTableRowDelimiter).length > 1) {//分隔符只能是一个字节
             throw new RuntimeException("Expected delimiter byte length is 1, but got " + Bytes.toBytes(intermediateTableRowDelimiter).length);
         }
 
@@ -105,6 +112,7 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
 
         intermediateTableDesc = new CubeJoinedFlatTableEnrich(EngineFactory.getJoinedFlatTableDesc(cubeSegment), cubeDesc);
 
+        //创建行解析器
         bytesSplitter = new BytesSplitter(200, 16384);
         rowKeyEncoder = AbstractRowKeyEncoder.createInstance(cubeSegment, baseCuboid);
 
@@ -120,6 +128,7 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
         initNullBytes();
     }
 
+    //初始化所有的null对应的字节数组
     private void initNullBytes() {
         nullBytes = Lists.newArrayList();
         nullBytes.add(HIVE_NULL);
@@ -131,6 +140,7 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
         }
     }
 
+    //是否是null
     protected boolean isNull(byte[] v) {
         for (byte[] nullByte : nullBytes) {
             if (Bytes.equals(v, nullByte))
@@ -139,6 +149,7 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
         return false;
     }
 
+    //对列的字节数组转换成key
     protected byte[] buildKey(SplittedBytes[] splitBuffers) {
         int[] rowKeyColumnIndexes = intermediateTableDesc.getRowKeyColumnIndexes();
         for (int i = 0; i < baseCuboid.getColumns().size(); i++) {
@@ -151,6 +162,7 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
         return rowKeyEncoder.encode(keyBytesBuf);
     }
 
+    //对列的字节数组转换成value
     private ByteBuffer buildValue(SplittedBytes[] splitBuffers) {
 
         for (int i = 0; i < measures.length; i++) {
@@ -186,8 +198,10 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
         return aggrIngesters[idxOfMeasure].valueOf(inputToMeasure, measure, dictionaryMap);
     }
 
+    //将一列的数据转换成字符串
+    //i表示第几列,splitBuffers表示每一列的集合
     private String getCell(int i, SplittedBytes[] splitBuffers) {
-        byte[] bytes = Arrays.copyOf(splitBuffers[i].value, splitBuffers[i].length);
+        byte[] bytes = Arrays.copyOf(splitBuffers[i].value, splitBuffers[i].length);//获取第i列对应的字节数组
         if (isNull(bytes))
             return null;
         else
@@ -195,7 +209,7 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
     }
 
     protected void outputKV(Context context) throws IOException, InterruptedException {
-        intermediateTableDesc.sanityCheck(bytesSplitter);
+        intermediateTableDesc.sanityCheck(bytesSplitter);//判断hive的列是否与一行数据拆分后的列相同
 
         byte[] rowKey = buildKey(bytesSplitter.getSplitBuffers());
         outputKey.set(rowKey, 0, rowKey.length);
@@ -205,6 +219,7 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
         context.write(outputKey, outputValue);
     }
 
+    //将一行的每一列转换成字节数组,如果是null,则转换成null的字节数组
     protected byte[][] convertUTF8Bytes(String[] row) throws UnsupportedEncodingException {
         byte[][] result = new byte[row.length][];
         for (int i = 0; i < row.length; i++) {
@@ -218,7 +233,7 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
         logger.error("Insane record: " + bytesSplitter, ex);
 
         // TODO expose errorRecordCounter as hadoop counter
-        errorRecordCounter++;
+        errorRecordCounter++; //记录失败的行数
         if (errorRecordCounter > BatchConstants.ERROR_RECORD_LOG_THRESHOLD) {
             if (ex instanceof IOException)
                 throw (IOException) ex;

@@ -110,6 +110,7 @@ abstract public class KylinConfigBase implements Serializable {
         }
     }
 
+    //将prop字符串按照逗号拆分成数组,dft是默认值
     final protected int[] getOptionalIntArray(String prop, String[] dft) {
         String[] strArray = getOptionalStringArray(prop, dft);
         int[] intArray = new int[strArray.length];
@@ -315,6 +316,7 @@ abstract public class KylinConfigBase implements Serializable {
         }
     }
 
+    //默认一个reduce读取多少M数据
     public double getDefaultHadoopJobReducerInputMB() {
         return Double.parseDouble(getOptional("kylin.job.mapreduce.default.reduce.input.mb", "500"));
     }

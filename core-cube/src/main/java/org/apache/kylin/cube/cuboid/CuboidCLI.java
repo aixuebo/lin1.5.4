@@ -118,8 +118,8 @@ public class CuboidCLI {
     }
 
     public static int[] calculateAllLevelCount(CubeDesc cube) {
-        int levels = cube.getBuildLevel();
-        int[] allLevelCounts = new int[levels + 1];
+        int levels = cube.getBuildLevel();//获取最大的level
+        int[] allLevelCounts = new int[levels + 1];//创建数组
 
         CuboidScheduler scheduler = new CuboidScheduler(cube);
         LinkedList<Long> nextQueue = new LinkedList<Long>();

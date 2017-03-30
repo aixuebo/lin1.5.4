@@ -81,9 +81,10 @@ public class CubeJoinedFlatTableEnrich implements IJoinedFlatTableDesc {
     }
 
     // sanity check the input record (in bytes) matches what's expected
+    //判断hive的列是否与一行数据拆分后的列相同
     public void sanityCheck(BytesSplitter bytesSplitter) {
-        int columnCount = flatDesc.getAllColumns().size();
-        if (columnCount != bytesSplitter.getBufferSize()) {
+        int columnCount = flatDesc.getAllColumns().size();//有多少列
+        if (columnCount != bytesSplitter.getBufferSize()) {//bytesSplitter.getBufferSize()表示拆分后有多少列数据
             throw new IllegalArgumentException("Expect " + columnCount + " columns, but see " + bytesSplitter.getBufferSize() + " -- " + bytesSplitter);
         }
 

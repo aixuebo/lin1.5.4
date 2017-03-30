@@ -20,7 +20,7 @@ package org.apache.kylin.common.util;
 
 /**
  * @author George Song (ysong1)
- * 
+ * 每一列对应一个该对象
  */
 public class SplittedBytes {
     public SplittedBytes(int length) {
@@ -28,6 +28,6 @@ public class SplittedBytes {
         this.length = 0;
     }
 
-    public byte[] value;
-    public int length;
+    public byte[] value;//该列对应的字节数组
+    public int length;//该列需要的字节长度
 }

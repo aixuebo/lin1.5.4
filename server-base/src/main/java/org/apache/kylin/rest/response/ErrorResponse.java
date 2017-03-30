@@ -24,8 +24,8 @@ package org.apache.kylin.rest.response;
  */
 public class ErrorResponse {
 
-    public String url;
-    public String exception;
+    public String url;//请求的url
+    public String exception;//请求产生的异常
 
     /**
      * @param exception

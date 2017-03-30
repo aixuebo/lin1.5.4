@@ -26,6 +26,7 @@ import org.apache.kylin.engine.mr.common.BatchConstants;
 
 /**
  * @author George Song (ysong1)
+ * 从hive表读取数据,处理基本cuboid
  */
 public class HiveToBaseCuboidMapper<KEYIN> extends BaseCuboidMapperBase<KEYIN, Object> {
 
@@ -47,7 +48,7 @@ public class HiveToBaseCuboidMapper<KEYIN> extends BaseCuboidMapperBase<KEYIN, O
         try {
             //put a record into the shared bytesSplitter
             String[] row = flatTableInputFormat.parseMapperInput(value);
-            bytesSplitter.setBuffers(convertUTF8Bytes(row));
+            bytesSplitter.setBuffers(convertUTF8Bytes(row));//将一行数据转换成字节数组
             //take care of the data in bytesSplitter
             outputKV(context);
 

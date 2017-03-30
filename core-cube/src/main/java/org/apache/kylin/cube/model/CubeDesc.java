@@ -189,7 +189,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
 
 
     @JsonProperty("null_string")
-    private String[] nullStrings;
+    private String[] nullStrings;//设定一组字符串表示null,即出现这种字符串了,就表示null
 
     @JsonProperty("hbase_mapping")
     private HBaseMappingDesc hbaseMapping;

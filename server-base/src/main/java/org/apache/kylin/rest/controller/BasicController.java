@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
+ * 基础类,用于控制出现异常的时候如何处理
  */
 public class BasicController {
 
