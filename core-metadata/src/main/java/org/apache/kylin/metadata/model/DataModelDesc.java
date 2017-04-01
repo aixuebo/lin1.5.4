@@ -79,12 +79,12 @@ public class DataModelDesc extends RootPersistentEntity {
     private List<ModelDimensionDesc> dimensions;
 
     //第四个页面 选择度量的列集合
-
     @JsonProperty("metrics")
-    private String[] metrics;
+    private String[] metrics;//表示页面添加的Measures属性集合,即哪些列是可以作为维度值进行统计分析的
 
+    //第5个页面
     @JsonProperty("filter_condition")
-    private String filterCondition;
+    private String filterCondition;//自定义的where过滤条件
 
     //如何分区,查询不同日期区间的数据
     @JsonProperty("partition_desc")
@@ -131,6 +131,7 @@ public class DataModelDesc extends RootPersistentEntity {
         this.description = description;
     }
 
+    //返回该model所有相关联的表名集合
     public Collection<String> getAllTables() {
         HashSet<String> ret = Sets.newHashSet();
         ret.add(factTable);
@@ -163,6 +164,7 @@ public class DataModelDesc extends RootPersistentEntity {
         this.lookups = lookups;
     }
 
+    //是否是事实表
     public boolean isFactTable(String factTable) {
         return this.factTable.equalsIgnoreCase(factTable);
     }
@@ -195,24 +197,24 @@ public class DataModelDesc extends RootPersistentEntity {
      * 通过事实表的外键,找到该外键对应哪个lookup表的主键
      * @param fk 事实表的外键
      * @param joinType join类型
-     * @return
+     * @return 返回lookup表关联的列--问题是可以返回好多个lookp表啊,并不唯一,因此有什么意义呢
      */
     public TblColRef findPKByFK(TblColRef fk, String joinType) {
-        assert isFactTable(fk.getTable());
+        assert isFactTable(fk.getTable());//确保fk对象是事实表(fact_table)的一个字段
 
-        TblColRef candidate = null;
+        TblColRef candidate = null;//lookup表关联的列
 
-        for (LookupDesc dim : lookups) {
+        for (LookupDesc dim : lookups) {//循环所有关联的从表
             JoinDesc join = dim.getJoin();
             if (join == null)
                 continue;
 
-            if (joinType != null && !joinType.equals(join.getType()))
+            if (joinType != null && !joinType.equals(join.getType()))//说明join类型不匹配
                 continue;
 
-            int find = ArrayUtils.indexOf(join.getForeignKeyColumns(), fk);
+            int find = ArrayUtils.indexOf(join.getForeignKeyColumns(), fk);//找到与主表的id所在外键索引
             if (find >= 0) {
-                candidate = join.getPrimaryKeyColumns()[find];
+                candidate = join.getPrimaryKeyColumns()[find];//通过该索引,找到lookup表的主键
                 if (join.getForeignKeyColumns().length == 1) { // is single
                     // column join?
                     break;
@@ -220,6 +222,19 @@ public class DataModelDesc extends RootPersistentEntity {
             }
         }
         return candidate;
+    }
+
+    //找到table信息
+    public TableDesc findTable(String table) {
+        if (factTableDesc.getName().equalsIgnoreCase(table) || factTableDesc.getIdentity().equalsIgnoreCase(table))
+            return factTableDesc;
+
+        for (TableDesc desc : lookupTableDescs) {
+            if (desc.getName().equalsIgnoreCase(table) || desc.getIdentity().equalsIgnoreCase(table))
+                return desc;
+        }
+
+        throw new IllegalArgumentException("Table not found by " + table);
     }
 
     // TODO let this replace CubeDesc.buildColumnNameAbbreviation()
@@ -235,7 +250,7 @@ public class DataModelDesc extends RootPersistentEntity {
             colDesc = tableDesc.findColumnByName(column.substring(cut + 1));
         } else {//只是有列名,没有列所在table信息,就全部遍历了
             // table not specified, try each table
-            colDesc = factTableDesc.findColumnByName(column);
+            colDesc = factTableDesc.findColumnByName(column);//先从事实表查找该列
             if (colDesc == null) {
                 for (TableDesc tableDesc : lookupTableDescs) {
                     colDesc = tableDesc.findColumnByName(column);
@@ -249,19 +264,6 @@ public class DataModelDesc extends RootPersistentEntity {
             throw new IllegalArgumentException("Column not found by " + column);
 
         return colDesc;
-    }
-
-    //找到table信息
-    public TableDesc findTable(String table) {
-        if (factTableDesc.getName().equalsIgnoreCase(table) || factTableDesc.getIdentity().equalsIgnoreCase(table))
-            return factTableDesc;
-
-        for (TableDesc desc : lookupTableDescs) {
-            if (desc.getName().equalsIgnoreCase(table) || desc.getIdentity().equalsIgnoreCase(table))
-                return desc;
-        }
-
-        throw new IllegalArgumentException("Table not found by " + table);
     }
 
     //初始化该model
@@ -278,18 +280,12 @@ public class DataModelDesc extends RootPersistentEntity {
         initPartitionDesc(tables);//初始化分区信息
     }
 
-    //初始化分区信息
-    private void initPartitionDesc(Map<String, TableDesc> tables) {
-        if (this.partitionDesc != null)
-            this.partitionDesc.init(tables);
-    }
-
     //初始化join的列属性信息
     private void initJoinColumns(Map<String, TableDesc> tables) {
         // join columns may or may not present in cube;
         // here we don't modify 'allColumns' and 'dimensionColumns';
         // initDimensionColumns() will do the update
-        for (LookupDesc lookup : this.lookups) {
+        for (LookupDesc lookup : this.lookups) {//循环所有的lookup表
             lookup.setTable(lookup.getTable().toUpperCase());
             TableDesc dimTable = tables.get(lookup.getTable());
             if (dimTable == null) {
@@ -306,7 +302,7 @@ public class DataModelDesc extends RootPersistentEntity {
             StringUtil.toUpperCaseArray(join.getPrimaryKey(), join.getPrimaryKey());
 
             // primary key 设置主键信息
-            String[] pks = join.getPrimaryKey();
+            String[] pks = join.getPrimaryKey();//lookup表中列
             TblColRef[] pkCols = new TblColRef[pks.length];//每一个列转换成TblColRef对象
             for (int i = 0; i < pks.length; i++) {
                 ColumnDesc col = dimTable.findColumnByName(pks[i]);//从lookup表中找到对应的列对象
@@ -346,6 +342,12 @@ public class DataModelDesc extends RootPersistentEntity {
             }
 
         }
+    }
+
+    //初始化分区信息
+    private void initPartitionDesc(Map<String, TableDesc> tables) {
+        if (this.partitionDesc != null)
+            this.partitionDesc.init(tables);
     }
 
     /** * Add error info and thrown exception out

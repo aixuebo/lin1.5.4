@@ -43,8 +43,8 @@ public class CubeDescController {
 
     /**
      * Get detail information of the "Cube ID"
-     * 
-     * @param cubeDescName
+     * 通过cube的name获取cube对象,返回值是数组,其实真实的返回值也是一个对象,即数组里面就有一个元素
+     * @param cubeName
      *            Cube ID
      * @return
      * @throws IOException
@@ -67,8 +67,8 @@ public class CubeDescController {
     /**
      * Get detail information of the "Cube ID"
      * return CubeDesc instead of CubeDesc[]
-     *
-     * @param cubeDescName
+     * 通过cube的name获取cube对象,返回值就是一个对象
+     * @param cubeName
      *            Cube ID
      * @return
      * @throws IOException

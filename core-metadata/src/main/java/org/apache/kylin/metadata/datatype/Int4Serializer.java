@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import org.apache.kylin.common.util.BytesUtil;
 
 /**
+ * 真的用4个字节存储int
  */
 public class Int4Serializer extends DataTypeSerializer<IntMutable> {
 

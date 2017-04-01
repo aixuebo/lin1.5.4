@@ -29,10 +29,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class RealizationEntry {
 
     @JsonProperty("type")
-    private RealizationType type;
+    private RealizationType type;//输入参数
 
     @JsonProperty("realization")
-    private String realization;
+    private String realization;//输入参数
 
     public RealizationType getType() {
         return type;

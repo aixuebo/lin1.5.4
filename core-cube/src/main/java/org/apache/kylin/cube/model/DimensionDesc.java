@@ -39,7 +39,7 @@ import com.google.common.base.Objects;
 public class DimensionDesc {
 
     @JsonProperty("name")
-    private String name;//该维度属性名字,一般为库.表.列  或者库.表.derived
+    private String name;//该维度属性名字,一般为库.表.列  或者库.表.derived,或者自定义的名字
     @JsonProperty("table")
     private String table;//该维度属于哪个表的一个列
     @JsonProperty("column")
@@ -47,11 +47,11 @@ public class DimensionDesc {
     @JsonProperty("derived")
     private String[] derived;//如果是derived的时候,这个是一组列的集合,表示这个维度不是一个单独的列
 
-    private TableDesc tableDesc;
-    private JoinDesc join;
-
+    //init的时候初始化以下2个变量
+    private TableDesc tableDesc;//table对应的表对象
+    private JoinDesc join;//找到该model中该表的join关系
     // computed
-    private TblColRef[] columnRefs;
+    private TblColRef[] columnRefs;//fact_table中对应的列映射关系,该映射是on语法使用的列集合
 
     public void init(CubeDesc cubeDesc, Map<String, TableDesc> tables) {
         if (name != null)
@@ -65,7 +65,7 @@ public class DimensionDesc {
             throw new IllegalStateException("Can't find table " + table + " for dimension " + name);
 
         join = null;
-        for (LookupDesc lookup : cubeDesc.getModel().getLookups()) {
+        for (LookupDesc lookup : cubeDesc.getModel().getLookups()) {//找到该model中该表的join关系
             if (lookup.getTable().equalsIgnoreCase(this.getTable())) {
                 join = lookup.getJoin();
                 break;
@@ -96,6 +96,7 @@ public class DimensionDesc {
         if (derived != null && derived.length == 0) {
             derived = null;
         }
+        //全部大写
         if (derived != null) {
             StringUtil.toUpperCaseArray(derived, derived);
         }

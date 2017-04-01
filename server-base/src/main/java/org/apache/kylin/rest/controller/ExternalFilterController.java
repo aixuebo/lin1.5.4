@@ -52,40 +52,44 @@ public class ExternalFilterController extends BasicController {
     @Autowired
     private ExtFilterService extFilterService;
 
+    //根据请求创建filter对象
     @RequestMapping(value = "/saveExtFilter", method = { RequestMethod.POST })
     @ResponseBody
     public Map<String, String> saveExternalFilter(@RequestBody ExternalFilterRequest request) throws IOException {
         Map<String, String> result = new HashMap();
-        String filterProject = request.getProject();
+        String filterProject = request.getProject();//获取哪个project
         ExternalFilterDesc desc = JsonUtil.readValue(request.getExtFilter(), ExternalFilterDesc.class);
         desc.setUuid(UUID.randomUUID().toString());
-        extFilterService.saveExternalFilter(desc);
-        extFilterService.syncExtFilterToProject(new String[] { desc.getName() }, filterProject);
+        extFilterService.saveExternalFilter(desc);//真正意义上的保存到磁盘
+        extFilterService.syncExtFilterToProject(new String[] { desc.getName() }, filterProject); //对一个project 增加一组filter
         result.put("success", "true");
         return result;
     }
 
+    //更新filter对象
     @RequestMapping(value = "/updateExtFilter", method = { RequestMethod.PUT })
     @ResponseBody
     public Map<String, String> updateExternalFilter(@RequestBody ExternalFilterRequest request) throws IOException {
         Map<String, String> result = new HashMap();
         ExternalFilterDesc desc = JsonUtil.readValue(request.getExtFilter(), ExternalFilterDesc.class);
-        extFilterService.updateExternalFilter(desc);
-        extFilterService.syncExtFilterToProject(new String[] { desc.getName() }, request.getProject());
+        extFilterService.updateExternalFilter(desc);//更新磁盘内容
+        extFilterService.syncExtFilterToProject(new String[] { desc.getName() }, request.getProject()); //对一个project 增加一组filter
         result.put("success", "true");
         return result;
     }
 
+    //删除一个filter
     @RequestMapping(value = "/{filter}/{project}", method = { RequestMethod.DELETE })
     @ResponseBody
     public Map<String, String> removeFilter(@PathVariable String filter, @PathVariable String project) throws IOException {
         Map<String, String> result = new HashMap<String, String>();
-        extFilterService.removeExtFilterFromProject(filter, project);
-        extFilterService.removeExternalFilter(filter);
+        extFilterService.removeExtFilterFromProject(filter, project);//删除一个project下的filter
+        extFilterService.removeExternalFilter(filter);//删除一个filter
         result.put("success", "true");
         return result;
     }
 
+    //获取所有的filter
     @RequestMapping(value = "", method = { RequestMethod.GET })
     @ResponseBody
     public List<ExternalFilterDesc> getExternalFilters(@RequestParam(value = "project", required = true) String project) throws IOException {

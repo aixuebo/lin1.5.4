@@ -64,6 +64,7 @@ public class ModelController extends BasicController {
     @Autowired
     private ModelService modelService;
 
+    //获取一组model集合,因为model属于project级别下的,因此要project参数
     @RequestMapping(value = "", method = { RequestMethod.GET })
     @ResponseBody
     public List<DataModelDesc> getModels(@RequestParam(value = "modelName", required = false) String modelName, @RequestParam(value = "projectName", required = false) String projectName, @RequestParam(value = "limit", required = false) Integer limit, @RequestParam(value = "offset", required = false) Integer offset) {
@@ -76,7 +77,7 @@ public class ModelController extends BasicController {
     }
 
     /**
-     *
+     * 创建一个model对象
      * create model
      * @throws java.io.IOException
      */
@@ -84,7 +85,7 @@ public class ModelController extends BasicController {
     @ResponseBody
     public ModelRequest saveModelDesc(@RequestBody ModelRequest modelRequest) {
         //Update Model
-        DataModelDesc modelDesc = deserializeDataModelDesc(modelRequest);
+        DataModelDesc modelDesc = deserializeDataModelDesc(modelRequest);//将json内容反序列成model对象
         if (modelDesc == null || StringUtils.isEmpty(modelDesc.getName())) {
             return modelRequest;
         }
@@ -96,20 +97,21 @@ public class ModelController extends BasicController {
 
         try {
             modelDesc.setUuid(UUID.randomUUID().toString());
-            String projectName = (null == modelRequest.getProject()) ? ProjectInstance.DEFAULT_PROJECT_NAME : modelRequest.getProject();
+            String projectName = (null == modelRequest.getProject()) ? ProjectInstance.DEFAULT_PROJECT_NAME : modelRequest.getProject();//将该model分配给默认的project或者给定的project
 
-            modelService.createModelDesc(projectName, modelDesc);
+            modelService.createModelDesc(projectName, modelDesc);//将该model添加保存到所属project中
         } catch (IOException e) {
             // TODO Auto-generated catch block
             logger.error("Failed to deal with the request:" + e.getLocalizedMessage(), e);
             throw new InternalErrorException("Failed to deal with the request: " + e.getLocalizedMessage());
         }
-
+       //因为response返回值也是ModelRequest对象,因此要赋予这些内容
         modelRequest.setUuid(modelDesc.getUuid());
         modelRequest.setSuccessful(true);
         return modelRequest;
     }
 
+    //更新一个model
     @RequestMapping(value = "", method = { RequestMethod.PUT })
     @ResponseBody
     public ModelRequest updateModelDesc(@RequestBody ModelRequest modelRequest) throws JsonProcessingException {
@@ -130,13 +132,14 @@ public class ModelController extends BasicController {
             modelRequest.setSuccessful(true);
         } else {
             logger.warn("Model " + modelDesc.getName() + " fail to update because " + modelDesc.getError());
-            updateRequest(modelRequest, false, omitMessage(modelDesc.getError()));
+            updateRequest(modelRequest, false, omitMessage(modelDesc.getError()));//更新请求要返回的response信息
         }
-        String descData = JsonUtil.writeValueAsIndentString(modelDesc);
+        String descData = JsonUtil.writeValueAsIndentString(modelDesc);//详细的model信息返回给客户端
         modelRequest.setModelDescData(descData);
         return modelRequest;
     }
 
+    //删除一个model
     @RequestMapping(value = "/{modelName}", method = { RequestMethod.DELETE })
     @ResponseBody
     public void deleteModel(@PathVariable String modelName) {
@@ -152,6 +155,7 @@ public class ModelController extends BasicController {
         }
     }
 
+    //对已经存在的model,即modelName进行复制,所有内容都一样,只是要重新赋予一个name即可,name在请求里面
     @RequestMapping(value = "/{modelName}/clone", method = { RequestMethod.PUT })
     @ResponseBody
     public ModelRequest cloneModel(@PathVariable String modelName, @RequestBody ModelRequest modelRequest) {
@@ -191,6 +195,7 @@ public class ModelController extends BasicController {
         return modelRequest;
     }
 
+    //通过json信息范序列化成对象
     private DataModelDesc deserializeDataModelDesc(ModelRequest modelRequest) {
         DataModelDesc desc = null;
         try {
@@ -209,8 +214,9 @@ public class ModelController extends BasicController {
         return desc;
     }
 
+    //更新请求信息
     private void updateRequest(ModelRequest request, boolean success, String message) {
-        request.setModelDescData("");
+        request.setModelDescData("");//因为不需要把要保存的model详细信息给用户.因此清空详细信息的内容
         request.setSuccessful(success);
         request.setMessage(message);
     }
@@ -220,6 +226,7 @@ public class ModelController extends BasicController {
     }
 
     /**
+     * 将错误信息转换成字符串
      * @param errors
      * @return
      */

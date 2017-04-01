@@ -50,6 +50,7 @@ public class JsonUtil {
         return mapper.readValue(src, valueType);
     }
 
+    //将字符串内容转换成T对象
     public static <T> T readValue(String content, Class<T> valueType) throws IOException, JsonParseException, JsonMappingException {
         return mapper.readValue(content, valueType);
     }

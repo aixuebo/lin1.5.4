@@ -124,6 +124,7 @@ public class BadQueryHistoryManager {
         return updateEntryToProject(new BadQueryEntry(sql, adj, startTime, runningSecs, server, threadName, user), project);
     }
 
+    //删除该project相关联的bad query,因为该project已经被删除了
     public void removeBadQueryHistory(String project) throws IOException {
         getStore().deleteResource(getResourcePathForProject(project));
     }

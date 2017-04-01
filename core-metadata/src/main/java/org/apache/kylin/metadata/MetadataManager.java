@@ -402,6 +402,7 @@ public class MetadataManager {
         return new ArrayList<>(dataModelDescMap.values());
     }
 
+    //获取project下所有的model
     public List<DataModelDesc> getModels(String projectName) throws IOException {
         ProjectInstance projectInstance = ProjectManager.getInstance(config).getProject(projectName);
         HashSet<DataModelDesc> ret = new HashSet<>();
@@ -421,6 +422,7 @@ public class MetadataManager {
     }
 
     //是否project下某一model使用了该表
+    //即该table在project中的一个model里面使用了
     public boolean isTableInModel(String tableName, String projectName) throws IOException {
         for (DataModelDesc modelDesc : getModels(projectName)) {
             if (modelDesc.getAllTables().contains(tableName.toUpperCase())) {
@@ -430,7 +432,7 @@ public class MetadataManager {
         return false;
     }
 
-    //false表示任何一个model都没有使用该表
+    //即该table是否在所有的model中被使用,有任意一个model使用了该table,都会返回true
     public boolean isTableInAnyModel(String tableName) {
         for (DataModelDesc modelDesc : getModels()) {
             if (modelDesc.getAllTables().contains(tableName.toUpperCase())) {
@@ -475,7 +477,7 @@ public class MetadataManager {
         }
     }
 
-    // sync on update
+    // sync on update  删除该model,并且同步在project中删除该model
     public DataModelDesc dropModel(DataModelDesc desc) throws IOException {
         logger.info("Dropping model '" + desc.getName() + "'");
         ResourceStore store = getStore();
@@ -496,15 +498,17 @@ public class MetadataManager {
         dataModelDescMap.remove(modelName);
     }
 
+    //在project下创建model
     public DataModelDesc createDataModelDesc(DataModelDesc desc, String projectName, String owner) throws IOException {
         String name = desc.getName();
         if (dataModelDescMap.containsKey(name))
             throw new IllegalArgumentException("DataModelDesc '" + name + "' already exists");
-        ProjectManager.getInstance(config).updateModelToProject(name, projectName);
+        ProjectManager.getInstance(config).updateModelToProject(name, projectName);//将model赋予给一个project,并且保存了project到磁盘
         desc.setOwner(owner);
-        return saveDataModelDesc(desc);
+        return saveDataModelDesc(desc);//保存model到磁盘
     }
 
+    //保存model到磁盘
     public DataModelDesc updateDataModelDesc(DataModelDesc desc) throws IOException {
         String name = desc.getName();
         if (!dataModelDescMap.containsKey(name)) {
@@ -514,6 +518,7 @@ public class MetadataManager {
         return saveDataModelDesc(desc);
     }
 
+    //保存model到磁盘
     private DataModelDesc saveDataModelDesc(DataModelDesc dataModelDesc) throws IOException {
         dataModelDesc.init(config, this.getAllTablesMap());
 

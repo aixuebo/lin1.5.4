@@ -51,10 +51,11 @@ public class ModelDimensionDesc {
         this.columns = columns;
     }
 
-    //去大写字母
+    //静态方法,去大写字母
+    //即标准化的过程
     public static void capicalizeStrings(List<ModelDimensionDesc> dimensions) {
         if (dimensions != null) {
-            for (ModelDimensionDesc modelDimensionDesc : dimensions) {
+            for (ModelDimensionDesc modelDimensionDesc : dimensions) {//循环每一个表选择的维度指标对象
                 modelDimensionDesc.setTable(modelDimensionDesc.getTable().toUpperCase());//table的name进行大写字母处理
                 if (modelDimensionDesc.getColumns() != null) {
                     StringUtil.toUpperCaseArray(modelDimensionDesc.getColumns(), modelDimensionDesc.getColumns());//列名字进行大写字母处理
@@ -63,12 +64,12 @@ public class ModelDimensionDesc {
         }
     }
 
-    //计算总共多少个维度要去被观察
+    //静态方法,计算总共多少个维度
     public static int getColumnCount(List<ModelDimensionDesc> modelDimensionDescs) {
         int count = 0;
-        for (ModelDimensionDesc modelDimensionDesc : modelDimensionDescs) {
+        for (ModelDimensionDesc modelDimensionDesc : modelDimensionDescs) {//循环每一个表选择的维度指标对象
             if (modelDimensionDesc.getColumns() != null) {
-                count += modelDimensionDesc.getColumns().length;
+                count += modelDimensionDesc.getColumns().length;//计算该表有多少列
             }
         }
         return count;

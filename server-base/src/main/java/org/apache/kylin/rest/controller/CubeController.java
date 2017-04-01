@@ -96,11 +96,12 @@ public class CubeController extends BasicController {
     @Autowired
     private JobService jobService;
 
+    //查找符合条件的cube集合,其中三个参数都可以为null
     @RequestMapping(value = "", method = { RequestMethod.GET })
     @ResponseBody
     public List<CubeInstance> getCubes(@RequestParam(value = "cubeName", required = false) String cubeName, @RequestParam(value = "modelName", required = false) String modelName, @RequestParam(value = "projectName", required = false) String projectName, @RequestParam(value = "limit", required = false) Integer limit, @RequestParam(value = "offset", required = false) Integer offset) {
         List<CubeInstance> cubes;
-        cubes = cubeService.listAllCubes(cubeName, projectName, modelName);
+        cubes = cubeService.listAllCubes(cubeName, projectName, modelName);//查找project下使用了指定model的cube集合,最终过滤选择cube名字相同的cube集合
 
         int climit = (null == limit) ? cubes.size() : limit;
         int coffset = (null == offset) ? 0 : offset;
@@ -116,6 +117,109 @@ public class CubeController extends BasicController {
         return cubes.subList(coffset, coffset + climit);
     }
 
+    /**
+     * save cubeDesc
+     * 新增一个cube
+     * @return Table metadata array
+     * @throws IOException
+     */
+    @RequestMapping(value = "", method = { RequestMethod.POST })
+    @ResponseBody
+    public CubeRequest saveCubeDesc(@RequestBody CubeRequest cubeRequest) {
+
+        CubeDesc desc = deserializeCubeDesc(cubeRequest);//将请求cube的json信息序列化成CubeDesc对象
+        if (desc == null) {
+            cubeRequest.setMessage("CubeDesc is null.");
+            return cubeRequest;
+        }
+        String name = CubeService.getCubeNameFromDesc(desc.getName());//创建cube的name
+        if (StringUtils.isEmpty(name)) {
+            logger.info("Cube name should not be empty.");
+            throw new BadRequestException("Cube name should not be empty.");
+        }
+
+        try {
+            desc.setUuid(UUID.randomUUID().toString());
+            String projectName = (null == cubeRequest.getProject()) ? ProjectInstance.DEFAULT_PROJECT_NAME : cubeRequest.getProject();//找到cube所属的project
+            cubeService.createCubeAndDesc(name, projectName, desc);
+        } catch (Exception e) {
+            logger.error("Failed to deal with the request.", e);
+            throw new InternalErrorException(e.getLocalizedMessage(), e);
+        }
+
+        //设置response内容
+        cubeRequest.setUuid(desc.getUuid());
+        cubeRequest.setSuccessful(true);
+        return cubeRequest;
+    }
+
+    /**
+     * update CubDesc
+     * 更新一个cube
+     * @return Table metadata array
+     * @throws JsonProcessingException
+     * @throws IOException
+     */
+    @RequestMapping(value = "", method = { RequestMethod.PUT })
+    @ResponseBody
+    public CubeRequest updateCubeDesc(@RequestBody CubeRequest cubeRequest) throws JsonProcessingException {
+
+        //update cube
+        CubeDesc desc = deserializeCubeDesc(cubeRequest);//范序列化成cube对象
+        CubeDesc oldCubeDesc;
+        boolean isCubeDescFreeEditable;
+
+        if (desc == null) {
+            return cubeRequest;
+        }
+
+        // Check if the cube is editable
+        isCubeDescFreeEditable = cubeService.isCubeDescFreeEditable(desc);
+
+        String projectName = (null == cubeRequest.getProject()) ? ProjectInstance.DEFAULT_PROJECT_NAME : cubeRequest.getProject();
+        try {
+            CubeInstance cube = cubeService.getCubeManager().getCube(cubeRequest.getCubeName());
+
+            if (cube == null) {
+                String error = "The cube named " + cubeRequest.getCubeName() + " does not exist ";
+                updateRequest(cubeRequest, false, error);
+                return cubeRequest;
+            }
+
+            //cube renaming is not allowed
+            if (!cube.getDescriptor().getName().equalsIgnoreCase(desc.getName())) {
+                String error = "Cube Desc renaming is not allowed: desc.getName(): " + desc.getName() + ", cubeRequest.getCubeName(): " + cubeRequest.getCubeName();
+                updateRequest(cubeRequest, false, error);
+                return cubeRequest;
+            }
+
+            oldCubeDesc = cube.getDescriptor();
+            if (isCubeDescFreeEditable || oldCubeDesc.consistentWith(desc)) {
+                desc = cubeService.updateCubeAndDesc(cube, desc, projectName, true);
+            } else {
+                logger.warn("Won't update the cube desc due to inconsistency");
+                updateRequest(cubeRequest, false, "CubeDesc " + desc.getName() + " is inconsistent with existing. Try purge that cube first or avoid updating key cube desc fields.");
+                return cubeRequest;
+            }
+        } catch (AccessDeniedException accessDeniedException) {
+            throw new ForbiddenException("You don't have right to update this cube.");
+        } catch (Exception e) {
+            logger.error("Failed to deal with the request:" + e.getLocalizedMessage(), e);
+            throw new InternalErrorException("Failed to deal with the request: " + e.getLocalizedMessage());
+        }
+
+        if (!desc.getError().isEmpty()) {
+            logger.warn("Cube " + desc.getName() + " fail to update because " + desc.getError());
+            updateRequest(cubeRequest, false, omitMessage(desc.getError()));
+            return cubeRequest;
+        }
+
+        String descData = JsonUtil.writeValueAsIndentString(desc);
+        cubeRequest.setCubeDescData(descData);
+        cubeRequest.setSuccessful(true);
+        return cubeRequest;
+    }
+
     @RequestMapping(value = "validEncodings", method = { RequestMethod.GET })
     @ResponseBody
     public Set<String> getValidEncodings() {
@@ -128,6 +232,7 @@ public class CubeController extends BasicController {
         return encodings;
     }
 
+    //根据cube名字查找一个具体的cube
     @RequestMapping(value = "/{cubeName}", method = { RequestMethod.GET })
     @ResponseBody
     public CubeInstance getCube(@PathVariable String cubeName) {
@@ -291,7 +396,7 @@ public class CubeController extends BasicController {
     private JobInstance buildInternal(String cubeName, long startTime, long endTime, //
             long startOffset, long endOffset, String buildType, boolean force) {
         try {
-            String submitter = SecurityContextHolder.getContext().getAuthentication().getName();
+            String submitter = SecurityContextHolder.getContext().getAuthentication().getName();//提交人
             CubeInstance cube = jobService.getCubeManager().getCube(cubeName);
             return jobService.submitJob(cube, startTime, endTime, startOffset, endOffset, //
                     CubeBuildTypeEnum.valueOf(buildType), force, submitter);
@@ -382,6 +487,7 @@ public class CubeController extends BasicController {
         }
     }
 
+    //删除一个cube
     @RequestMapping(value = "/{cubeName}", method = { RequestMethod.DELETE })
     @ResponseBody
     public void deleteCube(@PathVariable String cubeName) {
@@ -398,108 +504,6 @@ public class CubeController extends BasicController {
             throw new InternalErrorException("Failed to delete cube. " + " Caused by: " + e.getMessage(), e);
         }
 
-    }
-
-    /**
-     * save cubeDesc
-     *
-     * @return Table metadata array
-     * @throws IOException
-     */
-    @RequestMapping(value = "", method = { RequestMethod.POST })
-    @ResponseBody
-    public CubeRequest saveCubeDesc(@RequestBody CubeRequest cubeRequest) {
-
-        CubeDesc desc = deserializeCubeDesc(cubeRequest);
-        if (desc == null) {
-            cubeRequest.setMessage("CubeDesc is null.");
-            return cubeRequest;
-        }
-        String name = CubeService.getCubeNameFromDesc(desc.getName());
-        if (StringUtils.isEmpty(name)) {
-            logger.info("Cube name should not be empty.");
-            throw new BadRequestException("Cube name should not be empty.");
-        }
-
-        try {
-            desc.setUuid(UUID.randomUUID().toString());
-            String projectName = (null == cubeRequest.getProject()) ? ProjectInstance.DEFAULT_PROJECT_NAME : cubeRequest.getProject();
-            cubeService.createCubeAndDesc(name, projectName, desc);
-        } catch (Exception e) {
-            logger.error("Failed to deal with the request.", e);
-            throw new InternalErrorException(e.getLocalizedMessage(), e);
-        }
-
-        cubeRequest.setUuid(desc.getUuid());
-        cubeRequest.setSuccessful(true);
-        return cubeRequest;
-    }
-
-    /**
-     * update CubDesc
-     *
-     * @return Table metadata array
-     * @throws JsonProcessingException
-     * @throws IOException
-     */
-    @RequestMapping(value = "", method = { RequestMethod.PUT })
-    @ResponseBody
-    public CubeRequest updateCubeDesc(@RequestBody CubeRequest cubeRequest) throws JsonProcessingException {
-
-        //update cube
-        CubeDesc desc = deserializeCubeDesc(cubeRequest);
-        CubeDesc oldCubeDesc;
-        boolean isCubeDescFreeEditable;
-
-        if (desc == null) {
-            return cubeRequest;
-        }
-
-        // Check if the cube is editable
-        isCubeDescFreeEditable = cubeService.isCubeDescFreeEditable(desc);
-
-        String projectName = (null == cubeRequest.getProject()) ? ProjectInstance.DEFAULT_PROJECT_NAME : cubeRequest.getProject();
-        try {
-            CubeInstance cube = cubeService.getCubeManager().getCube(cubeRequest.getCubeName());
-
-            if (cube == null) {
-                String error = "The cube named " + cubeRequest.getCubeName() + " does not exist ";
-                updateRequest(cubeRequest, false, error);
-                return cubeRequest;
-            }
-
-            //cube renaming is not allowed
-            if (!cube.getDescriptor().getName().equalsIgnoreCase(desc.getName())) {
-                String error = "Cube Desc renaming is not allowed: desc.getName(): " + desc.getName() + ", cubeRequest.getCubeName(): " + cubeRequest.getCubeName();
-                updateRequest(cubeRequest, false, error);
-                return cubeRequest;
-            }
-
-            oldCubeDesc = cube.getDescriptor();
-            if (isCubeDescFreeEditable || oldCubeDesc.consistentWith(desc)) {
-                desc = cubeService.updateCubeAndDesc(cube, desc, projectName, true);
-            } else {
-                logger.warn("Won't update the cube desc due to inconsistency");
-                updateRequest(cubeRequest, false, "CubeDesc " + desc.getName() + " is inconsistent with existing. Try purge that cube first or avoid updating key cube desc fields.");
-                return cubeRequest;
-            }
-        } catch (AccessDeniedException accessDeniedException) {
-            throw new ForbiddenException("You don't have right to update this cube.");
-        } catch (Exception e) {
-            logger.error("Failed to deal with the request:" + e.getLocalizedMessage(), e);
-            throw new InternalErrorException("Failed to deal with the request: " + e.getLocalizedMessage());
-        }
-
-        if (!desc.getError().isEmpty()) {
-            logger.warn("Cube " + desc.getName() + " fail to update because " + desc.getError());
-            updateRequest(cubeRequest, false, omitMessage(desc.getError()));
-            return cubeRequest;
-        }
-
-        String descData = JsonUtil.writeValueAsIndentString(desc);
-        cubeRequest.setCubeDescData(descData);
-        cubeRequest.setSuccessful(true);
-        return cubeRequest;
     }
 
     /**
@@ -545,6 +549,7 @@ public class CubeController extends BasicController {
         return hbase;
     }
 
+    //将请求cube的json信息序列化成CubeDesc对象
     private CubeDesc deserializeCubeDesc(CubeRequest cubeRequest) {
         CubeDesc desc = null;
         try {
@@ -600,7 +605,7 @@ public class CubeController extends BasicController {
     }
 
     /**
-     * @return
+     * 将错误信息输出成一个字符串
      */
     private String omitMessage(List<String> errors) {
         StringBuffer buffer = new StringBuffer();
@@ -612,6 +617,7 @@ public class CubeController extends BasicController {
         return buffer.toString();
     }
 
+    //对response信息进行更新
     private void updateRequest(CubeRequest request, boolean success, String message) {
         request.setCubeDescData("");
         request.setSuccessful(success);

@@ -46,7 +46,7 @@ import com.google.common.collect.Lists;
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
 public class ProjectInstance extends RootPersistentEntity {
 
-    public static final String DEFAULT_PROJECT_NAME = "DEFAULT";
+    public static final String DEFAULT_PROJECT_NAME = "DEFAULT"; //默认不填写project的话,则默认project的name
 
     //项目名称
     @JsonProperty("name")
@@ -172,6 +172,7 @@ public class ProjectInstance extends RootPersistentEntity {
         });
     }
 
+    //该project移除一个RealizationType
     public void removeRealization(final RealizationType type, final String realization) {
         Iterables.removeIf(this.realizationEntries, new Predicate<RealizationEntry>() {
             @Override
@@ -281,6 +282,7 @@ public class ProjectInstance extends RootPersistentEntity {
         this.models = models;
     }
 
+    //向该project添加该model
     public void addModel(String modelName) {
         if (this.getModels() == null) {
             this.setModels(new ArrayList<String>());

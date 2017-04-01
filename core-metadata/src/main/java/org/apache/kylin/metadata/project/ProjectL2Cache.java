@@ -62,19 +62,22 @@ class ProjectL2Cache {
         projectCaches.clear();
     }
 
+    //获取project下对应的extFilterName对应的对象
     public ExternalFilterDesc getExternalFilterDesc(String project, String extFilterName) {
         ProjectCache prjCache = getCache(project);
         return prjCache.extFilters.get(extFilterName);
     }
 
+    //获取该project对应的所有的filter集合
     public Map<String, ExternalFilterDesc> listExternalFilterDesc(String project) {
         ProjectCache prjCache = getCache(project);
         return Collections.unmodifiableMap(prjCache.extFilters);
     }
 
+    //返回该project对应的所有的hive表集合
     public List<TableDesc> listDefinedTables(String project) {
         ProjectCache prjCache = getCache(project);
-        List<TableDesc> result = Lists.newArrayListWithCapacity(prjCache.tables.size());
+        List<TableDesc> result = Lists.newArrayListWithCapacity(prjCache.tables.size());//该project对应的所有的hive表集合
         for (TableCache tableCache : prjCache.tables.values()) {
             result.add(tableCache.tableDesc);
         }
@@ -161,6 +164,7 @@ class ProjectL2Cache {
     // build the cache
     // ----------------------------------------------------------------------------
 
+    //先从缓存里面取,没有则加载--存放缓存
     private ProjectCache getCache(String project) {
         project = ProjectInstance.getNormalizedProjectName(project);
         ProjectCache result = projectCaches.get(project);
@@ -171,6 +175,7 @@ class ProjectL2Cache {
         return result;
     }
 
+    //加载一个project到内存
     private ProjectCache loadCache(String project) {
         logger.info("Loading L2 project cache for " + project);
         ProjectCache projectCache = new ProjectCache(project);
@@ -182,7 +187,7 @@ class ProjectL2Cache {
 
         MetadataManager metaMgr = mgr.getMetadataManager();
 
-        for (String tableName : pi.getTables()) {
+        for (String tableName : pi.getTables()) {//加载该project里面的table信息
             TableDesc tableDesc = metaMgr.getTableDesc(tableName);
             if (tableDesc != null) {
                 projectCache.tables.put(tableDesc.getIdentity(), new TableCache(tableDesc));
@@ -191,7 +196,7 @@ class ProjectL2Cache {
             }
         }
 
-        for (String extFilterName : pi.getExtFilters()) {
+        for (String extFilterName : pi.getExtFilters()) {//加载该project中的filter
             ExternalFilterDesc filterDesc = metaMgr.getExtFilterDesc(extFilterName);
             if (filterDesc != null) {
                 projectCache.extFilters.put(extFilterName, filterDesc);
@@ -282,21 +287,23 @@ class ProjectL2Cache {
         }
     }
 
+    //缓存的project
     private static class ProjectCache {
         private String project;
-        private Map<String, TableCache> tables = Maps.newHashMap();
+        private Map<String, TableCache> tables = Maps.newHashMap();//该project对应的所有的hive表集合
         private Set<TableDesc> exposedTables = Sets.newHashSet();
         private Set<IRealization> realizations = Sets.newHashSet();
-        private Map<String, ExternalFilterDesc> extFilters = Maps.newHashMap();
+        private Map<String, ExternalFilterDesc> extFilters = Maps.newHashMap();//该项目所有的filter
 
         ProjectCache(String project) {
             this.project = project;
         }
     }
 
+    //针对project中的hive的table进行缓存
     private static class TableCache {
         private boolean exposed = false;
-        private TableDesc tableDesc;
+        private TableDesc tableDesc;//持有真正意义的hive对象
         private Set<ColumnDesc> exposedColumns = Sets.newLinkedHashSet();
         private Set<IRealization> realizations = Sets.newLinkedHashSet();
 

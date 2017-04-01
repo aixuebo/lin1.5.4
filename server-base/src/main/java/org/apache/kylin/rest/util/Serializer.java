@@ -26,6 +26,7 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
+//将一个对象转换成字节数组的序列化与反序列化过程
 public class Serializer<T> {
     private final Class<T> type;
 

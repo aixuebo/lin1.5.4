@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import org.apache.kylin.common.util.BytesUtil;
 
 /**
+ * 真的用8个字节存储long
  */
 public class Long8Serializer extends DataTypeSerializer<LongMutable> {
 

@@ -41,10 +41,18 @@ public class AggregationGroup {
 
     @JsonProperty("includes")
     private String[] includes;//该维度组包含哪些列
+    /**
+     json内容
+     "select_rule": {
+     "hierarchy_dims": [],
+     "mandatory_dims": [],
+     "joint_dims": []
+     }
+     */
     @JsonProperty("select_rule")
     private SelectRule selectRule;//维度组内的列是什么方式可以优化
 
-    //computed
+    //computed 计算编码----在hbase的rowkey的位置
     private long partialCubeFullMask;
     private long mandatoryColumnMask;
     private List<HierarchyMask> hierarchyMasks;
@@ -53,7 +61,8 @@ public class AggregationGroup {
     private long normalDimsMask;
     private long hierarchyDimsMask;
     private List<Long> normalDims;//each long is a single dim
-    private CubeDesc cubeDesc;
+
+    private CubeDesc cubeDesc;//该聚合组所属的cube对象
     private boolean isMandatoryOnlyValid;
 
     public void init(CubeDesc cubeDesc, RowKeyDesc rowKeyDesc) {
@@ -65,6 +74,7 @@ public class AggregationGroup {
             throw new IllegalStateException("AggregationGroup incomplete");
         }
 
+        //分别对include、Mandatory、Hierarchy、joint所在的维度进行编码
         buildPartialCubeFullMask(colNameAbbr, rowKeyDesc);
         buildMandatoryColumnMask(colNameAbbr, rowKeyDesc);
         buildHierarchyMasks(colNameAbbr, rowKeyDesc);
@@ -75,6 +85,7 @@ public class AggregationGroup {
 
     }
 
+    //对include所在的维度进行编码
     private void buildPartialCubeFullMask(Map<String, TblColRef> colNameAbbr, RowKeyDesc rowKeyDesc) {
         Preconditions.checkState(this.includes != null);
         Preconditions.checkState(this.includes.length != 0);
@@ -116,7 +127,7 @@ public class AggregationGroup {
     private void buildMandatoryColumnMask(Map<String, TblColRef> colNameAbbr, RowKeyDesc rowKeyDesc) {
         mandatoryColumnMask = 0L;
 
-        String[] mandatory_dims = this.selectRule.mandatory_dims;
+        String[] mandatory_dims = this.selectRule.mandatory_dims;//必须存在的维度集合
         if (mandatory_dims == null || mandatory_dims.length == 0) {
             return;
         }

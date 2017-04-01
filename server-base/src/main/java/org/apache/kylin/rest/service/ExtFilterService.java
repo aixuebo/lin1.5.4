@@ -37,6 +37,7 @@ public class ExtFilterService extends BasicService {
     @Autowired
     private AccessService accessService;
 
+    //向磁盘保存filter对象内容
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN)
     public void saveExternalFilter(ExternalFilterDesc desc) throws IOException {
         if (getMetadataManager().getExtFilterDesc(desc.getName()) != null) {
@@ -45,6 +46,7 @@ public class ExtFilterService extends BasicService {
         getMetadataManager().saveExternalFilter(desc);
     }
 
+    //更新新的版本到磁盘上
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN)
     public void updateExternalFilter(ExternalFilterDesc desc) throws IOException {
         if (getMetadataManager().getExtFilterDesc(desc.getName()) == null) {
@@ -53,21 +55,25 @@ public class ExtFilterService extends BasicService {
         getMetadataManager().saveExternalFilter(desc);
     }
 
+    //删除一个filter
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN)
     public void removeExternalFilter(String name) throws IOException {
         getMetadataManager().removeExternalFilter(name);
     }
 
+    //对一个project 增加一组filter
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN)
     public void syncExtFilterToProject(String[] filters, String project) throws IOException {
         getProjectManager().addExtFilterToProject(filters, project);
     }
 
+    //删除project下的filter
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN)
     public void removeExtFilterFromProject(String filterName, String projectName) throws IOException {
         getProjectManager().removeExtFilterFromProject(filterName, projectName);
     }
 
+    //获取所有的filter
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN)
     public List<ExternalFilterDesc> listAllExternalFilters() {
         return getMetadataManager().listAllExternalFilters();

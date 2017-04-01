@@ -83,7 +83,7 @@ import com.google.common.collect.Lists;
  */
 @Component("cubeMgmtService")
 public class CubeService extends BasicService {
-    private static final String DESC_SUFFIX = "_desc";
+    private static final String DESC_SUFFIX = "_desc";//cube的名字后缀
 
     private static final Logger logger = LoggerFactory.getLogger(CubeService.class);
 
@@ -92,22 +92,28 @@ public class CubeService extends BasicService {
     @Autowired
     private AccessService accessService;
 
+    /**
+     * 一个综合条件的查询cube的方法,其中三个参数都可以为null
+     * 查找project下使用了指定model的cube集合,最终过滤选择cube名字相同的cube集合
+     * 1.project和model可以没有值,此时为查找所有的cube集合
+     * 2.在过滤cube名字的时候,如果cube名字是null,则返回全部查询到的cube,否则只查询满足条件cube的集合(不同project下cube名字是可以相同的)
+     */
     @PostFilter(Constant.ACCESS_POST_FILTER_READ)
     public List<CubeInstance> listAllCubes(final String cubeName, final String projectName, final String modelName) {
         List<CubeInstance> cubeInstances = null;
         ProjectInstance project = (null != projectName) ? getProjectManager().getProject(projectName) : null;
 
         if (null == project) {
-            cubeInstances = getCubeManager().listAllCubes();
+            cubeInstances = getCubeManager().listAllCubes();//获取所有的cube
         } else {
-            cubeInstances = listAllCubes(projectName);
+            cubeInstances = listAllCubes(projectName);//获取属于该project的项目
         }
 
         List<CubeInstance> filterModelCubes = new ArrayList<CubeInstance>();
 
-        if (modelName != null) {
+        if (modelName != null) {//针对model进行过滤
             for (CubeInstance cubeInstance : cubeInstances) {
-                boolean isCubeMatch = cubeInstance.getDescriptor().getModelName().toLowerCase().equals(modelName.toLowerCase());
+                boolean isCubeMatch = cubeInstance.getDescriptor().getModelName().toLowerCase().equals(modelName.toLowerCase());//说明该cube使用了该model
                 if (isCubeMatch) {
                     filterModelCubes.add(cubeInstance);
                 }
@@ -116,6 +122,7 @@ public class CubeService extends BasicService {
             filterModelCubes = cubeInstances;
         }
 
+        //过滤只要cube名字满足条件的cube,或者如果cube名字为null,则选择所有的cube集合
         List<CubeInstance> filterCubes = new ArrayList<CubeInstance>();
         for (CubeInstance cubeInstance : filterModelCubes) {
             boolean isCubeMatch = (null == cubeName) || cubeInstance.getName().toLowerCase().contains(cubeName.toLowerCase());
@@ -145,9 +152,10 @@ public class CubeService extends BasicService {
         return getCubeManager().updateCube(cubeBuilder);
     }
 
+    //为project新增一个cube对象,cube的name是cubeName
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN + " or " + Constant.ACCESS_HAS_ROLE_MODELER)
     public CubeInstance createCubeAndDesc(String cubeName, String projectName, CubeDesc desc) throws IOException {
-        if (getCubeManager().getCube(cubeName) != null) {
+        if (getCubeManager().getCube(cubeName) != null) {//cube不能存在
             throw new InternalErrorException("The cube named " + cubeName + " already exists");
         }
 
@@ -254,6 +262,7 @@ public class CubeService extends BasicService {
         }
     }
 
+    //删除一个cube
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN + " or hasPermission(#cube, 'ADMINISTRATION') or hasPermission(#cube, 'MANAGEMENT')")
     public void deleteCube(CubeInstance cube) throws IOException, JobException {
         final List<CubingJob> cubingJobs = listAllCubingJobs(cube.getName(), null, EnumSet.of(ExecutableState.READY, ExecutableState.RUNNING));
@@ -284,10 +293,12 @@ public class CubeService extends BasicService {
         return true;
     }
 
+    //为cube的名字追加后缀
     public static String getCubeDescNameFromCube(String cubeName) {
         return cubeName + DESC_SUFFIX;
     }
 
+    //获取cube的名字
     public static String getCubeNameFromDesc(String descName) {
         if (descName.toLowerCase().endsWith(DESC_SUFFIX)) {
             return descName.substring(0, descName.toLowerCase().indexOf(DESC_SUFFIX));

@@ -24,7 +24,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.kylin.metadata.datatype.DataType;
 
 /**
- * 表对应的列集合
+ * 表示表中一个列对象
  */
 @SuppressWarnings("serial")
 public class TblColRef implements Serializable {

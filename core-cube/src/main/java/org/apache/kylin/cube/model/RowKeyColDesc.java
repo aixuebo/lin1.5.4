@@ -54,6 +54,7 @@ public class RowKeyColDesc {
     private String index;//是否需要索引
 
     // computed
+    //编码相关的引擎名字和参数
     private String encodingName;
     private String[] encodingArgs;
 

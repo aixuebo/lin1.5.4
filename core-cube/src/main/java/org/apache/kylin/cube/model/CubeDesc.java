@@ -75,6 +75,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 /**
+ * 描述一个cube的详细内容
  */
 @SuppressWarnings("serial")
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
@@ -88,7 +89,9 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
     }
 
     public enum DeriveType {
-        LOOKUP, PK_FK, EXTENDED_COLUMN
+        LOOKUP,
+        PK_FK,
+        EXTENDED_COLUMN //扩展属性
     }
 
     public static class DeriveInfo {
@@ -388,14 +391,17 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
         this.description = description;
     }
 
+    //获取该cube对应的事实表名字
     public String getFactTable() {
         return model.getFactTable();
     }
 
+    //获取该cube对应的事实表对象
     public TableDesc getFactTableDesc() {
         return model.getFactTableDesc();
     }
 
+    //获取该cube对应的关联表集合
     public List<TableDesc> getLookupTableDescs() {
         return model.getLookupTableDescs();
     }
@@ -520,6 +526,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
     /**
      * this method is to prevent malicious metadata change by checking the saved signature
      * with the calculated signature.
+     * 该方法可以防止恶意的元数据更改
      * 
      * if you're comparing two cube descs, prefer to use consistentWith()
      * @return
@@ -657,13 +664,13 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
 
             int combination = 1;//总的组合方式数量
             Set<String> includeDims = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);//所有的维度集合
-            getDims(includeDims, agg.getIncludes());
+            getDims(includeDims, agg.getIncludes());//将agg.getIncludes()维度集合添加到includeDims中
 
             Set<String> mandatoryDims = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);//必须的列集合
             getDims(mandatoryDims, agg.getSelectRule().mandatory_dims);
 
             ArrayList<Set<String>> hierarchyDimsList = Lists.newArrayList();//每一组继承列组成一个Set
-            Set<String> hierarchyDims = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);//所有的继承列
+            Set<String> hierarchyDims = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);//所有的继承列集合
             getDims(hierarchyDimsList, hierarchyDims, agg.getSelectRule().hierarchy_dims);
 
             /**
@@ -680,7 +687,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
                 combination = combination * (1 << jointDimsList.size());//2的jointDimsList.size()次方组合,即每一个join只能有一种组合
             }
 
-            //必须includeDims包含所有的属性
+            //必须includeDims包含所有的属性-----这个是一定的,页面选择的时候就已经控制了
             if (!includeDims.containsAll(mandatoryDims) || !includeDims.containsAll(hierarchyDims) || !includeDims.containsAll(jointDims)) {
                 logger.error("Aggregation group " + index + " Include dims not containing all the used dims");
                 throw new IllegalStateException("Aggregation group " + index + " Include dims not containing all the used dims");
@@ -704,6 +711,26 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
                 throw new IllegalStateException(msg);
             }
 
+            //该方法表示两个参数集合是否有交集,一旦有一个元素是共同存在的,则都返回true
+            /**
+             * 源代码
+             public static boolean containsAny(final Collection coll1, final Collection coll2) {
+                 if (coll1.size() < coll2.size()) {
+                     for (Iterator it = coll1.iterator(); it.hasNext();) {
+                         if (coll2.contains(it.next())) {
+                             return true;
+                         }
+                     }
+                 } else {
+                     for (Iterator it = coll2.iterator(); it.hasNext();) {
+                         if (coll1.contains(it.next())) {
+                              return true;
+                         }
+                     }
+                 }
+                     return false;
+             }
+             */
             if (CollectionUtils.containsAny(mandatoryDims, hierarchyDims)) {
                 logger.warn("Aggregation group " + index + " mandatory dims overlap with hierarchy dims");
             }
@@ -716,7 +743,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
                 throw new IllegalStateException("Aggregation group " + index + " hierarchy dims overlap with joint dims");
             }
 
-            //必须至少两个元素
+            //必须至少两个元素-----继承关系肯定是至少有两个维度次才能体现继承的概念
             if (hasSingle(hierarchyDimsList)) {
                 logger.error("Aggregation group " + index + " require at least 2 dims in a hierarchy");
                 throw new IllegalStateException("Aggregation group " + index + " require at least 2 dims in a hierarchy");
@@ -777,10 +804,11 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
     }
 
     //每一个属性列不允许设置到不同分组中
+    //true表示至少有一个维度,在不同的分类中存在了
     private boolean hasOverlap(ArrayList<Set<String>> dimsList, Set<String> Dims) {
         boolean hasOverlap = false;
         int dimSize = 0;//总共有多少个属性在dimsList中
-        for (Set<String> dims : dimsList) {
+        for (Set<String> dims : dimsList) {//循环每一组设置
             dimSize += dims.size();
         }
         if (dimSize != Dims.size())
@@ -788,22 +816,23 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
         return hasOverlap;
     }
 
+    //初始化维度列
     private void initDimensionColumns() {
         for (DimensionDesc dim : dimensions) {//对每一个维度进行处理
             JoinDesc join = dim.getJoin();
 
             // init dimension columns
             ArrayList<TblColRef> dimCols = Lists.newArrayList();//属于该列需要的列集合
-            String colStrs = dim.getColumn();//列属性对象
+            String colStrs = dim.getColumn();//列属性名称
 
             //添加列信息
             if ((colStrs == null && dim.isDerived()) || ("{FK}".equalsIgnoreCase(colStrs))) {//说明没有设置属性列,但是设置了deived了,或者属性列设置为{FK}
                 // when column is omitted, special case
 
-                for (TblColRef col : join.getForeignKeyColumns()) {
-                    dimCols.add(initDimensionColRef(col));
+                for (TblColRef col : join.getForeignKeyColumns()) {//循环fact_table对应关联的属性集合
+                    dimCols.add(initDimensionColRef(col));//initDimensionColRef的目的就是收集该cube所使用了哪些列以及维度使用了哪些列
                 }
-            } else {
+            } else {//说明是normal形式,即维度就是fact_table中维度
                 // normal case
 
                 if (StringUtils.isEmpty(colStrs))
@@ -819,7 +848,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
             }
 
             TblColRef[] dimColArray = dimCols.toArray(new TblColRef[dimCols.size()]);
-            dim.setColumnRefs(dimColArray);
+            dim.setColumnRefs(dimColArray);//设置该维度表中与fact_table关联的列集合,该集合是fact_table中的列集合
 
             // init derived columns
             if (dim.isDerived()) {
@@ -827,17 +856,17 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
                 String[][] split = splitDerivedColumnAndExtra(derived);//将derived列的内容按照:拆分成两个集合
                 String[] derivedNames = split[0];
                 String[] derivedExtra = split[1];
-                TblColRef[] derivedCols = new TblColRef[derivedNames.length];
+                TblColRef[] derivedCols = new TblColRef[derivedNames.length];//引用对应的fact_table中的列对象
                 for (int i = 0; i < derivedNames.length; i++) {
-                    derivedCols[i] = initDimensionColRef(dim, derivedNames[i]);
+                    derivedCols[i] = initDimensionColRef(dim, derivedNames[i]);//给定维度对象以及要查询的列名字,获取该列对应的列对象,返回该列对应的fact_table中的列对象
                 }
                 initDerivedMap(dimColArray, DeriveType.LOOKUP, dim, derivedCols, derivedExtra);
             }
 
             // PK-FK derive the other side
             if (join != null) {
-                TblColRef[] fk = join.getForeignKeyColumns();
-                TblColRef[] pk = join.getPrimaryKeyColumns();
+                TblColRef[] fk = join.getForeignKeyColumns();//事实表关联键
+                TblColRef[] pk = join.getPrimaryKeyColumns();//维度表关联键
 
                 allColumns.addAll(Arrays.asList(fk));
                 allColumns.addAll(Arrays.asList(pk));
@@ -920,14 +949,15 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
         }
     }
 
+    //给定维度对象以及要查询的列名字,获取该列对应的列对象,返回该列对应的fact_table中的列对象
     private TblColRef initDimensionColRef(DimensionDesc dim, String colName) {
         //找到对应的列对象
         TableDesc table = dim.getTableDesc();
-        ColumnDesc col = table.findColumnByName(colName);
+        ColumnDesc col = table.findColumnByName(colName);//找到该表对应的列对象
         if (col == null)
             throw new IllegalArgumentException("No column '" + colName + "' found in table " + table);
 
-        TblColRef ref = col.getRef();
+        TblColRef ref = col.getRef();//获取该列对象
 
         // always use FK instead PK, FK could be shared by more than one lookup tables
         JoinDesc join = dim.getJoin();
@@ -940,13 +970,14 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
         return initDimensionColRef(ref);
     }
 
-    //添加列的映射关系
+    //添加列的映射关系,即该cube的所有列集合 以及 维度列集合
     private TblColRef initDimensionColRef(TblColRef ref) {
         TblColRef existing = findColumnRef(ref.getTable(), ref.getName());//找到列对象
         if (existing != null) {//说明已经缓存过了
             return existing;
         }
 
+        //将该列添加到cube的列集合中 以及 cube的维度列集合中
         allColumns.add(ref);
         dimensionColumns.add(ref);
 
@@ -954,17 +985,18 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
         if (cols == null) {
             columnMap.put(ref.getTable(), cols = new HashMap<String, TblColRef>());
         }
-        cols.put(ref.getName(), ref);
+        cols.put(ref.getName(), ref);//添加该列和列对象
         return ref;
     }
 
+    //初始化度量内容
     private void initMeasureColumns() {
         if (measures == null || measures.isEmpty()) {
             return;
         }
 
-        TableDesc factTable = getFactTableDesc();
-        List<TableDesc> lookupTables = getLookupTableDescs();
+        TableDesc factTable = getFactTableDesc();//事实表
+        List<TableDesc> lookupTables = getLookupTableDescs();//关联表集合
         for (MeasureDesc m : measures) {
             m.setName(m.getName().toUpperCase());
 
@@ -986,6 +1018,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
         }
     }
 
+    //用于扩展属性
     private void initExtendedColumnMap(TblColRef[] hostCols, TblColRef extendedColumn) {
         extendedColumnToHosts.put(extendedColumn, new DeriveInfo(DeriveType.EXTENDED_COLUMN, null, hostCols, false));
     }

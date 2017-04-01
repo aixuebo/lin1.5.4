@@ -135,6 +135,7 @@ public class ProjectManager {
         return new ArrayList<ProjectInstance>(projectMap.values());
     }
 
+    //获取该project对象
     public ProjectInstance getProject(String projectName) {
         projectName = norm(projectName);//对name进行格式化
         return projectMap.get(projectName);
@@ -157,6 +158,7 @@ public class ProjectManager {
         return currentProject;
     }
 
+    //删除一个project的存储以及映射
     public ProjectInstance dropProject(String projectName) throws IOException {
         if (projectName == null)
             throw new IllegalArgumentException("Project name not given");
@@ -174,7 +176,7 @@ public class ProjectManager {
         logger.info("Dropping project '" + projectInstance.getName() + "'");
 
         removeProject(projectInstance);
-        BadQueryHistoryManager.getInstance(config).removeBadQueryHistory(projectName);
+        BadQueryHistoryManager.getInstance(config).removeBadQueryHistory(projectName);//删除该project相关联的bad query,因为该project已经被删除了
 
         return projectInstance;
     }
@@ -189,9 +191,10 @@ public class ProjectManager {
     //更新一个project,更新新的name和描述信息
     //update project itself
     public ProjectInstance updateProject(ProjectInstance project, String newName, String newDesc) throws IOException {
-        if (!project.getName().equals(newName)) {
-            ProjectInstance newProject = this.createProject(newName, project.getOwner(), newDesc);
+        if (!project.getName().equals(newName)) {//说明name都更改了,则删除老的project,增加新的project
+            ProjectInstance newProject = this.createProject(newName, project.getOwner(), newDesc);//创建新的project
 
+            //新的project一部分属性使用老的project
             newProject.setCreateTimeUTC(project.getCreateTimeUTC());
             newProject.recordUpdateTime(System.currentTimeMillis());
             newProject.setRealizationEntries(project.getRealizationEntries());
@@ -203,12 +206,12 @@ public class ProjectManager {
             updateProject(newProject);
 
             return newProject;
-        } else {
+        } else {//做更新操作
             project.setName(newName);
             project.setDescription(newDesc);
 
             if (project.getUuid() == null)
-                project.updateRandomUuid();
+                project.updateRandomUuid();//设置一个project的唯一ID
 
             updateProject(project);
 
@@ -231,22 +234,26 @@ public class ProjectManager {
         clearL2Cache();
     }
 
+    //判断该项目是否有该model
     public boolean isModelInProject(String projectName, String modelName) {
         return this.getProject(projectName).containsModel(modelName);
     }
 
+    //更新一个model属于该project
     public ProjectInstance updateModelToProject(String modelName, String newProjectName) throws IOException {
-        removeModelFromProjects(modelName);
-        return addModelToProject(modelName, newProjectName);
+        removeModelFromProjects(modelName);//在所有的project中删除该model
+        return addModelToProject(modelName, newProjectName);//向该project添加该model
     }
 
+    //从所有的项目中移除该model
     public void removeModelFromProjects(String modelName) throws IOException {
-        for (ProjectInstance projectInstance : findProjects(modelName)) {
-            projectInstance.removeModel(modelName);
-            updateProject(projectInstance);
+        for (ProjectInstance projectInstance : findProjects(modelName)) {//查找包含该model的项目集合
+            projectInstance.removeModel(modelName);//移除该model
+            updateProject(projectInstance);//重新更新元数据,因为已经移除了一个model了
         }
     }
 
+    //向该project添加该model
     private ProjectInstance addModelToProject(String modelName, String project) throws IOException {
         String newProjectName = ProjectInstance.getNormalizedProjectName(project);
         ProjectInstance newProject = getProject(newProjectName);
@@ -259,11 +266,13 @@ public class ProjectManager {
         return newProject;
     }
 
+    //移动该RealizationType到newProjectName这个project上
     public ProjectInstance moveRealizationToProject(RealizationType type, String realizationName, String newProjectName, String owner) throws IOException {
-        removeRealizationsFromProjects(type, realizationName);
+        removeRealizationsFromProjects(type, realizationName);//所有匹配规则的project,都要被移除,然后重新序列化
         return addRealizationToProject(type, realizationName, newProjectName, owner);
     }
 
+    //对project添加RealizationType
     private ProjectInstance addRealizationToProject(RealizationType type, String realizationName, String project, String user) throws IOException {
         String newProjectName = norm(project);
         ProjectInstance newProject = getProject(newProjectName);
@@ -271,18 +280,20 @@ public class ProjectManager {
             newProject = this.createProject(newProjectName, user, "This is a project automatically added when adding realization " + realizationName + "(" + type + ")");
         }
         newProject.addRealizationEntry(type, realizationName);
-        updateProject(newProject);
+        updateProject(newProject);//更新元数据
 
         return newProject;
     }
 
+    //所有匹配规则的project,都要被移除,然后重新序列化
     public void removeRealizationsFromProjects(RealizationType type, String realizationName) throws IOException {
-        for (ProjectInstance projectInstance : findProjects(type, realizationName)) {
-            projectInstance.removeRealization(type, realizationName);
-            updateProject(projectInstance);
+        for (ProjectInstance projectInstance : findProjects(type, realizationName)) {//通过RealizationType和realizationName查找匹配的所有的project集合
+            projectInstance.removeRealization(type, realizationName);//真正移除
+            updateProject(projectInstance);//重新序列化该project
         }
     }
 
+    //向该project添加一组表
     public ProjectInstance addTableDescToProject(String[] tableIdentities, String projectName) throws IOException {
         MetadataManager metaMgr = getMetadataManager();
         ProjectInstance projectInstance = getProject(projectName);
@@ -294,7 +305,7 @@ public class ProjectManager {
             projectInstance.addTable(table.getIdentity());
         }
 
-        updateProject(projectInstance);
+        updateProject(projectInstance);//更新元数据
         return projectInstance;
     }
 
@@ -311,6 +322,7 @@ public class ProjectManager {
         updateProject(projectInstance);
     }
 
+    //添加filter到一个project上
     public ProjectInstance addExtFilterToProject(String[] filters, String projectName) throws IOException {
         MetadataManager metaMgr = getMetadataManager();
         ProjectInstance projectInstance = getProject(projectName);
@@ -322,10 +334,11 @@ public class ProjectManager {
             projectInstance.addExtFilter(filterName);
         }
 
-        updateProject(projectInstance);
+        updateProject(projectInstance);//更新元数据
         return projectInstance;
     }
 
+    //删除一个filter
     public void removeExtFilterFromProject(String filterName, String projectName) throws IOException {
         MetadataManager metaMgr = getMetadataManager();
         ProjectInstance projectInstance = getProject(projectName);
@@ -335,9 +348,10 @@ public class ProjectManager {
         }
 
         projectInstance.removeExtFilter(filterName);
-        updateProject(projectInstance);
+        updateProject(projectInstance);//更新元数据
     }
 
+    //通过RealizationType和realizationName查找匹配的所有的project集合
     public List<ProjectInstance> findProjects(RealizationType type, String realizationName) {
         List<ProjectInstance> result = Lists.newArrayList();
         for (ProjectInstance prj : projectMap.values()) {
@@ -351,6 +365,7 @@ public class ProjectManager {
         return result;
     }
 
+    //查找包含该model的项目集合
     private List<ProjectInstance> findProjects(String modelName) {
         List<ProjectInstance> projects = new ArrayList<ProjectInstance>();
         for (ProjectInstance projectInstance : projectMap.values()) {

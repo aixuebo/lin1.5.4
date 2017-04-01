@@ -34,9 +34,9 @@ public class JoinDesc {
     @JsonProperty("type")
     private String type;//inner 还是left
     @JsonProperty("primary_key")
-    private String[] primaryKey;//主键
+    private String[] primaryKey;//主键,即关联时候,从表对应的主键
     @JsonProperty("foreign_key")
-    private String[] foreignKey;//外键
+    private String[] foreignKey;//外键,即fact表的主键
 
     private TblColRef[] primaryKeyColumns;//主键表对应的列集合,该属性来自于lookup表
     private TblColRef[] foreignKeyColumns;//该字段来自于事实表的某些列

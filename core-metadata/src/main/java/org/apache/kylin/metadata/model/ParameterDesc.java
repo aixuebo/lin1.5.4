@@ -38,7 +38,7 @@ public class ParameterDesc {
     @JsonProperty("next_parameter")
     private ParameterDesc nextParameter;//参数值对应的下一个参数
 
-    private List<TblColRef> colRefs;//参数对应的列集合
+    private List<TblColRef> colRefs;//对参数的第一个设置所需要的全部列集合
 
     public String getType() {
         return type;
@@ -76,6 +76,7 @@ public class ParameterDesc {
         this.nextParameter = nextParameter;
     }
 
+    //true说明该参数是属性,而不是固定值
     public boolean isColumnType() {
         return FunctionDesc.PARAMETER_TYPE_COLUMN.equals(type);
     }

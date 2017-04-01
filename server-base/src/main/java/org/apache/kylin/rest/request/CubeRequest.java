@@ -18,16 +18,17 @@
 
 package org.apache.kylin.rest.request;
 
+//cube的请求和返回对象,公用同一个对象
 public class CubeRequest {
 
     private String uuid;
     private String cubeName;
-    private String cubeDescData;
+    private String cubeDescData;//json文件,用于描述cube的所有信息
     private String streamingData;
     private String kafkaData;
-    private boolean successful;
-    private String message;
-    private String project;
+    private boolean successful;//response,回复cube是否成功
+    private String message;//response,回复cube的错误信息
+    private String project;//该cube属于哪个project
     private String streamingCube;
 
     public String getUuid() {

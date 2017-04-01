@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author yangli9
- * 
+ * 暂时都用double,因此很少使用该序列化
  */
 public class BigDecimalSerializer extends DataTypeSerializer<BigDecimal> {
 

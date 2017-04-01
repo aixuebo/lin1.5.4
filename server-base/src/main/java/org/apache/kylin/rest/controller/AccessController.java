@@ -98,7 +98,7 @@ public class AccessController extends BasicController {
     /**
      * Revoke access on a domain object from a user/role
      * 
-     * @param AccessRequest
+     * @param accessRequest
      */
     @RequestMapping(value = "/{type}/{uuid}", method = { RequestMethod.DELETE })
     public List<AccessEntryResponse> revoke(@PathVariable String type, @PathVariable String uuid, AccessRequest accessRequest) {

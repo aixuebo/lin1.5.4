@@ -25,32 +25,35 @@ import org.apache.commons.lang.BooleanUtils;
 
 public class BooleanSerializer extends DataTypeSerializer<LongMutable> {
 
-    public final static String[] TRUE_VALUE_SET = { "true", "t", "on", "yes" };
+    public final static String[] TRUE_VALUE_SET = { "true", "t", "on", "yes" };//表示true含义的集合
 
     // be thread-safe and avoid repeated obj creation
+    //使用一个long代表该boolean值
     private ThreadLocal<LongMutable> current = new ThreadLocal<LongMutable>();
 
     public BooleanSerializer(DataType type) {
     }
 
+    //序列化就是将一个long存储到字节数组中
     @Override
     public void serialize(LongMutable value, ByteBuffer out) {
         out.putLong(value.get());
-    }
-
-    private LongMutable current() {
-        LongMutable l = current.get();
-        if (l == null) {
-            l = new LongMutable();
-            current.set(l);
-        }
-        return l;
     }
 
     @Override
     public LongMutable deserialize(ByteBuffer in) {
         LongMutable l = current();
         l.set(in.getLong());
+        return l;
+    }
+
+    //获取当前线程对应的值
+    private LongMutable current() {
+        LongMutable l = current.get();
+        if (l == null) {
+            l = new LongMutable();
+            current.set(l);
+        }
         return l;
     }
 
@@ -73,9 +76,9 @@ public class BooleanSerializer extends DataTypeSerializer<LongMutable> {
     public LongMutable valueOf(String str) {
         LongMutable l = current();
         if (str == null)
-            l.set(0L);
+            l.set(0L);//默认是false
         else
-            l.set(BooleanUtils.toInteger(ArrayUtils.contains(TRUE_VALUE_SET, str.toLowerCase())));
+            l.set(BooleanUtils.toInteger(ArrayUtils.contains(TRUE_VALUE_SET, str.toLowerCase())));//判断内容是否是true的字符串
         return l;
     }
 }

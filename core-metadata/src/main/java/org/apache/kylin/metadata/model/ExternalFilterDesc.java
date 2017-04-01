@@ -32,13 +32,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * and are accessed by each cube shard at runtime.
  * 
  * Currently the way to use external filter is 1. register external filter through REST 2. use UDF to specify conditions on external filter
+ * 该对象是客户端传递来的一个json,通过该json转换成该对象
  */
 @SuppressWarnings("serial")
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
 public class ExternalFilterDesc extends RootPersistentEntity implements ISourceAware {
 
     @JsonProperty("name")
-    private String name;
+    private String name;//filter的name
     @JsonProperty("filter_resource_identifier")
     private String filterResourceIdentifier;
     @JsonProperty("filter_table_type")
@@ -46,7 +47,7 @@ public class ExternalFilterDesc extends RootPersistentEntity implements ISourceA
     @JsonProperty("source_type")
     private int sourceType = ISourceAware.ID_EXTERNAL;
     @JsonProperty("description")
-    private String description;
+    private String description;//描述信息
 
     public String getResourcePath() {
         return concatResourcePath(getName());

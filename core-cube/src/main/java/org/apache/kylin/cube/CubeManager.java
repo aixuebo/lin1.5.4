@@ -139,6 +139,7 @@ public class CubeManager implements IRealizationProvider {
         return new ArrayList<CubeInstance>(cubeMap.values());
     }
 
+    //根据cube名字查找一个具体的cube
     public CubeInstance getCube(String cubeName) {
         cubeName = cubeName.toUpperCase();
         return cubeMap.get(cubeName);
@@ -163,12 +164,12 @@ public class CubeManager implements IRealizationProvider {
     public List<CubeInstance> getCubesByDesc(String descName) {
 
         descName = descName.toUpperCase();
-        List<CubeInstance> list = listAllCubes();
+        List<CubeInstance> list = listAllCubes();//获取所有的cube
         List<CubeInstance> result = new ArrayList<CubeInstance>();
-        Iterator<CubeInstance> it = list.iterator();
+        Iterator<CubeInstance> it = list.iterator();//循环所有的cube
         while (it.hasNext()) {
             CubeInstance ci = it.next();
-            if (descName.equalsIgnoreCase(ci.getDescName())) {
+            if (descName.equalsIgnoreCase(ci.getDescName())) {//描述相同的则就是要找到的cube集合
                 result.add(ci);
             }
         }

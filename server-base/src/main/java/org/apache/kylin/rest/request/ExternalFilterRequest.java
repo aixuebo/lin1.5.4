@@ -18,11 +18,12 @@
 
 package org.apache.kylin.rest.request;
 
+//设置project的filter
 public class ExternalFilterRequest {
 
     private String project;
 
-    private String extFilter;
+    private String extFilter;//该字符串是一个json对象,可以转换成org.apache.kylin.metadata.model.ExternalFilterDesc对象
 
     private boolean successful;
 

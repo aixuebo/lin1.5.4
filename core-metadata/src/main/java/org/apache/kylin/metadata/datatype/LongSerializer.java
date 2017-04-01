@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import org.apache.kylin.common.util.BytesUtil;
 
 /**
+ * LongSerializer表示可变化的vlong
  */
 public class LongSerializer extends DataTypeSerializer<LongMutable> {
 
@@ -55,24 +56,24 @@ public class LongSerializer extends DataTypeSerializer<LongMutable> {
 
     @Override
     public int peekLength(ByteBuffer in) {
-        int mark = in.position();
+        int mark = in.position();//当前位置
 
-        BytesUtil.readVLong(in);
-        int len = in.position() - mark;
+        BytesUtil.readVLong(in);//读取一个long
+        int len = in.position() - mark;//记录该long占用多少个字节
 
-        in.position(mark);
+        in.position(mark);//恢复到未读取之前的位置
         return len;
     }
 
     @Override
     public int maxLength() {
         return 9; // vlong: 1 + 8
-    }
+    } //需要第一个位置存储多少个字节
 
     @Override
     public int getStorageBytesEstimate() {
         return 5;
-    }
+    }//平均需要5个字节
 
     @Override
     public LongMutable valueOf(String str) {

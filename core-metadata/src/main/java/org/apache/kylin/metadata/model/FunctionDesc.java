@@ -51,6 +51,27 @@ public class FunctionDesc {
     public static final String FUNC_COUNT = "COUNT";
     public static final String FUNC_COUNT_DISTINCT = "COUNT_DISTINCT";
 
+    //查看表达式是什么函数
+    public boolean isMin() {
+        return FUNC_MIN.equalsIgnoreCase(expression);
+    }
+
+    public boolean isMax() {
+        return FUNC_MAX.equalsIgnoreCase(expression);
+    }
+
+    public boolean isSum() {
+        return FUNC_SUM.equalsIgnoreCase(expression);
+    }
+
+    public boolean isCount() {
+        return FUNC_COUNT.equalsIgnoreCase(expression);
+    }
+
+    public boolean isCountDistinct() {
+        return FUNC_COUNT_DISTINCT.equalsIgnoreCase(expression);
+    }
+
     //总支持的函数集合
     public static final Set<String> BUILT_IN_AGGREGATIONS = Sets.newHashSet();
 
@@ -75,9 +96,9 @@ public class FunctionDesc {
 
     @JsonProperty("configuration")
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    private HashMap<String, String> configuration = new LinkedHashMap<String, String>();
+    private HashMap<String, String> configuration = new LinkedHashMap<String, String>();//页面上有时候增加的配置信息
 
-    private DataType returnDataType;
+    private DataType returnDataType; //返回值对应的类型
     private MeasureType<?> measureType;
     private boolean isDimensionAsMetric = false;
 
@@ -93,14 +114,14 @@ public class FunctionDesc {
         ArrayList<TblColRef> colRefs = Lists.newArrayList();//参数集合对应的列集合
 
         for (ParameterDesc p = parameter; p != null; p = p.getNextParameter()) {
-            if (p.isColumnType()) {
+            if (p.isColumnType()) {//说明该参数是属性,而不是固定值
                 ColumnDesc sourceColumn = findColumn(factTable, lookupTables, p.getValue());//从星形表中找到列名字对应的列对象
                 TblColRef colRef = new TblColRef(sourceColumn);
                 colRefs.add(colRef);
             }
         }
 
-        parameter.setColRefs(colRefs);
+        parameter.setColRefs(colRefs);//对参数的第一个设置所需要的全部列集合
     }
 
     //从星形表中找到列名字对应的列对象
@@ -183,26 +204,7 @@ public class FunctionDesc {
         return fakeCol;
     }
 
-    //查看表达式是什么函数
-    public boolean isMin() {
-        return FUNC_MIN.equalsIgnoreCase(expression);
-    }
 
-    public boolean isMax() {
-        return FUNC_MAX.equalsIgnoreCase(expression);
-    }
-
-    public boolean isSum() {
-        return FUNC_SUM.equalsIgnoreCase(expression);
-    }
-
-    public boolean isCount() {
-        return FUNC_COUNT.equalsIgnoreCase(expression);
-    }
-
-    public boolean isCountDistinct() {
-        return FUNC_COUNT_DISTINCT.equalsIgnoreCase(expression);
-    }
 
     /**
      * Get Full Expression such as sum(amount), count(1), count(*)...

@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.apache.kylin.common.util.DateFormat;
 
+//long就可以表示日期+时间类型了
 public class DateTimeSerializer extends DataTypeSerializer<LongMutable> {
 
     // be thread-safe and avoid repeated obj creation

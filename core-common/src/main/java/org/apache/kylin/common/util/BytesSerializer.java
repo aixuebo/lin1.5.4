@@ -22,14 +22,16 @@ import java.nio.ByteBuffer;
 
 /**
  * @author yangli9
- * 
+ * 序列化和反序列化
  */
 public interface BytesSerializer<T> {
 
     int SERIALIZE_BUFFER_SIZE = 65536;
 
+    //将对象序列化成字节数组,存储到ByteBuffer中
     void serialize(T value, ByteBuffer out);
 
+    //从字节数组反序列化成对象
     T deserialize(ByteBuffer in);
 
 }

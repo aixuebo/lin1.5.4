@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.apache.kylin.common.util.BytesUtil;
 
+//因为char和verchar都有精度参数(n),n表示该字段最多允许多少个字节
 public class StringSerializer extends DataTypeSerializer<String> {
 
     final DataType type;
@@ -30,16 +31,16 @@ public class StringSerializer extends DataTypeSerializer<String> {
     public StringSerializer(DataType type) {
         this.type = type;
         // see serialize(): 2 byte length, rest is String.toBytes()
-        this.maxLength = 2 + type.getPrecision();
+        this.maxLength = 2 + type.getPrecision();//2表示真实的字节数量,因此最大字节就是真实字节数量+精准度
     }
 
     @Override
     public void serialize(String value, ByteBuffer out) {
         int start = out.position();
 
-        BytesUtil.writeUTFString(value, out);
+        BytesUtil.writeUTFString(value, out);//将字符串写入到输出流中
 
-        if (out.position() - start > maxLength)
+        if (out.position() - start > maxLength) //不允许超过最大值
             throw new IllegalArgumentException("'" + value + "' exceeds the expected length for type " + type);
     }
 
@@ -48,6 +49,7 @@ public class StringSerializer extends DataTypeSerializer<String> {
         return BytesUtil.readUTFString(in);
     }
 
+    //返回真实的下一个字段占用多少个字节
     @Override
     public int peekLength(ByteBuffer in) {
         return BytesUtil.peekByteArrayLength(in);

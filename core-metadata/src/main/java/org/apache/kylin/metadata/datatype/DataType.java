@@ -37,6 +37,7 @@ import org.apache.kylin.measure.MeasureTypeFactory;
 import org.apache.kylin.metadata.model.TblColRef.InnerDataTypeEnum;
 
 /**
+ * 该类表示的是类似mysql的数据类型
  */
 @SuppressWarnings("serial")
 public class DataType implements Serializable {
@@ -59,6 +60,7 @@ public class DataType implements Serializable {
     }
 
     // standard sql types, ref: http://www.w3schools.com/sql/sql_datatypes_general.asp
+    //因为char和verchar都有精度参数(n),n表示该字段最多允许多少个字节
     static {
         register("any", "char", "varchar", "string", //
                 "boolean", "byte", "binary", //
@@ -103,6 +105,7 @@ public class DataType implements Serializable {
         STRING_FAMILY.add("char");
 
         //其他类型映射
+        //即类型名字不同,但是类型相同
         LEGACY_TYPE_MAP.put("byte", "tinyint");
         LEGACY_TYPE_MAP.put("int", "integer");
         LEGACY_TYPE_MAP.put("short", "smallint");
@@ -139,8 +142,8 @@ public class DataType implements Serializable {
     // ============================================================================
 
     private String name;
-    private int precision;
-    private int scale;
+    private int precision;//精准
+    private int scale;//比例
 
     public DataType(String name, int precision, int scale) {
         this.name = name;
@@ -150,7 +153,7 @@ public class DataType implements Serializable {
 
     private DataType(String datatype) {
         datatype = datatype.trim().toLowerCase();
-        datatype = replaceLegacy(datatype);
+        datatype = replaceLegacy(datatype);//转换成合法的类型名字
 
         Pattern pattern = TYPE_PATTERN;
         Matcher m = pattern.matcher(datatype);
@@ -171,7 +174,7 @@ public class DataType implements Serializable {
                 } catch (NumberFormatException e) {
                     throw new IllegalArgumentException("bad data type -- " + datatype + ", precision/scale not numeric");
                 }
-                if (i == 0)
+                if (i == 0) //先出现precision,后出现scale
                     precision = n;
                 else if (i == 1)
                     scale = n;
@@ -321,6 +324,7 @@ public class DataType implements Serializable {
 
     //序列化字段类型name和精度
     public static final BytesSerializer<DataType> serializer = new BytesSerializer<DataType>() {
+        //向ByteBuffer中写入信息
         @Override
         public void serialize(DataType value, ByteBuffer out) {
             BytesUtil.writeUTFString(value.name, out);
@@ -329,6 +333,7 @@ public class DataType implements Serializable {
 
         }
 
+        //从ByteBuffer中读取DataType对象
         @Override
         public DataType deserialize(ByteBuffer in) {
             String name = BytesUtil.readUTFString(in);
