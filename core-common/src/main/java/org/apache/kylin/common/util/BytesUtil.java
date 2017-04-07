@@ -48,10 +48,11 @@ public class BytesUtil {
         return num;
     }
 
+    //将num这个int写入到bytes字节数组中,从offset位置开始写入,size是总字节大小
     public static void writeUnsigned(int num, byte[] bytes, int offset, int size) {
         for (int i = offset + size - 1; i >= offset; i--) {
             bytes[i] = (byte) num;
-            num >>>= 8;
+            num >>>= 8;//每次写入一个字节
         }
     }
 

@@ -267,7 +267,7 @@ public class ProjectManager {
     }
 
     //移动该RealizationType到newProjectName这个project上
-    public ProjectInstance moveRealizationToProject(RealizationType type, String realizationName, String newProjectName, String owner) throws IOException {
+        public ProjectInstance moveRealizationToProject(RealizationType type, String realizationName, String newProjectName, String owner) throws IOException {
         removeRealizationsFromProjects(type, realizationName);//所有匹配规则的project,都要被移除,然后重新序列化
         return addRealizationToProject(type, realizationName, newProjectName, owner);
     }

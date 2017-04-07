@@ -20,7 +20,7 @@ package org.apache.kylin.cube.model;
 
 /**
  * @author xduo
- * 
+ * cube的builder类型
  */
 public enum CubeBuildTypeEnum {
     /**

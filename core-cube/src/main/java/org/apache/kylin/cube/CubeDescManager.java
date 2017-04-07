@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Manager class for CubeDesc; extracted from #CubeManager
  * @author shaoshi
- *
+ * 管理cube的描述信息
  */
 public class CubeDescManager {
 
@@ -108,11 +108,12 @@ public class CubeDescManager {
      * 
      * @param name
      * @throws IOException
+     * 加载指定的cube
      */
     public CubeDesc reloadCubeDescLocal(String name) throws IOException {
 
         // Save Source
-        String path = CubeDesc.concatResourcePath(name);
+        String path = CubeDesc.concatResourcePath(name);//该cube描述对象对应的存储路径
 
         // Reload the CubeDesc
         CubeDesc ndesc = loadCubeDesc(path);
@@ -123,9 +124,10 @@ public class CubeDescManager {
         return ndesc;
     }
 
+    //加载一个cube的描述内容
     private CubeDesc loadCubeDesc(String path) throws IOException {
-        ResourceStore store = getStore();
-        CubeDesc ndesc = store.getResource(path, CubeDesc.class, CUBE_DESC_SERIALIZER);
+        ResourceStore store = getStore();//存储资源对象
+        CubeDesc ndesc = store.getResource(path, CubeDesc.class, CUBE_DESC_SERIALIZER);//解析反序列化成对象
 
         if (StringUtils.isBlank(ndesc.getName())) {
             throw new IllegalStateException("CubeDesc name must not be blank");
@@ -150,27 +152,33 @@ public class CubeDescManager {
     public CubeDesc createCubeDesc(CubeDesc cubeDesc) throws IOException {
         if (cubeDesc.getUuid() == null || cubeDesc.getName() == null)
             throw new IllegalArgumentException();
+
+        //说明该cube描述已经存在了
         if (cubeDescMap.containsKey(cubeDesc.getName()))
             throw new IllegalArgumentException("CubeDesc '" + cubeDesc.getName() + "' already exists");
 
         try {
-            cubeDesc.init(config, getMetadataManager().getAllTablesMap());
+            cubeDesc.init(config, getMetadataManager().getAllTablesMap());//初始化该cube描述对象
         } catch (IllegalStateException e) {
             cubeDesc.addError(e.getMessage(), true);
         }
+
+        //校验cube的初始化过程中确保没有错误
         // Check base validation
         if (!cubeDesc.getError().isEmpty()) {
             return cubeDesc;
         }
+
         // Semantic validation
         CubeMetadataValidator validator = new CubeMetadataValidator();
         ValidateContext context = validator.validate(cubeDesc, true);
-        if (!context.ifPass()) {
+        if (!context.ifPass()) {//说明校验未通过
             return cubeDesc;
         }
 
         cubeDesc.setSignature(cubeDesc.calculateSignature());
 
+        //保存该cube的描述对象
         String path = cubeDesc.getResourcePath();
         getStore().putResource(path, cubeDesc, CUBE_DESC_SERIALIZER);
         cubeDescMap.put(cubeDesc.getName(), cubeDesc);
@@ -178,6 +186,7 @@ public class CubeDescManager {
         return cubeDesc;
     }
 
+    //删除该cube的描述信息
     // remove cubeDesc
     public void removeCubeDesc(CubeDesc cubeDesc) throws IOException {
         String path = cubeDesc.getResourcePath();
@@ -187,11 +196,13 @@ public class CubeDescManager {
     }
 
     // remove cubeDesc
+    //不删除该cube的描述信息,只是在内存中删除
     public void removeLocalCubeDesc(String name) throws IOException {
         cubeDescMap.removeLocal(name);
         Cuboid.reloadCache(name);
     }
 
+    //加载所有的cube描述信息
     private void reloadAllCubeDesc() throws IOException {
         ResourceStore store = getStore();
         logger.info("Reloading Cube Metadata from folder " + store.getReadableResourcePath(ResourceStore.CUBE_DESC_RESOURCE_ROOT));
@@ -235,12 +246,14 @@ public class CubeDescManager {
             throw new IllegalArgumentException();
         }
         String name = desc.getName();
+
+        //因为是更新,因此必须要存在
         if (!cubeDescMap.containsKey(name)) {
             throw new IllegalArgumentException("CubeDesc '" + name + "' does not exist.");
         }
 
         try {
-            desc.init(config, getMetadataManager().getAllTablesMap());
+            desc.init(config, getMetadataManager().getAllTablesMap());//初始化
         } catch (IllegalStateException e) {
             desc.addError(e.getMessage(), true);
             return desc;
@@ -249,6 +262,7 @@ public class CubeDescManager {
             return desc;
         }
 
+        //校验
         // Semantic validation
         CubeMetadataValidator validator = new CubeMetadataValidator();
         ValidateContext context = validator.validate(desc, true);
@@ -258,11 +272,11 @@ public class CubeDescManager {
 
         desc.setSignature(desc.calculateSignature());
 
-        // Save Source
+        // Save Source 保存信息到磁盘
         String path = desc.getResourcePath();
         getStore().putResource(path, desc, CUBE_DESC_SERIALIZER);
 
-        // Reload the CubeDesc
+        // Reload the CubeDesc 重新加载
         CubeDesc ndesc = loadCubeDesc(path);
         // Here replace the old one
         cubeDescMap.put(ndesc.getName(), desc);

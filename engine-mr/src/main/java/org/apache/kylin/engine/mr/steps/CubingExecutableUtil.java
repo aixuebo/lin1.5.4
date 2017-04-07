@@ -37,6 +37,9 @@ import javax.annotation.Nullable;
 
 public class CubingExecutableUtil {
 
+    /**
+     * cube执行过程中的参数信息
+     */
     public static final String CUBE_NAME = "cubeName";
     public static final String SEGMENT_ID = "segmentId";
     public static final String MERGING_SEGMENT_IDS = "mergingSegmentIds";
@@ -73,11 +76,13 @@ public class CubingExecutableUtil {
         params.put(MERGING_SEGMENT_IDS, StringUtils.join(ids, ","));
     }
 
+    //查找指定cube中的指定segment
     public static CubeSegment findSegment(ExecutableContext context, String cubeName, String segmentId) {
         final CubeManager mgr = CubeManager.getInstance(context.getConfig());
         final CubeInstance cube = mgr.getCube(cubeName);
 
         if (cube == null) {
+            //打印所有的cube名称,通知用户这些cube中没有查找的cube
             String cubeList = StringUtils.join(Iterables.transform(mgr.listAllCubes(), new Function<CubeInstance, String>() {
                 @Nullable
                 @Override
@@ -92,6 +97,7 @@ public class CubingExecutableUtil {
         final CubeSegment newSegment = cube.getSegmentById(segmentId);
 
         if (newSegment == null) {
+            //打印所有的segment名称,通知用户该cube中没有查找的segment
             String segmentList = StringUtils.join(Iterables.transform(cube.getSegments(), new Function<CubeSegment, String>() {
                 @Nullable
                 @Override
@@ -105,6 +111,7 @@ public class CubingExecutableUtil {
         return newSegment;
     }
 
+    //获取要合并的segment集合
     public static List<String> getMergingSegmentIds(Map<String, String> params) {
         final String ids = params.get(MERGING_SEGMENT_IDS);
         if (ids != null) {

@@ -18,13 +18,14 @@
 
 package org.apache.kylin.rest.request;
 
+//按照时间戳方式进行builder
 public class JobBuildRequest {
 
     private long startTime;
 
     private long endTime;
 
-    private String buildType;
+    private String buildType;//对应CubeBuildTypeEnum类的枚举信息,即BUILD  MERGE   REFRESH
 
     private boolean force;
 

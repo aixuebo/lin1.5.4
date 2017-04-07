@@ -23,8 +23,9 @@ import org.apache.kylin.metadata.model.SegmentStatusEnum;
 
 public interface ISegment {
 
-    public String getName();
+    public String getName();//segment的名字
 
+    //segment的开始位置和结束位置
     public long getDateRangeStart();
 
     public long getDateRangeEnd();
@@ -33,7 +34,7 @@ public interface ISegment {
 
     public long getSourceOffsetEnd();
     
-    public DataModelDesc getModel();
+    public DataModelDesc getModel();//该cube对应的model对象
 
-    public SegmentStatusEnum getStatus();
+    public SegmentStatusEnum getStatus();//该segment的状态
 }

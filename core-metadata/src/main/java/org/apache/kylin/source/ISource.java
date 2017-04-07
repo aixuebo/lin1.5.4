@@ -22,6 +22,10 @@ import org.apache.kylin.metadata.model.TableDesc;
 
 import java.util.List;
 
+/**
+ * 实现类
+ *         r.put(0, "org.apache.kylin.source.hive.HiveSource");
+ */
 public interface ISource {
 
     //如何创建ISource接口的实现类

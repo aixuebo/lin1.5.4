@@ -82,6 +82,7 @@ public class HadoopUtil {
         }
     }
 
+    //path路径转换
     public static String fixWindowsPath(String path) {
         // fix windows path
         if (path.startsWith("file://") && !path.startsWith("file:///") && path.contains(":\\")) {

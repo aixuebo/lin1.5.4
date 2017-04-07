@@ -61,22 +61,25 @@ public class TrieDictionary<T> extends Dictionary<T> {
     public static final byte[] MAGIC = new byte[] { 0x54, 0x72, 0x69, 0x65, 0x44, 0x69, 0x63, 0x74 }; // "TrieDict" 魔信息
     public static final int MAGIC_SIZE_I = MAGIC.length;
 
-    public static final int BIT_IS_LAST_CHILD = 0x80;
-    public static final int BIT_IS_END_OF_VALUE = 0x40;
+    public static final int BIT_IS_LAST_CHILD = 0x80;//是最后一个节点,即child是最后一个
+    public static final int BIT_IS_END_OF_VALUE = 0x40;//是一个单词结尾
 
     private static final Logger logger = LoggerFactory.getLogger(TrieDictionary.class);
 
     private byte[] trieBytes;//tree需要的全部字节数组,包括header内容
 
     // non-persistent part
-    transient private int headSize;
+    transient private int headSize;//头字节大小
     @SuppressWarnings("unused")
-    transient private int bodyLen;
+    transient private int bodyLen;//内容所占字节大小
+
     transient private int sizeChildOffset;
     transient private int sizeNoValuesBeneath;
-    transient private int baseId;
-    transient private int maxValueLength;
-    transient private BytesConverter<T> bytesConvert;
+
+
+    transient private int baseId;//ID
+    transient private int maxValueLength;//最长的单词占用多少个字节
+    transient private BytesConverter<T> bytesConvert; //字节数组和对象的转换实现类
 
     transient private int nValues;
     transient private int sizeOfId;
@@ -106,7 +109,7 @@ public class TrieDictionary<T> extends Dictionary<T> {
         try {
             //获取head头信息
             DataInputStream headIn = new DataInputStream(//
-                    new ByteArrayInputStream(trieBytes, MAGIC_SIZE_I, trieBytes.length - MAGIC_SIZE_I));
+                    new ByteArrayInputStream(trieBytes, MAGIC_SIZE_I, trieBytes.length - MAGIC_SIZE_I));//读取剩余字节
             this.headSize = headIn.readShort();
             this.bodyLen = headIn.readInt();
             this.sizeChildOffset = headIn.read();
@@ -114,7 +117,7 @@ public class TrieDictionary<T> extends Dictionary<T> {
             this.baseId = headIn.readShort();
             this.maxValueLength = headIn.readShort();
 
-            String converterName = headIn.readUTF();
+            String converterName = headIn.readUTF();//字节数组和对象的转换实现类
             if (converterName.isEmpty() == false)
                 this.bytesConvert = ClassUtil.forName(converterName, BytesConverter.class).newInstance();
 
@@ -474,19 +477,19 @@ public class TrieDictionary<T> extends Dictionary<T> {
     }
 
     private void writeObject(java.io.ObjectOutputStream stream) throws IOException {
-        stream.writeInt(trieBytes.length);
-        stream.write(trieBytes);
+        stream.writeInt(trieBytes.length);//先写入字节长度
+        stream.write(trieBytes);//再写入字节内容
     }
 
     private void readObject(java.io.ObjectInputStream stream) throws IOException, ClassNotFoundException {
-        int length = stream.readInt();
-        byte[] trieBytes = new byte[length];
-        int currentCount;
-        int idx = 0;
-        while ((currentCount = stream.read(trieBytes, idx, length - idx)) > 0) {
+        int length = stream.readInt();//字节长度
+        byte[] trieBytes = new byte[length];//组成字节数组
+        int currentCount;//每一次读取多少个字节
+        int idx = 0;//trieBytes写入到哪个位置了,即trieBytes的下标
+        while ((currentCount = stream.read(trieBytes, idx, length - idx)) > 0) {//不断的读取数据,读取到trieBytes中
             idx += currentCount;
         }
-        init(trieBytes);
+        init(trieBytes);//初始化
     }
 
     @Override
@@ -511,18 +514,19 @@ public class TrieDictionary<T> extends Dictionary<T> {
             return false;
         }
         TrieDictionary that = (TrieDictionary) o;
-        return Arrays.equals(this.trieBytes, that.trieBytes);
+        return Arrays.equals(this.trieBytes, that.trieBytes);//数组内容相同
     }
 
+    //必须本字典包含参数字典所有数据
     @Override
     public boolean contains(Dictionary other) {
-        if (other.getSize() > this.getSize()) {
+        if (other.getSize() > this.getSize()) {//如果参数字段size都比本字典大,说明肯定不能包含,因此返回false
             return false;
         }
 
-        for (int i = other.getMinId(); i <= other.getMaxId(); ++i) {
-            T v = (T) other.getValueFromId(i);
-            if (!this.containsValue(v)) {
+        for (int i = other.getMinId(); i <= other.getMaxId(); ++i) {//从最小值到最大值循环
+            T v = (T) other.getValueFromId(i);//获取该值
+            if (!this.containsValue(v)) {//参数字典的每一个值都要在本字典中存在
                 return false;
             }
         }
@@ -548,16 +552,17 @@ public class TrieDictionary<T> extends Dictionary<T> {
         TrieDictionary<String> dict = b.build(0);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        new ObjectOutputStream(baos).writeObject(dict);
+        new ObjectOutputStream(baos).writeObject(dict);//序列化TrieDictionary对象
 
-        TrieDictionary<String> dict2 = (TrieDictionary<String>) new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray())).readObject();
+        TrieDictionary<String> dict2 = (TrieDictionary<String>) new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray())).readObject();//进行反序列化
+        //说明这两个字典是相同的
         Preconditions.checkArgument(dict.contains(dict2));
         Preconditions.checkArgument(dict2.contains(dict));
         Preconditions.checkArgument(dict.equals(dict2));
 
         dict2.enableIdToValueBytesCache();
         for (int i = 0; i <= dict.getMaxId(); i++) {
-            System.out.println(Bytes.toString(dict.getValueBytesFromId(i)));
+            System.out.println(Bytes.toString(dict.getValueBytesFromId(i)));//将字节数组转换成String
         }
     }
 }

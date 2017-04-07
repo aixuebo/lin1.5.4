@@ -45,13 +45,13 @@ public class DimensionDesc {
     @JsonProperty("column")
     private String column;//对应的列名称
     @JsonProperty("derived")
-    private String[] derived;//如果是derived的时候,这个是一组列的集合,表示这个维度不是一个单独的列
+    private String[] derived;//如果是derived的时候,这个是一组列的集合,表示这个维度不是一个单独的列   衍生维度
 
     //init的时候初始化以下2个变量
     private TableDesc tableDesc;//table对应的表对象
     private JoinDesc join;//找到该model中该表的join关系
     // computed
-    private TblColRef[] columnRefs;//fact_table中对应的列映射关系,该映射是on语法使用的列集合
+    private TblColRef[] columnRefs;//该维度涉及到的column对象或者是与derived相当应的fact_table中属性column对象集合
 
     public void init(CubeDesc cubeDesc, Map<String, TableDesc> tables) {
         if (name != null)

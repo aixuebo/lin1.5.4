@@ -145,6 +145,7 @@ public class CubeManager implements IRealizationProvider {
         return cubeMap.get(cubeName);
     }
 
+    //找到uuid对应的cube实例
     public CubeInstance getCubeByUuid(String uuid) {
         Collection<CubeInstance> copy = new ArrayList<CubeInstance>(cubeMap.values());
         for (CubeInstance cube : copy) {
@@ -160,6 +161,7 @@ public class CubeManager implements IRealizationProvider {
      *
      * @param descName CubeDesc name
      * @return
+     * 找到cube的descName与参数相同的cube集合
      */
     public List<CubeInstance> getCubesByDesc(String descName) {
 
@@ -422,7 +424,7 @@ public class CubeManager implements IRealizationProvider {
         if (strictChecking)
             checkNoBuildingSegment(cube);
 
-        if (cube.getDescriptor().getModel().getPartitionDesc().isPartitioned()) {
+        if (cube.getDescriptor().getModel().getPartitionDesc().isPartitioned()) {//是分区的表
             // try figure out a reasonable start if missing
             if (startDate == 0 && startOffset == 0) {
                 boolean isOffsetsOn = endOffset != 0;
@@ -539,6 +541,7 @@ public class CubeManager implements IRealizationProvider {
         return newSegment;
     }
 
+    //找到在startDate到endDate之间的符合条件的CubeSegment集合
     private Pair<CubeSegment, CubeSegment> findMergeOffsetsByDateRange(List<CubeSegment> segments, long startDate, long endDate, long skipSegDateRangeCap) {
         // must be offset cube
         LinkedList<CubeSegment> result = Lists.newLinkedList();
@@ -552,7 +555,7 @@ public class CubeManager implements IRealizationProvider {
                     break;
 
                 // reject holes
-                if (result.size() > 0 && result.getLast().getSourceOffsetEnd() != seg.getSourceOffsetStart())
+                if (result.size() > 0 && result.getLast().getSourceOffsetEnd() != seg.getSourceOffsetStart())//说明上下两个segment的开始位置和结束位置没有连接上
                     break;
 
                 result.add(seg);
@@ -599,6 +602,7 @@ public class CubeManager implements IRealizationProvider {
         }
     }
 
+    //严格校验,确保此时没有正在buildering的segment
     private void checkNoBuildingSegment(CubeInstance cube) {
         if (cube.getBuildingSegments().size() > 0) {
             throw new IllegalStateException("There is already a building segment!");
@@ -652,7 +656,7 @@ public class CubeManager implements IRealizationProvider {
         segment.setSourceOffsetStart(startOffset);
         segment.setSourceOffsetEnd(endOffset);
         segment.setStatus(SegmentStatusEnum.NEW);
-        segment.setStorageLocationIdentifier(generateStorageLocation());
+        segment.setStorageLocationIdentifier(generateStorageLocation());//产生存储该segment数据的hbase表名
 
         segment.setCubeInstance(cube);
 
@@ -660,6 +664,7 @@ public class CubeManager implements IRealizationProvider {
         return segment;
     }
 
+    //产生一个不重复的tableName,名字组成是KYLIN_+10个随机字符
     private String generateStorageLocation() {
         String namePrefix = IRealizationConstants.CubeHbaseStorageLocationPrefix;
         String tableName = "";
@@ -668,15 +673,17 @@ public class CubeManager implements IRealizationProvider {
             StringBuffer sb = new StringBuffer();
             sb.append(namePrefix);
             for (int i = 0; i < HBASE_TABLE_LENGTH; i++) {
-                sb.append(ALPHA_NUM.charAt(ran.nextInt(ALPHA_NUM.length())));
+                sb.append(ALPHA_NUM.charAt(ran.nextInt(ALPHA_NUM.length())));//产生一个随机字符
             }
             tableName = sb.toString();
-        } while (this.usedStorageLocation.containsValue(tableName));
+        } while (this.usedStorageLocation.containsValue(tableName));//存在则重新生成一个
 
         return tableName;
     }
 
+    //产生需要合并的开始位置和结束位置
     public Pair<Long, Long> autoMergeCubeSegments(CubeInstance cube) throws IOException {
+        //true表示 需要自动merge分区,是在cube中设置的merge分区天数
         if (!cube.needAutoMerge()) {
             logger.debug("Cube " + cube.getName() + " doesn't need auto merge");
             return null;
@@ -689,16 +696,17 @@ public class CubeManager implements IRealizationProvider {
 
         List<CubeSegment> ready = cube.getSegments(SegmentStatusEnum.READY);
 
-        long[] timeRanges = cube.getDescriptor().getAutoMergeTimeRanges();
+        long[] timeRanges = cube.getDescriptor().getAutoMergeTimeRanges();//自动merge分区的时间信息
         Arrays.sort(timeRanges);
 
         for (int i = timeRanges.length - 1; i >= 0; i--) {
-            long toMergeRange = timeRanges[i];
+            long toMergeRange = timeRanges[i];//每一个规定的自动merge分区时间
 
             for (int s = 0; s < ready.size(); s++) {
                 CubeSegment seg = ready.get(s);
-                Pair<CubeSegment, CubeSegment> p = findMergeOffsetsByDateRange(ready.subList(s, ready.size()), //
-                        seg.getDateRangeStart(), seg.getDateRangeStart() + toMergeRange, toMergeRange);
+                Pair<CubeSegment, CubeSegment> p = findMergeOffsetsByDateRange(ready.subList(s, ready.size()),
+                        seg.getDateRangeStart(), seg.getDateRangeStart() + toMergeRange, toMergeRange);//找到在startDate到endDate之间的符合条件的CubeSegment集合
+
                 if (p != null && p.getSecond().getDateRangeEnd() - p.getFirst().getDateRangeStart() >= toMergeRange)
                     return Pair.newPair(p.getFirst().getSourceOffsetStart(), p.getSecond().getSourceOffsetEnd());
             }
@@ -826,6 +834,7 @@ public class CubeManager implements IRealizationProvider {
         return seg.getStatus() == SegmentStatusEnum.NEW || seg.getStatus() == SegmentStatusEnum.READY_PENDING;
     }
 
+    //加载所有的cube
     private void loadAllCubeInstance() throws IOException {
         ResourceStore store = getStore();
         List<String> paths = store.collectResourceRecursively(ResourceStore.CUBE_RESOURCE_ROOT, ".json");
@@ -846,6 +855,7 @@ public class CubeManager implements IRealizationProvider {
         logger.info("Loaded " + succeed + " cubes, fail on " + fail + " cubes");
     }
 
+    //加载一个cube
     private synchronized CubeInstance reloadCubeLocalAt(String path) {
         ResourceStore store = getStore();
 

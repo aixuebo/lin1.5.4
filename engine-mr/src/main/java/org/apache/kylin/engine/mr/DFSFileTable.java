@@ -35,7 +35,7 @@ import org.apache.kylin.source.ReadableTable;
 public class DFSFileTable implements ReadableTable {
 
     public static final String DELIM_AUTO = "auto";//如果是auto是期望的拆分符号,则可以按照177  |   \t  ,都可以作为拆分符号
-    public static final String DELIM_COMMA = ",";
+    public static final String DELIM_COMMA = ",";//说明是csv文件
 
     String path;
     String delim;

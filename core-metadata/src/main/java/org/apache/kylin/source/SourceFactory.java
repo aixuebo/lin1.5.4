@@ -32,6 +32,7 @@ public class SourceFactory {
     private static ImplementationSwitch<ISource> sources;
     static {
         //输入源引擎默认只有HiveSource引擎
+        //        r.put(0, "org.apache.kylin.source.hive.HiveSource");
         Map<Integer, String> impls = KylinConfig.getInstanceFromEnv().getSourceEngines();
         sources = new ImplementationSwitch<ISource>(impls, ISource.class);
     }

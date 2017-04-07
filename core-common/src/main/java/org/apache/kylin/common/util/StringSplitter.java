@@ -23,13 +23,14 @@ import java.util.List;
 
 /**
  * @author George Song (ysong1)
- * 
+ * 字符串拆分类
  */
 public class StringSplitter {
+    //将str进行拆分,按照delimiter字符串进行拆分
     public static String[] split(String str, String delimiter) {
         // The optimized split function
         List<String> list = new ArrayList<String>();
-        int index = 0, offset = 0;
+        int index = 0, offset = 0; //offset表示原始字符串str的下标,index表示拆分后的结尾位置
         int l = delimiter.length();
         if (str.startsWith(delimiter)) {
             // in case the first field is empty

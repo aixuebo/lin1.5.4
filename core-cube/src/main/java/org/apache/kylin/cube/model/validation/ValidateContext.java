@@ -67,7 +67,7 @@ public class ValidateContext {
 
     /**
      * Get validation result
-     * 
+     * 输出错误信息
      * @return
      */
     public Result[] getResults() {
@@ -77,7 +77,7 @@ public class ValidateContext {
     }
 
     /**
-     * 
+     * 打印错误信息
      */
     public void print(PrintStream out) {
         if (results.isEmpty()) {
@@ -92,6 +92,7 @@ public class ValidateContext {
 
     /**
      * @return if there is not validation errors
+     * true表示校验通过,没有异常
      */
     public boolean ifPass() {
         return results.isEmpty();

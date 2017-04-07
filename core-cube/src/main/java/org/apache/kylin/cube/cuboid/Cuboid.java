@@ -123,6 +123,7 @@ public class Cuboid implements Comparable<Cuboid> {
         return ret;
     }
 
+    //所有属性对应的cuboid
     public static long getBaseCuboidId(CubeDesc cube) {
         return cube.getRowkey().getFullMask();
     }

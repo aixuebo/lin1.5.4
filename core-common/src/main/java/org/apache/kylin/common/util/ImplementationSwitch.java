@@ -27,14 +27,15 @@ import com.google.common.collect.Maps;
 /**
  * Provide switch between different implementations of a same interface.
  * Each implementation is identified by an integer ID.
+ * 提供若干种不同的实现方式,每一个实现方式使用int进行切换
  */
 public class ImplementationSwitch<I> {
 
     private static final Logger logger = LoggerFactory.getLogger(ImplementationSwitch.class);
 
-    final private Object[] instances;
-    private Class<I> interfaceClz;
-    private Map<Integer, String> impls = Maps.newHashMap();
+    final private Object[] instances;//具体实现类
+    private Class<I> interfaceClz;//该实现是实现了哪个接口
+    private Map<Integer, String> impls = Maps.newHashMap();//每一个实现提供一个int和class全路径的映射
 
     public ImplementationSwitch(Map<Integer, String> impls, Class<I> interfaceClz) {
         this.impls.putAll(impls);
@@ -48,25 +49,25 @@ public class ImplementationSwitch<I> {
             maxId = Math.max(maxId, id);
         }
         if (maxId > 100)
-            throw new IllegalArgumentException("you have more than 100 implementations?");
+            throw new IllegalArgumentException("you have more than 100 implementations?");//不可能有100中实现
 
-        Object[] result = new Object[maxId + 1];
+        Object[] result = new Object[maxId + 1];//创建数组,用于日后存储若干个实现类
 
         return result;
     }
 
     public synchronized I get(int id) {
-        String clzName = impls.get(id);
+        String clzName = impls.get(id);//找到对应的class
         if (clzName == null) {
             throw new IllegalArgumentException("Implementation class missing, ID " + id + ", interface " + interfaceClz.getName());
         }
 
         @SuppressWarnings("unchecked")
-        I result = (I) instances[id];
+        I result = (I) instances[id];//看是否已经实例化了
 
         if (result == null) {
             try {
-                result = (I) ClassUtil.newInstance(clzName);
+                result = (I) ClassUtil.newInstance(clzName);//实例化并且添加到缓存中
                 instances[id] = result;
             } catch (Exception ex) {
                 logger.warn("Implementation missing " + clzName + " - " + ex);

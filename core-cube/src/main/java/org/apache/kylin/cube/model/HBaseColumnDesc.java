@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ * 该对象表示一个列族下的一个属性
  */
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
 public class HBaseColumnDesc {
@@ -35,7 +36,7 @@ public class HBaseColumnDesc {
     @JsonProperty("qualifier")
     private String qualifier;
     @JsonProperty("measure_refs")
-    private String[] measureRefs;
+    private String[] measureRefs;//度量的名字集合.即该列族下该属性存储哪些度量值
 
     // these two will be assembled at runtime
     private MeasureDesc[] measures;
@@ -82,6 +83,7 @@ public class HBaseColumnDesc {
         this.columnFamilyName = columnFamilyName;
     }
 
+    //该度量函数的下标
     public int findMeasure(FunctionDesc function) {
         for (int i = 0; i < measures.length; i++) {
             if (measures[i].getFunction().equals(function)) {

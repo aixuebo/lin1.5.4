@@ -39,13 +39,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 执行hive sql的执行器
  */
 public class CreateFlatHiveTableStep extends AbstractExecutable {
 
     private static final Logger logger = LoggerFactory.getLogger(CreateFlatHiveTableStep.class);
     private final BufferedLogger stepLogger = new BufferedLogger(logger);
 
-    //读取cunt文件,返回一个long类型内容
+    //读取cunt文件,返回一个long类型内容---该值是select count from 表的结果
     private long readRowCountFromFile() throws IOException {
         Path rowCountFile = new Path(getRowCountOutputDir(), "000000_0");
 
@@ -61,6 +62,7 @@ public class CreateFlatHiveTableStep extends AbstractExecutable {
     }
 
     //计算reduce数量
+    //参数rowCount 表示总行数
     private int determineNumReducer(KylinConfig config, long rowCount) throws IOException {
         int mapperInputRows = config.getHadoopJobMapperInputRows();//每一个reduce要处理多少行数据
 
@@ -77,6 +79,7 @@ public class CreateFlatHiveTableStep extends AbstractExecutable {
         return numReducers;
     }
 
+    //执行hive的sql
     private void createFlatHiveTable(KylinConfig config, int numReducers) throws IOException {
         final HiveCmdBuilder hiveCmdBuilder = new HiveCmdBuilder();
         hiveCmdBuilder.addStatement(getInitStatement());//hive初始化sql
@@ -98,6 +101,7 @@ public class CreateFlatHiveTableStep extends AbstractExecutable {
         }
     }
 
+    //获取该cube对应的配置文件
     private KylinConfig getCubeSpecificConfig() {
         String cubeName = CubingExecutableUtil.getCubeName(getParams());
         CubeManager manager = CubeManager.getInstance(KylinConfig.getInstanceFromEnv());
@@ -132,7 +136,7 @@ public class CreateFlatHiveTableStep extends AbstractExecutable {
         }
     }
 
-    //hive初始化sql
+    //hive初始化sql,即hive的set name=value等一些列属性
     public String getInitStatement() {
         return getParam("HiveInit");
     }
@@ -140,7 +144,7 @@ public class CreateFlatHiveTableStep extends AbstractExecutable {
         setParam("HiveInit", sql);
     }
 
-
+    //true表示使用DISTRIBUTE BY RAND() 或者DISTRIBUTE BY 字段 语法
     public boolean getUseRedistribute() {
         return Boolean.valueOf(getParam("useRedistribute"));
     }
@@ -148,6 +152,7 @@ public class CreateFlatHiveTableStep extends AbstractExecutable {
         setParam("useRedistribute", String.valueOf(useRedistribute));
     }
 
+    //执行的hive sql,参见HiveMRInput类的createFlatHiveTableStep方法,包含设置hive的set key=value,drop表,create 表,以及insert into 以及select语法一整套sql
     public String getCreateTableStatement() {
         return getParam("HiveRedistributeData");
     }
@@ -155,7 +160,7 @@ public class CreateFlatHiveTableStep extends AbstractExecutable {
         setParam("HiveRedistributeData", sql);
     }
 
-    //行总数文件
+    //行总数输出目录
     public void setRowCountOutputDir(String rowCountOutputDir) {
         setParam("rowCountOutputDir", rowCountOutputDir);
     }

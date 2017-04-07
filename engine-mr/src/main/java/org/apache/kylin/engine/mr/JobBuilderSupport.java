@@ -38,6 +38,7 @@ import com.google.common.base.Preconditions;
 
 /**
  * Hold reusable steps for builders.
+ * 如何生成一个hadoop的job任务
  */
 public class JobBuilderSupport {
 
@@ -60,21 +61,24 @@ public class JobBuilderSupport {
         return createFactDistinctColumnsStep(jobId, true);
     }
 
+    /**
+     * JOBid以及是否执行过程中需要统计
+     */
     private MapReduceExecutable createFactDistinctColumnsStep(String jobId, boolean withStats) {
         MapReduceExecutable result = new MapReduceExecutable();
-        result.setName(ExecutableConstants.STEP_NAME_FACT_DISTINCT_COLUMNS);
-        result.setMapReduceJobClass(FactDistinctColumnsJob.class);
+        result.setName(ExecutableConstants.STEP_NAME_FACT_DISTINCT_COLUMNS);//设置任务的名字
+        result.setMapReduceJobClass(FactDistinctColumnsJob.class);//设置mr程序的入口
         StringBuilder cmd = new StringBuilder();
         appendMapReduceParameters(cmd);
-        appendExecCmdParameters(cmd, BatchConstants.ARG_CUBE_NAME, seg.getRealization().getName());
-        appendExecCmdParameters(cmd, BatchConstants.ARG_OUTPUT, getFactDistinctColumnsPath(jobId));
-        appendExecCmdParameters(cmd, BatchConstants.ARG_SEGMENT_ID, seg.getUuid());
-        appendExecCmdParameters(cmd, BatchConstants.ARG_STATS_ENABLED, String.valueOf(withStats));
-        appendExecCmdParameters(cmd, BatchConstants.ARG_STATS_OUTPUT, getStatisticsPath(jobId));
-        appendExecCmdParameters(cmd, BatchConstants.ARG_STATS_SAMPLING_PERCENT, String.valueOf(config.getConfig().getCubingInMemSamplingPercent()));
-        appendExecCmdParameters(cmd, BatchConstants.ARG_JOB_NAME, "Kylin_Fact_Distinct_Columns_" + seg.getRealization().getName() + "_Step");
-        appendExecCmdParameters(cmd, BatchConstants.ARG_CUBING_JOB_ID, jobId);
-        result.setMapReduceParams(cmd.toString());
+        appendExecCmdParameters(cmd, BatchConstants.ARG_CUBE_NAME, seg.getRealization().getName());//-cubename cubename
+        appendExecCmdParameters(cmd, BatchConstants.ARG_OUTPUT, getFactDistinctColumnsPath(jobId));//-output
+        appendExecCmdParameters(cmd, BatchConstants.ARG_SEGMENT_ID, seg.getUuid());//-segmentid segment的UUID
+        appendExecCmdParameters(cmd, BatchConstants.ARG_STATS_ENABLED, String.valueOf(withStats));//-statisticsenabled 是否开启统计
+        appendExecCmdParameters(cmd, BatchConstants.ARG_STATS_OUTPUT, getStatisticsPath(jobId));//-statisticsoutput 统计输出目录
+        appendExecCmdParameters(cmd, BatchConstants.ARG_STATS_SAMPLING_PERCENT, String.valueOf(config.getConfig().getCubingInMemSamplingPercent()));//-statisticssamplingpercent 统计抽样百分比
+        appendExecCmdParameters(cmd, BatchConstants.ARG_JOB_NAME, "Kylin_Fact_Distinct_Columns_" + seg.getRealization().getName() + "_Step");//-jobname
+        appendExecCmdParameters(cmd, BatchConstants.ARG_CUBING_JOB_ID, jobId);//-cubingJobId jobid
+        result.setMapReduceParams(cmd.toString());//添加额外的参数
         return result;
     }
 
@@ -83,12 +87,12 @@ public class JobBuilderSupport {
         HadoopShellExecutable buildDictionaryStep = new HadoopShellExecutable();
         buildDictionaryStep.setName(ExecutableConstants.STEP_NAME_BUILD_DICTIONARY);
         StringBuilder cmd = new StringBuilder();
-        appendExecCmdParameters(cmd, BatchConstants.ARG_CUBE_NAME, seg.getRealization().getName());
-        appendExecCmdParameters(cmd, BatchConstants.ARG_SEGMENT_ID, seg.getUuid());
-        appendExecCmdParameters(cmd, BatchConstants.ARG_INPUT, getFactDistinctColumnsPath(jobId));
+        appendExecCmdParameters(cmd, BatchConstants.ARG_CUBE_NAME, seg.getRealization().getName());//-cubename cubename
+        appendExecCmdParameters(cmd, BatchConstants.ARG_SEGMENT_ID, seg.getUuid());//-segmentid segment的UUID
+        appendExecCmdParameters(cmd, BatchConstants.ARG_INPUT, getFactDistinctColumnsPath(jobId));//-input
 
         buildDictionaryStep.setJobParams(cmd.toString());
-        buildDictionaryStep.setJobClass(CreateDictionaryJob.class);
+        buildDictionaryStep.setJobClass(CreateDictionaryJob.class);//mr的主要类
         return buildDictionaryStep;
     }
 
@@ -188,6 +192,7 @@ public class JobBuilderSupport {
         return hdfsDir + "kylin-" + jobId;
     }
 
+    //添加参数-paraName paraValue
     public static StringBuilder appendExecCmdParameters(StringBuilder buf, String paraName, String paraValue) {
         return buf.append(" -").append(paraName).append(" ").append(paraValue);
     }

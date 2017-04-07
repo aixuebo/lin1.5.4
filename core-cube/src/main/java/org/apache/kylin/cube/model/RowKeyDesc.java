@@ -34,6 +34,20 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
 
 /**
+ "rowkey": {
+     "rowkey_columns": [
+         {
+         "column": "CREATE_YEAR",
+         "encoding": "dict",
+         "isShardBy": false
+         },
+         {
+         "column": "CREATE_MONTH",
+         "encoding": "dict",
+         "isShardBy": false
+         }
+     ]
+ },
  */
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
 public class RowKeyDesc {
@@ -48,7 +62,7 @@ public class RowKeyDesc {
     //每一个rowkey的列对象 与 rowkeyColumn的映射
     private Map<TblColRef, RowKeyColDesc> columnMap;
 
-    private Set<TblColRef> shardByColumns;//分片的列
+    private Set<TblColRef> shardByColumns;//分片的列--页面配置的时候shareBy设置为true的列
     private int[] columnsNeedIndex;//存储需要索引的字段序号
 
     public RowKeyColDesc[] getRowKeyColumns() {
@@ -123,6 +137,11 @@ public class RowKeyDesc {
             }
         }
 
+        /**
+1.1L << index; 表示2^index,即比如1<<3 表示 8,换算成二进制是1000,因此可以看到1<<3的结果就是1加上3个0
+2.因此第一个rowkey对应的字段index是最后一个值,因此产生的就是1后面跟的全都是0
+3.因此全部执行完后,就是11111110,即最后一个位置是0,但是他不代表任何属性,因为他是多余的属性
+         */
         this.fullMask = 0L;
         for (int i = 0; i < this.rowkeyColumns.length; i++) {
             int index = rowkeyColumns[i].getBitIndex();

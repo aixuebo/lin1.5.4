@@ -77,7 +77,7 @@ public class CubeInstance extends RootPersistentEntity implements IRealization, 
     @JsonProperty("owner")
     private String owner;
     @JsonProperty("descriptor")
-    private String descName;
+    private String descName;//就是cube的name
 
 
     // Mark cube priority for query
@@ -98,6 +98,7 @@ public class CubeInstance extends RootPersistentEntity implements IRealization, 
     public CubeInstance() {
     }
 
+    //正在builder状态的segment集合
     public List<CubeSegment> getBuildingSegments() {
         List<CubeSegment> buildingSegments = new ArrayList<CubeSegment>();
         if (null != segments) {
@@ -116,7 +117,7 @@ public class CubeInstance extends RootPersistentEntity implements IRealization, 
         if (mergedSegment == null)
             return result;
 
-        for (CubeSegment seg : this.segments) {
+        for (CubeSegment seg : this.segments) {//循环所有的merge
             if (seg.getStatus() != SegmentStatusEnum.READY && seg.getStatus() != SegmentStatusEnum.READY_PENDING)
                 continue;
 
@@ -138,6 +139,7 @@ public class CubeInstance extends RootPersistentEntity implements IRealization, 
         return CubeDescManager.getInstance(config).getCubeDesc(descName);
     }
 
+    //该cube对应的model对象
     @Override
     public DataModelDesc getDataModelDesc() {
         CubeDesc cubeDesc = this.getDescriptor();
@@ -326,6 +328,7 @@ public class CubeInstance extends RootPersistentEntity implements IRealization, 
         this.segments = segments;
     }
 
+    //通过uuid获取对象
     public CubeSegment getSegmentById(String segmentId) {
         for (CubeSegment segment : segments) {
             if (Objects.equal(segment.getUuid(), segmentId)) {
@@ -384,6 +387,7 @@ public class CubeInstance extends RootPersistentEntity implements IRealization, 
         return Lists.newArrayList(getDescriptor().listAllColumns());
     }
 
+    //ready中最小的segment对应的开始位置
     @Override
     public long getDateRangeStart() {
         List<CubeSegment> readySegs = getSegments(SegmentStatusEnum.READY);
@@ -396,6 +400,7 @@ public class CubeInstance extends RootPersistentEntity implements IRealization, 
         return startTime;
     }
 
+    //ready中最大的segment对应的结束位置
     @Override
     public long getDateRangeEnd() {
 
@@ -423,8 +428,9 @@ public class CubeInstance extends RootPersistentEntity implements IRealization, 
         return Lists.newArrayList(getDescriptor().listDimensionColumnsIncludingDerived());
     }
 
+    //true表示 需要自动merge分区,是在cube中设置的merge分区天数
     public boolean needAutoMerge() {
-        if (!this.getDescriptor().getModel().getPartitionDesc().isPartitioned())
+        if (!this.getDescriptor().getModel().getPartitionDesc().isPartitioned())//表示没有分区,因此不需要merge
             return false;
 
         return this.getDescriptor().getAutoMergeTimeRanges() != null && this.getDescriptor().getAutoMergeTimeRanges().length > 0;

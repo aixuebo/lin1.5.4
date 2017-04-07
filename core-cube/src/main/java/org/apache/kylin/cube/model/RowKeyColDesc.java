@@ -54,11 +54,11 @@ public class RowKeyColDesc {
     private String index;//是否需要索引
 
     // computed
-    //编码相关的引擎名字和参数
+    //
     private String encodingName;
     private String[] encodingArgs;
 
-    private int bitIndex;//该列在rowkey的序号
+    private int bitIndex;//该列在rowkey的序号,第一个元素的下标是最后一个下标,即是倒序的
     private TblColRef colRef;//该列对应的列对象
 
     public void init(int index, Map<String, TblColRef> colNameAbbr, CubeDesc cubeDesc) {

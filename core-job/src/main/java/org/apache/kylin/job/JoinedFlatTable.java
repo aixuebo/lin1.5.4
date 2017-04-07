@@ -82,6 +82,7 @@ public class JoinedFlatTable {
 
     /**
      * 产生hive的创建表语句
+     * CREATE EXTERNAL TABLE IF NOT EXISTS biao (属性)...
      * @param flatDesc
      * @param storageDfsDir
      * @return
@@ -116,28 +117,36 @@ public class JoinedFlatTable {
         return ddl.toString();
     }
 
+    //INSERT OVERWRITE TABLE biao select...
+    //产生创建数据的sql
     public static String generateInsertDataStatement(IJoinedFlatTableDesc intermediateTableDesc, JobEngineConfig engineConfig, boolean redistribute) {
         StringBuilder sql = new StringBuilder();
-        sql.append(generateHiveSetStatements(engineConfig));
+        sql.append(generateHiveSetStatements(engineConfig));//设置hive的环境变量
         sql.append("INSERT OVERWRITE TABLE " + intermediateTableDesc.getTableName() + " " + generateSelectDataStatement(intermediateTableDesc, redistribute) + ";").append("\n");
         return sql.toString();
     }
 
+    //查询sql
     public static String generateSelectDataStatement(IJoinedFlatTableDesc flatDesc, boolean redistribute) {
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT" + "\n");
         String tableAlias;
-        Map<String, String> tableAliasMap = buildTableAliasMap(flatDesc.getDataModel());
+        Map<String, String> tableAliasMap = buildTableAliasMap(flatDesc.getDataModel());//每一个表与别名映射
+
+        //组装select中的字段为  别名.字段,别名.字段,别名.字段形式
         for (int i = 0; i < flatDesc.getAllColumns().size(); i++) {
             TblColRef col = flatDesc.getAllColumns().get(i);
             if (i > 0) {
                 sql.append(",");
             }
             tableAlias = tableAliasMap.get(col.getTable());
-            sql.append(tableAlias + "." + col.getName() + "\n");
+            sql.append(tableAlias + "." + col.getName() + "\n");//添加别名.字段
         }
-        appendJoinStatement(flatDesc, sql, tableAliasMap);
-        appendWhereStatement(flatDesc, sql, tableAliasMap);
+
+        appendJoinStatement(flatDesc, sql, tableAliasMap);//追加from和join语法
+        appendWhereStatement(flatDesc, sql, tableAliasMap);//追加where条件,追加用户设置的条件 和分区条件
+
+        //向sql中追加DISTRIBUTE BY语法
         if (redistribute == true) {
             String redistributeCol = null;
             TblColRef distDcol = flatDesc.getDistributedBy();
@@ -150,6 +159,8 @@ public class JoinedFlatTable {
         return sql.toString();
     }
 
+    //dfs -mkdir -p  outputDir;  INSERT OVERWRITE DIRECTORY  outputDir SELECT count(*) FROM biao
+    //重新计算数据数量
     public static String generateCountDataStatement(IJoinedFlatTableDesc flatDesc, final String outputDir) {
         final Map<String, String> tableAliasMap = buildTableAliasMap(flatDesc.getDataModel());
         final StringBuilder sql = new StringBuilder();
@@ -160,6 +171,7 @@ public class JoinedFlatTable {
         return sql.toString();
     }
 
+    //对表设置别名映射
     private static Map<String, String> buildTableAliasMap(DataModelDesc dataModelDesc) {
         Map<String, String> tableAliasMap = new HashMap<String, String>();
 
@@ -179,7 +191,7 @@ public class JoinedFlatTable {
     // Also yet don't support joining the same table more than once, since table name is the map key.
     private static void addTableAlias(String table, Map<String, String> tableAliasMap) {
         String alias;
-        int cut = table.lastIndexOf('.');
+        int cut = table.lastIndexOf('.');//数据表可能是库.表形式
         if (cut < 0)
             alias = table;
         else
@@ -188,14 +200,17 @@ public class JoinedFlatTable {
         tableAliasMap.put(table, alias);
     }
 
+    /**
+     * 追加from 和join 语句
+     */
     private static void appendJoinStatement(IJoinedFlatTableDesc flatDesc, StringBuilder sql, Map<String, String> tableAliasMap) {
         List<JoinDesc> cubeJoins = getUsedJoinsSet(flatDesc);
 
-        Set<String> dimTableCache = new HashSet<String>();
+        Set<String> dimTableCache = new HashSet<String>();//连接了哪些join表,防止连接两次同一个join表
 
-        DataModelDesc dataModelDesc = flatDesc.getDataModel();
-        String factTableName = dataModelDesc.getFactTable();
-        String factTableAlias = tableAliasMap.get(factTableName);
+        DataModelDesc dataModelDesc = flatDesc.getDataModel();//获取模型
+        String factTableName = dataModelDesc.getFactTable();//事实表
+        String factTableAlias = tableAliasMap.get(factTableName);//事实表对应的别名
         sql.append("FROM " + factTableName + " as " + factTableAlias + " \n");
 
         for (LookupDesc lookupDesc : dataModelDesc.getLookups()) {
@@ -228,6 +243,7 @@ public class JoinedFlatTable {
         }
     }
 
+    //只要查询的属性所属的表,如果虽然join了一张表,但是没有使用该表字段,则该表不再返回的集合里
     private static List<JoinDesc> getUsedJoinsSet(IJoinedFlatTableDesc flatDesc) {
         Set<String> usedTableIdentities = Sets.newHashSet();
         for (TblColRef col : flatDesc.getAllColumns()) {
@@ -254,6 +270,7 @@ public class JoinedFlatTable {
         }
     }
 
+    //追加where条件,追加用户设置的条件 和分区条件
     private static void appendWhereStatement(IJoinedFlatTableDesc flatDesc, StringBuilder sql, Map<String, String> tableAliasMap) {
         boolean hasCondition = false;
         StringBuilder whereBuilder = new StringBuilder();
@@ -261,19 +278,21 @@ public class JoinedFlatTable {
 
         DataModelDesc model = flatDesc.getDataModel();
 
-        if (model.getFilterCondition() != null && model.getFilterCondition().equals("") == false) {
+        if (model.getFilterCondition() != null && model.getFilterCondition().equals("") == false) {//用户设置了where条件,追加该条件
             whereBuilder.append(" (").append(model.getFilterCondition()).append(") ");
             hasCondition = true;
         }
 
-        PartitionDesc partDesc = model.getPartitionDesc();
+        PartitionDesc partDesc = model.getPartitionDesc();//分区字段
         if (partDesc != null && partDesc.getPartitionDateColumn() != null) {
+            //获取该分区对应的真实时间区间
             long dateStart = flatDesc.getSourceOffsetStart();
             long dateEnd = flatDesc.getSourceOffsetEnd();
 
+            //添加分区字段
             if (!(dateStart == 0 && dateEnd == Long.MAX_VALUE)) {
                 whereBuilder.append(hasCondition ? " AND (" : " (");
-                whereBuilder.append(partDesc.getPartitionConditionBuilder().buildDateRangeCondition(partDesc, dateStart, dateEnd, tableAliasMap));
+                whereBuilder.append(partDesc.getPartitionConditionBuilder().buildDateRangeCondition(partDesc, dateStart, dateEnd, tableAliasMap));//追加分区sql
                 whereBuilder.append(")\n");
                 hasCondition = true;
             }
@@ -288,6 +307,7 @@ public class JoinedFlatTable {
         return canonicalColName.replace(".", "_");
     }
 
+    //将sql类型转换成hive类型
     private static String getHiveDataType(String javaDataType) {
         String hiveDataType = javaDataType.toLowerCase().startsWith("varchar") ? "string" : javaDataType;
         hiveDataType = javaDataType.toLowerCase().startsWith("integer") ? "int" : hiveDataType;
@@ -295,6 +315,8 @@ public class JoinedFlatTable {
         return hiveDataType.toLowerCase();
     }
 
+    //查询select count结果,将结果写入到输出文件中
+    //INSERT OVERWRITE DIRECTORY outputDir SELECT count(*) FROM  biao
     public static String generateSelectRowCountStatement(IJoinedFlatTableDesc intermediateTableDesc, String outputDir) {
         StringBuilder sql = new StringBuilder();
         sql.append("set hive.exec.compress.output=false;\n");
@@ -302,7 +324,8 @@ public class JoinedFlatTable {
         return sql.toString();
     }
 
-    //使用DISTRIBUTE BY语法
+    //查询全表的数据,不实用where条件
+    //INSERT OVERWRITE TABLE table SELECT * FROM tableName DISTRIBUTE BY 字段
     public static String generateRedistributeFlatTableStatement(IJoinedFlatTableDesc intermediateTableDesc) {
         final String tableName = intermediateTableDesc.getTableName();
         StringBuilder sql = new StringBuilder();

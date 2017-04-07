@@ -20,6 +20,7 @@ package org.apache.kylin.dict;
 
 /**
  * This class uses MAX_DIGITS_BEFORE_DECIMAL_POINT (=19) instead of legacy (=16).
+ * 该类就是让正数部分长度是19,而不是16
  */
 @SuppressWarnings("serial")
 public class NumberDictionary2<T> extends NumberDictionary<T> {

@@ -122,7 +122,7 @@ public class DFSFileTableReader implements TableReader {
     //拆分一行数据
     private String[] split(String line, String delim) {
         // FIXME CVS line should be parsed considering escapes
-        String[] str = StringSplitter.split(line, delim);
+        String[] str = StringSplitter.split(line, delim);//拆分一行数据
 
         // un-escape CSV
         if (DFSFileTable.DELIM_COMMA.equals(delim)) {//如果拆分行是逗号
@@ -172,9 +172,10 @@ public class DFSFileTableReader implements TableReader {
     // ============================================================================
 
     private interface RowReader extends Closeable {
-        String nextLine() throws IOException; // return null on EOF
+        String nextLine() throws IOException; // return null on EOF 读取一行内容
     }
 
+    //读取SequenceFile文件
     private class SeqRowReader implements RowReader {
         Reader reader;//读取SequenceFile文件的流
         Writable key;//可序列化的Key

@@ -31,6 +31,38 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
+ 用于存储度量属性
+ "hbase_mapping": {
+     "column_family": [
+         {
+             "name": "F1",//表示标准的度量
+             "columns": [
+                 {
+                     "qualifier": "M",
+                     "measure_refs": [
+                     "_COUNT_",
+                     "AMOUNT",
+                     "AA",
+                     "BB",
+                     "EE"
+                     ]
+                 }
+             ]
+         },
+         {
+             "name": "F2",//表示count distinct度量
+             "columns": [
+                 {
+                     "qualifier": "M",
+                     "measure_refs": [
+                     "CC",
+                     "GG"
+                     ]
+                 }
+             ]
+         }
+     ]
+ },
  */
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
 public class HBaseMappingDesc {
@@ -47,10 +79,10 @@ public class HBaseMappingDesc {
         if (hbaseMapping == null || hbaseMapping.getColumnFamily() == null) {
             return result;
         }
-        for (HBaseColumnFamilyDesc cf : hbaseMapping.getColumnFamily()) {
-            for (HBaseColumnDesc c : cf.getColumns()) {
-                for (MeasureDesc m : c.getMeasures()) {
-                    if (m.getFunction().equals(function)) {
+        for (HBaseColumnFamilyDesc cf : hbaseMapping.getColumnFamily()) {//循环每一个列族
+            for (HBaseColumnDesc c : cf.getColumns()) {//该列族下所有列
+                for (MeasureDesc m : c.getMeasures()) {//每一个列对应的度量
+                    if (m.getFunction().equals(function)) {//找到对应的度量
                         result.add(c);
                     }
                 }
@@ -79,11 +111,11 @@ public class HBaseMappingDesc {
         cubeRef = cubeDesc;
 
         for (HBaseColumnFamilyDesc cf : columnFamily) {//循环所有的列族
-            cf.setName(cf.getName().toUpperCase());
+            cf.setName(cf.getName().toUpperCase());//设置列族名字大写
 
-            for (HBaseColumnDesc c : cf.getColumns()) {
-                c.setQualifier(c.getQualifier().toUpperCase());
-                StringUtil.toUpperCaseArray(c.getMeasureRefs(), c.getMeasureRefs());
+            for (HBaseColumnDesc c : cf.getColumns()) {//循环每一个列
+                c.setQualifier(c.getQualifier().toUpperCase());//列名字大写
+                StringUtil.toUpperCaseArray(c.getMeasureRefs(), c.getMeasureRefs());//列里面保存的度量名字大写
             }
         }
     }

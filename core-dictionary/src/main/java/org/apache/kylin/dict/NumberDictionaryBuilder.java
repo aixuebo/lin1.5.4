@@ -22,11 +22,11 @@ import org.apache.kylin.common.util.Bytes;
 
 /**
  * @author yangli9
- * 
+ * 对数字类型的数据进行目录映射处理
  */
 public class NumberDictionaryBuilder<T> extends TrieDictionaryBuilder<T> {
 
-    NumberDictionary.NumberBytesCodec codec = new NumberDictionary.NumberBytesCodec(NumberDictionary.MAX_DIGITS_BEFORE_DECIMAL_POINT);
+    NumberDictionary.NumberBytesCodec codec = new NumberDictionary.NumberBytesCodec(NumberDictionary.MAX_DIGITS_BEFORE_DECIMAL_POINT);//如何对数字进行编码
 
     public NumberDictionaryBuilder(BytesConverter<T> bytesConverter) {
         super(bytesConverter);
@@ -34,9 +34,9 @@ public class NumberDictionaryBuilder<T> extends TrieDictionaryBuilder<T> {
 
     @Override
     public void addValue(byte[] value) {
-        codec.encodeNumber(value, 0, value.length);
-        byte[] copy = Bytes.copy(codec.buf, codec.bufOffset, codec.bufLen);
-        super.addValue(copy);
+        codec.encodeNumber(value, 0, value.length);//先对数字进行编码
+        byte[] copy = Bytes.copy(codec.buf, codec.bufOffset, codec.bufLen);//属于该字节数组转换后的字节数组
+        super.addValue(copy);//添加转换后的字节数组
     }
 
     public NumberDictionary<T> build(int baseId) {

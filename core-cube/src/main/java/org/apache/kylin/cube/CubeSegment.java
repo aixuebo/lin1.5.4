@@ -49,27 +49,34 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+//先比较开始位置,在比较结束位置
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
 public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegment {
 
     @JsonBackReference
-    private CubeInstance cubeInstance;
+    private CubeInstance cubeInstance;//该segment所属cube
     @JsonProperty("uuid")
-    private String uuid;
+    private String uuid;//segment对应的uuid
     @JsonProperty("name")
-    private String name;
+    private String name;//格式是FULL_BUILD  或者startOffset + "_" + endOffset  或者yyyyMMddHHmmss_yyyyMMddHHmmss
     @JsonProperty("storage_location_identifier")
-    private String storageLocationIdentifier; // HTable name
+    private String storageLocationIdentifier; // HTable name hbase对应的表名
+
+    //该segment对应的时间区间
     @JsonProperty("date_range_start")
     private long dateRangeStart;
     @JsonProperty("date_range_end")
     private long dateRangeEnd;
+
+    //该segment对应的offset区间
     @JsonProperty("source_offset_start")
     private long sourceOffsetStart;
     @JsonProperty("source_offset_end")
     private long sourceOffsetEnd;
+
+
     @JsonProperty("status")
-    private SegmentStatusEnum status;
+    private SegmentStatusEnum status;//状态
     @JsonProperty("size_kb")
     private long sizeKB;
     @JsonProperty("input_records")
@@ -81,7 +88,7 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
     @JsonProperty("last_build_job_id")
     private String lastBuildJobID;
     @JsonProperty("create_time_utc")
-    private long createTimeUTC;
+    private long createTimeUTC;//创建时间
     @JsonProperty("cuboid_shard_nums")
     private Map<Long, Short> cuboidShardNums = Maps.newHashMap();
     @JsonProperty("total_shards") //it is only valid when all cuboids are squshed into some shards. like the HBASE_STORAGE case, otherwise it'll stay 0
@@ -118,6 +125,7 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
      * @param endDate
      * @return if(startDate == 0 && endDate == 0), returns "FULL_BUILD", else
      * returns "yyyyMMddHHmmss_yyyyMMddHHmmss"
+     * 为segment产生一个name,格式是FULL_BUILD  或者startOffset + "_" + endOffset  或者yyyyMMddHHmmss_yyyyMMddHHmmss
      */
     public static String makeSegmentName(long startDate, long endDate, long startOffset, long endOffset) {
         if (startOffset != 0 || endOffset != 0) {
@@ -319,11 +327,13 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
         return new CubeDimEncMap(this);
     }
 
+    //true表示使用的是offset
     public boolean isSourceOffsetsOn() {
         return sourceOffsetStart != 0 || sourceOffsetEnd != 0;
     }
 
     // date range is used in place of source offsets when offsets are missing
+    //开始时间或者offset
     public long getSourceOffsetStart() {
         return isSourceOffsetsOn() ? sourceOffsetStart : dateRangeStart;
     }
@@ -333,6 +343,7 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
     }
 
     // date range is used in place of source offsets when offsets are missing
+    //获取segment的结束时间或者offset
     public long getSourceOffsetEnd() {
         return isSourceOffsetsOn() ? sourceOffsetEnd : dateRangeEnd;
     }
@@ -341,15 +352,18 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
         this.sourceOffsetEnd = sourceOffsetEnd;
     }
 
+    //true表示参数CubeSegment在本类范围内,不包含=关系
     public boolean dateRangeOverlaps(CubeSegment seg) {
         return dateRangeStart < seg.dateRangeEnd && seg.dateRangeStart < dateRangeEnd;
     }
 
+    //参数CubeSegment属于本类范围内,包含=关系
     public boolean dateRangeContains(CubeSegment seg) {
         return dateRangeStart <= seg.dateRangeStart && seg.dateRangeEnd <= dateRangeEnd;
     }
 
     // date range is used in place of source offsets when offsets are missing
+    //true表示参数CubeSegment在本类范围内,不包含=关系
     public boolean sourceOffsetOverlaps(CubeSegment seg) {
         if (isSourceOffsetsOn())
             return sourceOffsetStart < seg.sourceOffsetEnd && seg.sourceOffsetStart < sourceOffsetEnd;
@@ -358,6 +372,7 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
     }
 
     // date range is used in place of source offsets when offsets are missing
+    //参数CubeSegment属于本类范围内,包含=关系
     public boolean sourceOffsetContains(CubeSegment seg) {
         if (isSourceOffsetsOn())
             return sourceOffsetStart <= seg.sourceOffsetStart && seg.sourceOffsetEnd <= sourceOffsetEnd;
@@ -366,7 +381,7 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
     }
 
     public void validate() {
-        if (cubeInstance.getDescriptor().getModel().getPartitionDesc().isPartitioned()) {
+        if (cubeInstance.getDescriptor().getModel().getPartitionDesc().isPartitioned()) {//model是分区的
             if (!isSourceOffsetsOn() && dateRangeStart >= dateRangeEnd)
                 throw new IllegalStateException("Invalid segment, dateRangeStart(" + dateRangeStart + ") must be smaller than dateRangeEnd(" + dateRangeEnd + ") in segment " + this);
             if (isSourceOffsetsOn() && sourceOffsetStart >= sourceOffsetEnd)
@@ -374,6 +389,7 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
         }
     }
 
+    //先比较开始位置,在比较结束位置
     @Override
     public int compareTo(CubeSegment other) {
         long comp = this.getSourceOffsetStart() - other.getSourceOffsetStart();

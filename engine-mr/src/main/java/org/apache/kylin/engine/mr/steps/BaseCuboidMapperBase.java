@@ -61,10 +61,10 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
     public static final byte[] ONE = Bytes.toBytes("1");//1对应的byte字节数组
 
     protected String cubeName;
-    protected String segmentID;
+    protected String segmentID;//CubeSegment对应的uuid
     protected Cuboid baseCuboid;
     protected CubeInstance cube;
-    protected CubeDesc cubeDesc;
+    protected CubeDesc cubeDesc;//cube页面的配置信息组成的对象
     protected CubeSegment cubeSegment;
 
     protected List<byte[]> nullBytes;//存储所有的null对应的字节数组
@@ -105,9 +105,9 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
 
         cube = CubeManager.getInstance(config).getCube(cubeName);
         cubeDesc = cube.getDescriptor();
-        cubeSegment = cube.getSegmentById(segmentID);
+        cubeSegment = cube.getSegmentById(segmentID);//获取对应的segment
 
-        long baseCuboidId = Cuboid.getBaseCuboidId(cubeDesc);
+        long baseCuboidId = Cuboid.getBaseCuboidId(cubeDesc);//有多少个属性
         baseCuboid = Cuboid.findById(cubeDesc, baseCuboidId);
 
         intermediateTableDesc = new CubeJoinedFlatTableEnrich(EngineFactory.getJoinedFlatTableDesc(cubeSegment), cubeDesc);

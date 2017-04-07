@@ -42,9 +42,13 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 /**
+ * 用于删除过期的资源
+ * ./bin/metastore.sh clean --delete true
+ * ${KYLIN_HOME}/bin/kylin.sh org.apache.kylin.storage.hbase.util.StorageCleanupJob --delete true
  */
 public class MetadataCleanupJob extends AbstractHadoopJob {
 
+    //-delete true表示删除未使用的元数据
     @SuppressWarnings("static-access")
     private static final Option OPTION_DELETE = OptionBuilder.withArgName("delete").hasArg().isRequired(false).withDescription("Delete the unused metadata").create("delete");
 
@@ -90,6 +94,8 @@ public class MetadataCleanupJob extends AbstractHadoopJob {
         return ResourceStore.getStore(config);
     }
 
+    //参数是文件的最后修改时间
+    //true表示资源已经很老了
     private boolean isOlderThanThreshold(long resourceTime) {
         long currentTime = System.currentTimeMillis();
 
@@ -101,9 +107,11 @@ public class MetadataCleanupJob extends AbstractHadoopJob {
     public void cleanup() throws Exception {
         CubeManager cubeManager = CubeManager.getInstance(config);
 
+        //存储已经过期的资源path路径集合
         List<String> toDeleteResource = Lists.newArrayList();
 
         // two level resources, snapshot tables and cube statistics
+        //查找两种资源,table_snapshot和cube_statistics
         for (String resourceRoot : new String[] { ResourceStore.SNAPSHOT_RESOURCE_ROOT, ResourceStore.CUBE_STATISTICS_ROOT }) {
             NavigableSet<String> snapshotTables = getStore().listResources(resourceRoot);
 
@@ -112,7 +120,7 @@ public class MetadataCleanupJob extends AbstractHadoopJob {
                     NavigableSet<String> snapshotNames = getStore().listResources(snapshotTable);
                     if (snapshotNames != null)
                         for (String snapshot : snapshotNames) {
-                            if (isOlderThanThreshold(getStore().getResourceTimestamp(snapshot)))
+                            if (isOlderThanThreshold(getStore().getResourceTimestamp(snapshot)))//获取文件的最后修改时间
                                 toDeleteResource.add(snapshot);
                         }
                 }
@@ -120,6 +128,7 @@ public class MetadataCleanupJob extends AbstractHadoopJob {
         }
 
         // three level resources, only dictionaries
+        //dict资源
         NavigableSet<String> dictTables = getStore().listResources(ResourceStore.DICT_RESOURCE_ROOT);
 
         if (dictTables != null) {
@@ -136,15 +145,17 @@ public class MetadataCleanupJob extends AbstractHadoopJob {
             }
         }
 
+        //活跃的资源
         Set<String> activeResourceList = Sets.newHashSet();
-        for (org.apache.kylin.cube.CubeInstance cube : cubeManager.listAllCubes()) {
-            for (org.apache.kylin.cube.CubeSegment segment : cube.getSegments()) {
+        for (org.apache.kylin.cube.CubeInstance cube : cubeManager.listAllCubes()) {//所有cube
+            for (org.apache.kylin.cube.CubeSegment segment : cube.getSegments()) {//每一个cube的所有segment
                 activeResourceList.addAll(segment.getSnapshotPaths());
                 activeResourceList.addAll(segment.getDictionaryPaths());
                 activeResourceList.add(segment.getStatisticsResourcePath());
             }
         }
 
+        //删除的资源-活跃的资源
         toDeleteResource.removeAll(activeResourceList);
 
         // delete old and completed jobs
@@ -167,8 +178,8 @@ public class MetadataCleanupJob extends AbstractHadoopJob {
             logger.info("The following resources have no reference or is too old, will be cleaned from metadata store: \n");
 
             for (String s : toDeleteResource) {
-                logger.info(s);
-                if (delete == true) {
+                logger.info(s);//只是打印信息
+                if (delete == true) {//true的时候才会选择真的去删除
                     getStore().deleteResource(s);
                 }
             }

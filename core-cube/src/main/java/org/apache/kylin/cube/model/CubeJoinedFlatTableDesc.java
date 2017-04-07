@@ -33,17 +33,18 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 /**
+ * 过滤cube需要哪些列
  */
 public class CubeJoinedFlatTableDesc implements IJoinedFlatTableDesc {
 
-    private String tableName;
+    private String tableName;//中间表名
     private final CubeDesc cubeDesc;
-    private final CubeSegment cubeSegment;
+    private final CubeSegment cubeSegment;//处理属于该cube对应的一段数据,即segment,如果不分区,则该属性为null
 
-    private int columnCount;
+    private int columnCount;//一个多少个属性
 
-    private List<TblColRef> columnList = Lists.newArrayList();
-    private Map<TblColRef, Integer> columnIndexMap;
+    private List<TblColRef> columnList = Lists.newArrayList();//所需要的属性集合
+    private Map<TblColRef, Integer> columnIndexMap;//属性对应的序号映射
 
     public CubeJoinedFlatTableDesc(CubeDesc cubeDesc) {
         this(cubeDesc, null);
@@ -69,7 +70,7 @@ public class CubeJoinedFlatTableDesc implements IJoinedFlatTableDesc {
         }
 
         int columnIndex = 0;
-        for (TblColRef col : cubeDesc.listDimensionColumnsExcludingDerived(false)) {
+        for (TblColRef col : cubeDesc.listDimensionColumnsExcludingDerived(false)) {//选择需要的属性集合
             columnIndexMap.put(col, columnIndex);
             columnList.add(col);
             columnIndex++;
@@ -83,7 +84,7 @@ public class CubeJoinedFlatTableDesc implements IJoinedFlatTableDesc {
             if (colRefs != null) {
                 for (int j = 0; j < colRefs.size(); j++) {
                     TblColRef c = colRefs.get(j);
-                    if (columnList.indexOf(c) < 0) {
+                    if (columnList.indexOf(c) < 0) {//函数使用的属性 目前没涉及,因此要添加该属性
                         columnIndexMap.put(c, columnIndex);
                         columnList.add(c);
                         columnIndex++;

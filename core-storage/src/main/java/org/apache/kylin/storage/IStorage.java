@@ -20,6 +20,12 @@ package org.apache.kylin.storage;
 
 import org.apache.kylin.metadata.realization.IRealization;
 
+/**
+ * 实现类
+ r.put(0, "org.apache.kylin.storage.hbase.HBaseStorage");
+ r.put(1, "org.apache.kylin.storage.hybrid.HybridStorage");
+ r.put(2, "org.apache.kylin.storage.hbase.HBaseStorage");
+ */
 public interface IStorage {
 
     public IStorageQuery createQuery(IRealization realization);

@@ -642,7 +642,7 @@ abstract public class KylinConfigBase implements Serializable {
         return Boolean.parseBoolean(this.getOptional("kylin.hive.keep.flat.table", "false"));
     }
 
-    public String getHiveDatabaseForIntermediateTable() {
+    public String getHiveDatabaseForIntermediateTable() {//存储中间结果的hive数据库,默认是default
         return this.getOptional("kylin.job.hive.database.for.intermediatetable", "default");
     }
 
@@ -722,6 +722,7 @@ abstract public class KylinConfigBase implements Serializable {
         return getOptional("kylin.job.controller.lock", "org.apache.kylin.storage.hbase.util.ZookeeperJobLock");
     }
 
+    //job的引擎集合
     public Map<Integer, String> getJobEngines() {
         Map<Integer, String> r = convertKeyToInteger(getPropertiesByPrefix("kylin.cube.engine."));
         // ref constants in IEngineAware

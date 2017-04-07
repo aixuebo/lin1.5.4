@@ -167,7 +167,7 @@ public class CubeService extends BasicService {
         CubeDesc createdDesc;
         CubeInstance createdCube;
 
-        createdDesc = getCubeDescManager().createCubeDesc(desc);
+        createdDesc = getCubeDescManager().createCubeDesc(desc);//创建cube描述对象
 
         if (!createdDesc.getError().isEmpty()) {
             getCubeDescManager().removeCubeDesc(createdDesc);
@@ -182,6 +182,7 @@ public class CubeService extends BasicService {
             throw new InternalErrorException("Failed to deal with the request.", e);
         }
 
+        //创建cube对象
         createdCube = getCubeManager().createCube(cubeName, projectName, createdDesc, owner);
         accessService.init(createdCube, AclPermission.ADMINISTRATION);
 

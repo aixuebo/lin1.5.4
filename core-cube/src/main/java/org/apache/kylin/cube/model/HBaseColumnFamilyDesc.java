@@ -33,9 +33,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class HBaseColumnFamilyDesc {
 
     @JsonProperty("name")
-    private String name;
+    private String name;//family的name,即列族
     @JsonProperty("columns")
-    private HBaseColumnDesc[] columns;
+    private HBaseColumnDesc[] columns;//该列族包含的属性集合
 
     public String getName() {
         return name;

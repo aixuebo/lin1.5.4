@@ -122,14 +122,14 @@ public class HiveMRInput implements IMRInput {
 
         @Override
         public void addStepPhase1_CreateFlatTable(DefaultChainedExecutable jobFlow) {
-            final String cubeName = CubingExecutableUtil.getCubeName(jobFlow.getParams());
+            final String cubeName = CubingExecutableUtil.getCubeName(jobFlow.getParams());//获取cube名字
 
             final KylinConfig kylinConfig = CubeManager.getInstance(conf.getConfig()).getCube(cubeName).getConfig();
 
             String createFlatTableMethod = kylinConfig.getCreateFlatHiveTableMethod();
             if ("1".equals(createFlatTableMethod)) {
                 // create flat table first, then count and redistribute
-                jobFlow.addTask(createFlatHiveTableStep(conf, flatDesc, jobFlow.getId(), cubeName, false, ""));
+                jobFlow.addTask(createFlatHiveTableStep(conf, flatDesc, jobFlow.getId(), cubeName, false, ""));//创建执行hive sql的执行器
                 jobFlow.addTask(createRedistributeFlatHiveTableStep(conf, flatDesc, jobFlow.getId(), cubeName));
             } else if ("2".equals(createFlatTableMethod)) {
                 // count from source table first, and then redistribute, suitable for partitioned table
@@ -146,20 +146,21 @@ public class HiveMRInput implements IMRInput {
             }
         }
 
+        //对数据分布进行重新输出
         public static AbstractExecutable createRedistributeFlatHiveTableStep(JobEngineConfig conf, IJoinedFlatTableDesc flatTableDesc, String jobId, String cubeName) {
             StringBuilder hiveInitBuf = new StringBuilder();
-            hiveInitBuf.append("USE ").append(conf.getConfig().getHiveDatabaseForIntermediateTable()).append(";\n");
-            hiveInitBuf.append(JoinedFlatTable.generateHiveSetStatements(conf));
+            hiveInitBuf.append("USE ").append(conf.getConfig().getHiveDatabaseForIntermediateTable()).append(";\n");//use hive临时数据库
+            hiveInitBuf.append(JoinedFlatTable.generateHiveSetStatements(conf));//SET name=value;\n name=value;形式
 
-            String rowCountOutputDir = JobBuilderSupport.getJobWorkingDir(conf, jobId) + "/row_count";
+            String rowCountOutputDir = JobBuilderSupport.getJobWorkingDir(conf, jobId) + "/row_count";//输出目录
 
             RedistributeFlatHiveTableStep step = new RedistributeFlatHiveTableStep();
             step.setInitStatement(hiveInitBuf.toString());
-            step.setSelectRowCountStatement(JoinedFlatTable.generateSelectRowCountStatement(flatTableDesc, rowCountOutputDir));
+            step.setSelectRowCountStatement(JoinedFlatTable.generateSelectRowCountStatement(flatTableDesc, rowCountOutputDir));//INSERT OVERWRITE DIRECTORY outputDir SELECT count(*) FROM  biao
             step.setRowCountOutputDir(rowCountOutputDir);
-            step.setRedistributeDataStatement(JoinedFlatTable.generateRedistributeFlatTableStatement(flatTableDesc));
+            step.setRedistributeDataStatement(JoinedFlatTable.generateRedistributeFlatTableStatement(flatTableDesc));//INSERT OVERWRITE TABLE table SELECT * FROM tableName DISTRIBUTE BY 字段
             CubingExecutableUtil.setCubeName(cubeName, step.getParams());
-            step.setName(ExecutableConstants.STEP_NAME_REDISTRIBUTE_FLAT_HIVE_TABLE);
+            step.setName(ExecutableConstants.STEP_NAME_REDISTRIBUTE_FLAT_HIVE_TABLE);//计算select count(*) 表的总记录任务
             return step;
         }
 
@@ -168,9 +169,9 @@ public class HiveMRInput implements IMRInput {
             final ShellExecutable step = new ShellExecutable();
 
             final HiveCmdBuilder hiveCmdBuilder = new HiveCmdBuilder();
-            hiveCmdBuilder.addStatement(JoinedFlatTable.generateHiveSetStatements(conf));
+            hiveCmdBuilder.addStatement(JoinedFlatTable.generateHiveSetStatements(conf));//SET name=value;\n name=value;形式
             hiveCmdBuilder.addStatement("set hive.exec.compress.output=false;\n");
-            hiveCmdBuilder.addStatement(JoinedFlatTable.generateCountDataStatement(flatTableDesc, rowCountOutputDir));
+            hiveCmdBuilder.addStatement(JoinedFlatTable.generateCountDataStatement(flatTableDesc, rowCountOutputDir));//dfs -mkdir -p  outputDir;  INSERT OVERWRITE DIRECTORY  outputDir SELECT count(*) FROM biao
 
             step.setCmd(hiveCmdBuilder.build());
             step.setName(ExecutableConstants.STEP_NAME_COUNT_HIVE_TABLE);
@@ -197,9 +198,9 @@ public class HiveMRInput implements IMRInput {
             if (lookupViewsTables.size() == 0) {
                 return null;
             }
-            final String useDatabaseHql = "USE " + conf.getConfig().getHiveDatabaseForIntermediateTable() + ";";
+            final String useDatabaseHql = "USE " + conf.getConfig().getHiveDatabaseForIntermediateTable() + ";";//use 临时数据库
             hiveCmdBuilder.addStatement(useDatabaseHql);
-            hiveCmdBuilder.addStatement(JoinedFlatTable.generateHiveSetStatements(conf));
+            hiveCmdBuilder.addStatement(JoinedFlatTable.generateHiveSetStatements(conf));//SET name=value;\n name=value;形式
             for (TableDesc lookUpTableDesc : lookupViewsTables) {
                 if (TableDesc.TABLE_TYPE_VIRTUAL_VIEW.equalsIgnoreCase(lookUpTableDesc.getTableType())) {
                     StringBuilder createIntermediateTableHql = new StringBuilder();
@@ -218,22 +219,29 @@ public class HiveMRInput implements IMRInput {
             return step;
         }
 
+        /**
+         * 创建执行hive sql的执行器
+         * @param flatTableDesc 对该宽表进行hive的sql组装
+         * @param redistribute  true表示使用DISTRIBUTE BY RAND() 或者DISTRIBUTE BY 字段 语法
+         * @param rowCountOutputDir
+         */
         public static AbstractExecutable createFlatHiveTableStep(JobEngineConfig conf, IJoinedFlatTableDesc flatTableDesc, String jobId, String cubeName, boolean redistribute, String rowCountOutputDir) {
             StringBuilder hiveInitBuf = new StringBuilder();
-            hiveInitBuf.append(JoinedFlatTable.generateHiveSetStatements(conf));
+            hiveInitBuf.append(JoinedFlatTable.generateHiveSetStatements(conf));//加载hive的配置信息  SET name=value;\n name=value;形式
 
-            final String useDatabaseHql = "USE " + conf.getConfig().getHiveDatabaseForIntermediateTable() + ";\n";
-            final String dropTableHql = JoinedFlatTable.generateDropTableStatement(flatTableDesc);
-            final String createTableHql = JoinedFlatTable.generateCreateTableStatement(flatTableDesc, JobBuilderSupport.getJobWorkingDir(conf, jobId));
-            String insertDataHqls = JoinedFlatTable.generateInsertDataStatement(flatTableDesc, conf, redistribute);
+            final String useDatabaseHql = "USE " + conf.getConfig().getHiveDatabaseForIntermediateTable() + ";\n";//use 数据库
+            final String dropTableHql = JoinedFlatTable.generateDropTableStatement(flatTableDesc);//DROP TABLE IF EXISTS 删除语句
+            final String createTableHql = JoinedFlatTable.generateCreateTableStatement(flatTableDesc, JobBuilderSupport.getJobWorkingDir(conf, jobId));//创建hive临时表
+            String insertDataHqls = JoinedFlatTable.generateInsertDataStatement(flatTableDesc, conf, redistribute);//INSERT OVERWRITE TABLE biao select...产生创建数据的sql
 
+            //执行上面的hive的sql
             CreateFlatHiveTableStep step = new CreateFlatHiveTableStep();
             step.setUseRedistribute(redistribute);
             step.setInitStatement(hiveInitBuf.toString());
             step.setRowCountOutputDir(rowCountOutputDir);
             step.setCreateTableStatement(useDatabaseHql + dropTableHql + createTableHql + insertDataHqls);
             CubingExecutableUtil.setCubeName(cubeName, step.getParams());
-            step.setName(ExecutableConstants.STEP_NAME_CREATE_FLAT_HIVE_TABLE);
+            step.setName(ExecutableConstants.STEP_NAME_CREATE_FLAT_HIVE_TABLE);//名字是创建hive的临时表执行任务,即执行hive的sql
             return step;
         }
 
@@ -247,11 +255,13 @@ public class HiveMRInput implements IMRInput {
             jobFlow.addTask(step);
         }
 
+        //获取一个hive的数据库的信息内容
         @Override
         public IMRTableInputFormat getFlatTableInputFormat() {
             return new HiveTableInputFormat(getIntermediateTableIdentity());
         }
 
+        //存储中间结果的hive数据库,默认是default,即数据库和表名
         private String getIntermediateTableIdentity() {
             return conf.getConfig().getHiveDatabaseForIntermediateTable() + "." + flatDesc.getTableName();
         }
@@ -260,11 +270,12 @@ public class HiveMRInput implements IMRInput {
     public static class RedistributeFlatHiveTableStep extends AbstractExecutable {
         private final BufferedLogger stepLogger = new BufferedLogger(logger);
 
+        //去执行命令,去计算表内有多少数据,存储到HDFS上
         private void computeRowCount(CliCommandExecutor cmdExecutor) throws IOException {
             final HiveCmdBuilder hiveCmdBuilder = new HiveCmdBuilder();
-            hiveCmdBuilder.addStatement(getInitStatement());
+            hiveCmdBuilder.addStatement(getInitStatement());//设置hive的初始化条件  SET name=value;\n name=value;形式
             hiveCmdBuilder.addStatement("set hive.exec.compress.output=false;\n");
-            hiveCmdBuilder.addStatement(getSelectRowCountStatement());
+            hiveCmdBuilder.addStatement(getSelectRowCountStatement());//INSERT OVERWRITE DIRECTORY outputDir SELECT count(*) FROM  biao
             final String cmd = hiveCmdBuilder.build();
 
             stepLogger.log("Compute row count of flat hive table, cmd: ");
@@ -276,6 +287,7 @@ public class HiveMRInput implements IMRInput {
             }
         }
 
+        //读取文件内的行数
         private long readRowCountFromFile(Path file) throws IOException {
             FileSystem fs = FileSystem.get(file.toUri(), HadoopUtil.getCurrentConfiguration());
             InputStream in = fs.open(file);
@@ -345,14 +357,15 @@ public class HiveMRInput implements IMRInput {
             }
         }
 
+        //设置hive的初始化条件  SET name=value;\n name=value;形式
         public void setInitStatement(String sql) {
             setParam("HiveInit", sql);
         }
-
         public String getInitStatement() {
             return getParam("HiveInit");
         }
 
+        //INSERT OVERWRITE DIRECTORY outputDir SELECT count(*) FROM  biao
         public void setSelectRowCountStatement(String sql) {
             setParam("HiveSelectRowCount", sql);
         }
@@ -361,6 +374,7 @@ public class HiveMRInput implements IMRInput {
             return getParam("HiveSelectRowCount");
         }
 
+        //INSERT OVERWRITE TABLE table SELECT * FROM tableName DISTRIBUTE BY 字段
         public void setRedistributeDataStatement(String sql) {
             setParam("HiveRedistributeData", sql);
         }
@@ -369,6 +383,7 @@ public class HiveMRInput implements IMRInput {
             return getParam("HiveRedistributeData");
         }
 
+        //select count的输出目录
         public void setRowCountOutputDir(String rowCountOutputDir) {
             setParam("rowCountOutputDir", rowCountOutputDir);
         }
@@ -378,6 +393,7 @@ public class HiveMRInput implements IMRInput {
         }
     }
 
+    //删除数据库以及HDFS的内容
     public static class GarbageCollectionStep extends AbstractExecutable {
         private static final Logger logger = LoggerFactory.getLogger(GarbageCollectionStep.class);
 
@@ -403,17 +419,18 @@ public class HiveMRInput implements IMRInput {
             if (config.isHiveKeepFlatTable() == false && StringUtils.isNotEmpty(hiveTable)) {
                 final HiveCmdBuilder hiveCmdBuilder = new HiveCmdBuilder();
                 hiveCmdBuilder.addStatement("USE " + config.getHiveDatabaseForIntermediateTable() + ";");
-                hiveCmdBuilder.addStatement("DROP TABLE IF EXISTS  " + hiveTable + ";");
+                hiveCmdBuilder.addStatement("DROP TABLE IF EXISTS  " + hiveTable + ";");//hive命令执行删除该table
 
                 config.getCliCommandExecutor().execute(hiveCmdBuilder.build());
-                output.append("Hive table " + hiveTable + " is dropped. \n");
+                output.append("Hive table " + hiveTable + " is dropped. \n");//打印输出日志
 
-                rmdirOnHDFS(getExternalDataPath());
+                rmdirOnHDFS(getExternalDataPath());//删除table对应的HDFS上目录,因为可能是外部表
                 output.append("Hive table " + hiveTable + " external data path " + getExternalDataPath() + " is deleted. \n");
             }
             return output.toString();
         }
 
+        //创建该目录
         private void mkdirOnHDFS(String path) throws IOException {
             Path externalDataPath = new Path(path);
             FileSystem fs = FileSystem.get(externalDataPath.toUri(), HadoopUtil.getCurrentConfiguration());
@@ -422,6 +439,7 @@ public class HiveMRInput implements IMRInput {
             }
         }
 
+        //删除该目录
         private void rmdirOnHDFS(String path) throws IOException {
             Path externalDataPath = new Path(path);
             FileSystem fs = FileSystem.get(externalDataPath.toUri(), HadoopUtil.getCurrentConfiguration());
@@ -433,7 +451,7 @@ public class HiveMRInput implements IMRInput {
         private String cleanUpHiveViewIntermediateTable(KylinConfig config) throws IOException {
             StringBuffer output = new StringBuffer();
             final HiveCmdBuilder hiveCmdBuilder = new HiveCmdBuilder();
-            hiveCmdBuilder.addStatement("USE " + config.getHiveDatabaseForIntermediateTable() + ";");
+            hiveCmdBuilder.addStatement("USE " + config.getHiveDatabaseForIntermediateTable() + ";");//use 临时数据库
             if (getHiveViewIntermediateTableIdentities() != null && !getHiveViewIntermediateTableIdentities().isEmpty()) {
                 for (String hiveTableName : getHiveViewIntermediateTableIdentities().split(";")) {
                     hiveCmdBuilder.addStatement("DROP TABLE IF EXISTS  " + hiveTableName + ";");

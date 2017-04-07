@@ -23,13 +23,19 @@ import org.apache.kylin.cube.model.CubeDesc;
 import org.apache.kylin.job.execution.DefaultChainedExecutable;
 import org.apache.kylin.metadata.model.IJoinedFlatTableDesc;
 
+/**
+ 实现类
+ r.put(0, "org.apache.kylin.engine.mr.MRBatchCubingEngine");
+ r.put(2, "org.apache.kylin.engine.mr.MRBatchCubingEngine2");
+批处理引擎接口
+ */
 public interface IBatchCubingEngine {
     
     /** Mark deprecated to indicate for test purpose only */
     @Deprecated
-    public IJoinedFlatTableDesc getJoinedFlatTableDesc(CubeDesc cubeDesc);
+    public IJoinedFlatTableDesc getJoinedFlatTableDesc(CubeDesc cubeDesc);//cube运行的时候需要哪些列
     
-    public IJoinedFlatTableDesc getJoinedFlatTableDesc(CubeSegment newSegment);
+    public IJoinedFlatTableDesc getJoinedFlatTableDesc(CubeSegment newSegment);//cube运行的时候需要哪些列
 
     /** Build a new cube segment, typically its time range appends to the end of current cube. */
     public DefaultChainedExecutable createBatchCubingJob(CubeSegment newSegment, String submitter);

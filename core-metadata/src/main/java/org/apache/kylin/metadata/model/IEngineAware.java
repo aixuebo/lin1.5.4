@@ -19,7 +19,10 @@
 package org.apache.kylin.metadata.model;
 
 public interface IEngineAware {
-
+    /**
+     r.put(0, "org.apache.kylin.engine.mr.MRBatchCubingEngine");
+     r.put(2, "org.apache.kylin.engine.mr.MRBatchCubingEngine2");
+     */
     public static final int ID_MR_V1 = 0;
     public static final int ID_MR_V2 = 2;
     public static final int ID_MR_II = 3;

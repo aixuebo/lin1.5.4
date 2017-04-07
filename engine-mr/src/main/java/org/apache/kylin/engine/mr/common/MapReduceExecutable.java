@@ -48,6 +48,7 @@ import com.google.common.base.Preconditions;
 
 /**
  * 一个mr任务
+ * 由JobBuilderSupport类生成
  */
 public class MapReduceExecutable extends AbstractExecutable {
 

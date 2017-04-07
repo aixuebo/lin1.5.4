@@ -43,10 +43,10 @@ public class TrieDictionaryBuilder<T> {
 
     public static class Node {
         public byte[] part;
-        public boolean isEndOfValue;//true表明该node是一个单词的结尾  默认boolean类型返回的是false
+        public boolean isEndOfValue;//true表明该node是一个单词的结尾,即表示存在这样的一个单词  默认boolean类型返回的是false
         public ArrayList<Node> children;
 
-        public int nValuesBeneath; // only present after stats()
+        public int nValuesBeneath; // only present after stats() 在stats方法之后,存在该属性对应的值,该属性是说该node节点的子子孙孙,包含本node节点对象,一共多少个单词结尾的单词
 
         Node(byte[] value, boolean isEndOfValue) {
             reset(value, isEndOfValue);
@@ -82,6 +82,7 @@ public class TrieDictionaryBuilder<T> {
     }
 
     //添加一个对象,将对象转换成字节数组再添加
+    //插入后就组成了一个字典树结构
     public void addValue(T value) {
         addValue(bytesConverter.convertToBytes(value));
     }
@@ -103,16 +104,16 @@ public class TrieDictionaryBuilder<T> {
                 break;
         }
 
-        if (j == nn) {//说明value全部内容都匹配当前node
+        if (j == nn) {//说明value全部内容都匹配当前node,即j的位置等于全部value的内容,因此是匹配完成
             // if value fully matched within the current node
-            if (i == n) {//而当前node节点也被循环完了,说明这两个value是相同的
+            if (i == n) {//而当前node节点也被循环完了,说明这两个value是相同的,i是当前位置,n是总位置
                 // if equals to current node, just mark end of value
                 node.isEndOfValue = true;
             } else {//说明此时value是node的一部分
                 // otherwise, split the current node into two
-                Node c = new Node(BytesUtil.subarray(node.part, i, n), node.isEndOfValue, node.children);
+                Node c = new Node(BytesUtil.subarray(node.part, i, n), node.isEndOfValue, node.children);//将i后面的元素单独拿出来,组成一个Node
                 node.reset(BytesUtil.subarray(node.part, 0, i), true);//0到i的部分,就是匹配到一个单词了,因此该node就是一个单词内容,因此设置成true
-                node.children.add(c);
+                node.children.add(c);//单独拿出来的作为子节点
             }
             return;
         }
@@ -120,10 +121,10 @@ public class TrieDictionaryBuilder<T> {
         // if partially matched the current, split the current node, add the new value, make a 3-way
         //说明只是匹配了一部分,拆分当前节点,
         if (i < n) {
-            Node c1 = new Node(BytesUtil.subarray(node.part, i, n), node.isEndOfValue, node.children);
-            Node c2 = new Node(BytesUtil.subarray(value, j, nn), true);
-            node.reset(BytesUtil.subarray(node.part, 0, i), false);
-            if (comp < 0) {
+            Node c1 = new Node(BytesUtil.subarray(node.part, i, n), node.isEndOfValue, node.children);//i后面的部分单独拿出来
+            Node c2 = new Node(BytesUtil.subarray(value, j, nn), true);//n后面的内容单独拿出来,并且nn是整个单词,因此设置为true,表示单词结尾
+            node.reset(BytesUtil.subarray(node.part, 0, i), false);//重置0到i,非单词结尾
+            if (comp < 0) {//按照顺序设置子节点
                 node.children.add(c1);
                 node.children.add(c2);
             } else {
@@ -144,7 +145,7 @@ public class TrieDictionaryBuilder<T> {
         comp = 0;
         while (!found && lo <= hi) {
             mid = lo + (hi - lo) / 2;
-            comp = BytesUtil.compareByteUnsigned(lookfor, node.children.get(mid).part[0]);
+            comp = BytesUtil.compareByteUnsigned(lookfor, node.children.get(mid).part[0]);//比较第0个字节
             if (comp < 0)
                 hi = mid - 1;
             else if (comp > 0)
@@ -152,16 +153,19 @@ public class TrieDictionaryBuilder<T> {
             else
                 found = true;
         }
-        if (found) {
+
+
+        if (found) {//说明找到了
             // found a child node matching the first byte, continue in that child
-            addValueR(node.children.get(mid), value, j);
-        } else {
+            addValueR(node.children.get(mid), value, j);//在子字符串内继续追加,value从j位置开始计算
+        } else {//说明没找到,则添加新的子节点
             // otherwise, make the value a new child
-            Node c = new Node(BytesUtil.subarray(value, j, nn), true);
-            node.children.add(comp <= 0 ? mid : mid + 1, c);
+            Node c = new Node(BytesUtil.subarray(value, j, nn), true);//并且是单词结尾,因此是true
+            node.children.add(comp <= 0 ? mid : mid + 1, c);//在适当位置上插入该值
         }
     }
 
+    //从前往后循环每一个node
     public void traverse(Visitor visitor) {
         traverseR(root, visitor, 0);
     }
@@ -172,6 +176,7 @@ public class TrieDictionaryBuilder<T> {
             traverseR(c, visitor, level + 1);
     }
 
+    //从后往前循环每一个node
     public void traversePostOrder(Visitor visitor) {
         traversePostOrderR(root, visitor, 0);
     }
@@ -183,19 +188,21 @@ public class TrieDictionaryBuilder<T> {
     }
 
     public static class Stats {
-        public int nValues; // number of values in total
+        public int nValues; // number of values in total 总的单词数
         public int nValueBytesPlain; // number of bytes for all values
-                                     // uncompressed
+                                     // uncompressed 所有的单词占用总字节(没有压缩前)
         public int nValueBytesCompressed; // number of values bytes in Trie
-                                          // (compressed)
-        public int maxValueLength; // size of longest value in bytes
+                                          // (compressed) 压缩后所有单词占用总字节
+        public int maxValueLength; // size of longest value in bytes 最长的单词占用多少个字节
 
         // the trie is multi-byte-per-node
-        public int mbpn_nNodes; // number of nodes in trie
-        public int mbpn_trieDepth; // depth of trie
-        public int mbpn_maxFanOut; // the maximum no. children
+        public int mbpn_nNodes; // number of nodes in trie 有多少个node节点
+        public int mbpn_trieDepth; // depth of trie ,node节点的最大深度
+        public int mbpn_maxFanOut; // the maximum no. children ,node中最多有多少个子节点
         public long mbpn_nChildLookups; // number of child lookups during lookup every value once
         public long mbpn_nTotalFanOut; // the sum of fan outs during lookup every value once
+
+
         public int mbpn_sizeValueTotal; // the sum of value space in all nodes
         public int mbpn_sizeNoValueBytes; // size of field noValueBytes
         public int mbpn_sizeNoValueBeneath; // size of field noValuesBeneath, depends on cardinality
@@ -242,32 +249,34 @@ public class TrieDictionaryBuilder<T> {
     /** out print some statistics of the trie and the dictionary built from it */
     public Stats stats() {
         // calculate nEndValueBeneath
+        //从最底层开始计算,计算每一个node有多少个单词结尾的完整单词
         traversePostOrder(new Visitor() {
             @Override
             public void visit(Node n, int level) {
-                n.nValuesBeneath = n.isEndOfValue ? 1 : 0;
+                n.nValuesBeneath = n.isEndOfValue ? 1 : 0;//有多少个单词结尾
                 for (Node c : n.children)
-                    n.nValuesBeneath += c.nValuesBeneath;
+                    n.nValuesBeneath += c.nValuesBeneath;//因为底层的子节点已经计算完成了,因此当前节点是可以直接与子节点的求和的
             }
         });
 
         // run stats
         final Stats s = new Stats();
         final ArrayList<Integer> lenAtLvl = new ArrayList<Integer>();
+        //从头到尾循环
         traverse(new Visitor() {
             @Override
             public void visit(Node n, int level) {
-                if (n.isEndOfValue)
-                    s.nValues++;
-                s.nValueBytesPlain += n.part.length * n.nValuesBeneath;
-                s.nValueBytesCompressed += n.part.length;
-                s.mbpn_nNodes++;
+                if (n.isEndOfValue) //是单词结尾
+                    s.nValues++; //总的单词数++
+                s.nValueBytesPlain += n.part.length * n.nValuesBeneath;//所有的单词占用总字节(没有压缩前)
+                s.nValueBytesCompressed += n.part.length;//压缩后所有单词占用总字节
+                s.mbpn_nNodes++;//有多少个node节点
                 if (s.mbpn_trieDepth < level + 1)
-                    s.mbpn_trieDepth = level + 1;
+                    s.mbpn_trieDepth = level + 1;//node节点的最大深度
                 if (n.children.size() > 0) {
                     if (s.mbpn_maxFanOut < n.children.size())
-                        s.mbpn_maxFanOut = n.children.size();
-                    int childLookups = n.nValuesBeneath - (n.isEndOfValue ? 1 : 0);
+                        s.mbpn_maxFanOut = n.children.size();//node中最多有多少个子节点
+                    int childLookups = n.nValuesBeneath - (n.isEndOfValue ? 1 : 0);//该node节点下所有子子孙孙,不包含node本身,有多少个完整的单词
                     s.mbpn_nChildLookups += childLookups;
                     s.mbpn_nTotalFanOut += childLookups * n.children.size();
                 }
@@ -277,10 +286,10 @@ public class TrieDictionaryBuilder<T> {
                 else
                     lenAtLvl.add(n.part.length);
                 int lenSoFar = 0;
-                for (int i = 0; i <= level; i++)
+                for (int i = 0; i <= level; i++) //计算从头到现在的级别,一共有多少个字节
                     lenSoFar += lenAtLvl.get(i);
                 if (lenSoFar > s.maxValueLength)
-                    s.maxValueLength = lenSoFar;
+                    s.maxValueLength = lenSoFar; //最长的单词占用多少个字节
             }
         });
 
@@ -328,8 +337,9 @@ public class TrieDictionaryBuilder<T> {
             @Override
             public void visit(Node n, int level) {
                 try {
-                    for (int i = 0; i < level; i++)
+                    for (int i = 0; i < level; i++){//每一层循环.打印若干个空格
                         out.print("  ");
+                    }
                     out.print(new String(n.part, "UTF-8"));
                     out.print(" - ");
                     if (n.nValuesBeneath > 0)
@@ -344,19 +354,20 @@ public class TrieDictionaryBuilder<T> {
         });
     }
 
+    //缓冲区间对象
     private CompleteParts completeParts = new CompleteParts();
 
     private class CompleteParts {
-        byte[] data = new byte[4096];
-        int current = 0;
+        byte[] data = new byte[4096];//缓冲池
+        int current = 0;//当前已经在缓冲池中写到哪个位置了
 
         //追加参数字节数组到data中
         public void append(byte[] part) {
             while (current + part.length > data.length)
                 expand();//扩容
 
-            System.arraycopy(part, 0, data, current, part.length);
-            current += part.length;
+            System.arraycopy(part, 0, data, current, part.length);//复制part的数据,到data数组中,从current位置开始写数据
+            current += part.length;//增加current位置
         }
 
         //丢弃最后若干个字节位置
@@ -393,13 +404,13 @@ public class TrieDictionaryBuilder<T> {
                 this.addValue(visited);//重新添加
                 //清空添加的字符内容
                 completeParts.withdraw(255);
-                completeParts.withdraw(node.part.length);
+                completeParts.withdraw(node.part.length);//清空父Node的内容
             }
         }
 
         completeParts.append(node.part); // by here the node.children may have been changed
         for (Node child : node.children) {
-            checkOverflowParts(child);
+            checkOverflowParts(child);//递归子子孙孙(这部分日后可以详细研究,因为这么写很容易产生bug)
         }
         completeParts.withdraw(node.part.length);
     }
@@ -438,7 +449,7 @@ public class TrieDictionaryBuilder<T> {
             ByteArrayOutputStream byteBuf = new ByteArrayOutputStream();
             DataOutputStream headOut = new DataOutputStream(byteBuf);
             headOut.write(TrieDictionary.MAGIC);
-            headOut.writeShort(0); // head size, will back fill
+            headOut.writeShort(0); // head size, will back fill ,head头的字节总数
             headOut.writeInt((int) stats.mbpn_footprint); // body size
             headOut.write(sizeChildOffset);
             headOut.write(sizeNoValuesBeneath);
@@ -447,7 +458,7 @@ public class TrieDictionaryBuilder<T> {
             headOut.writeUTF(bytesConverter == null ? "" : bytesConverter.getClass().getName());
             headOut.close();
             head = byteBuf.toByteArray();
-            BytesUtil.writeUnsigned(head.length, head, TrieDictionary.MAGIC_SIZE_I, 2);
+            BytesUtil.writeUnsigned(head.length, head, TrieDictionary.MAGIC_SIZE_I, 2);//将head头字节数写入到输出流中
         } catch (IOException e) {
             throw new RuntimeException(e); // shall not happen, as we are writing in memory
         }
@@ -456,24 +467,24 @@ public class TrieDictionaryBuilder<T> {
         System.arraycopy(head, 0, trieBytes, 0, head.length);//先复制header信息
 
         LinkedList<Node> open = new LinkedList<Node>();
-        IdentityHashMap<Node, Integer> offsetMap = new IdentityHashMap<Node, Integer>();
+        IdentityHashMap<Node, Integer> offsetMap = new IdentityHashMap<Node, Integer>();//每一个node对应的offset位置
 
         // write body
         int o = head.length;
         offsetMap.put(root, o);
-        o = build_writeNode(root, o, true, sizeNoValuesBeneath, sizeChildOffset, trieBytes);
-        if (root.children.isEmpty() == false)
-            open.addLast(root);
+        o = build_writeNode(root, o, true, sizeNoValuesBeneath, sizeChildOffset, trieBytes);//返回值是位置,因为root就一个node,因此他就是最后一个node,所以参数设置为true
+        if (root.children.isEmpty() == false) //不是空
+            open.addLast(root);//追加root到队列
 
-        while (open.isEmpty() == false) {
-            Node parent = open.removeFirst();
+        while (open.isEmpty() == false) {//只要不是null,队列有内容,则不断迭代循环
+            Node parent = open.removeFirst();//获取一个元素
             build_overwriteChildOffset(offsetMap.get(parent), o - head.length, sizeChildOffset, trieBytes);
-            for (int i = 0; i < parent.children.size(); i++) {
+            for (int i = 0; i < parent.children.size(); i++) {//所有的子node
                 Node c = parent.children.get(i);
                 boolean isLastChild = (i == parent.children.size() - 1);
-                offsetMap.put(c, o);
+                offsetMap.put(c, o);//每一个node对应offset位置
                 o = build_writeNode(c, o, isLastChild, sizeNoValuesBeneath, sizeChildOffset, trieBytes);
-                if (c.children.isEmpty() == false)
+                if (c.children.isEmpty() == false)//如果是有子节点的,因此将子节点追加到open集合中
                     open.addLast(c);
             }
         }
@@ -489,30 +500,40 @@ public class TrieDictionaryBuilder<T> {
         trieBytes[parentOffset] |= flags;
     }
 
+    /**
+     * 将node写入到字节数组中
+     * @param n 要准备写入的node
+     * @param offset 在trieBytes中开始从哪个偏移写入数据
+     * @param isLastChild 是否是child中最后一个节点,即是否下一个是另外node了
+     * @param sizeNoValuesBeneath
+     * @param sizeChildOffset
+     * @param trieBytes 最终大数组,向该数组中写入字节内容
+     * @return
+     */
     private int build_writeNode(Node n, int offset, boolean isLastChild, int sizeNoValuesBeneath, int sizeChildOffset, byte[] trieBytes) {
-        int o = offset;
+        int o = offset;//开始位置是否超过了20G了
         if (o > _2GB)
             throw new IllegalStateException();
 
-        // childOffset
+        //设置状态,使用一个字节
         if (isLastChild)
-            trieBytes[o] |= TrieDictionary.BIT_IS_LAST_CHILD;
+            trieBytes[o] |= TrieDictionary.BIT_IS_LAST_CHILD;//是最后一个节点
         if (n.isEndOfValue)
-            trieBytes[o] |= TrieDictionary.BIT_IS_END_OF_VALUE;
+            trieBytes[o] |= TrieDictionary.BIT_IS_END_OF_VALUE;//是单词结尾
         o += sizeChildOffset;
 
         // nValuesBeneath
-        BytesUtil.writeUnsigned(n.nValuesBeneath, trieBytes, o, sizeNoValuesBeneath);
+        BytesUtil.writeUnsigned(n.nValuesBeneath, trieBytes, o, sizeNoValuesBeneath);//将一共多少个单词结尾的单词这个int写入到字节数组中
         o += sizeNoValuesBeneath;
 
         // nValueBytes
         if (n.part.length > 255)
             throw new RuntimeException();
-        BytesUtil.writeUnsigned(n.part.length, trieBytes, o, 1);
+        BytesUtil.writeUnsigned(n.part.length, trieBytes, o, 1);//因为不超过255,因此字节长度就用一个字节表示,即写入字节长度
         o++;
 
         // valueBytes
-        System.arraycopy(n.part, 0, trieBytes, o, n.part.length);
+        System.arraycopy(n.part, 0, trieBytes, o, n.part.length);//写入字节内容
         o += n.part.length;
 
         return o;

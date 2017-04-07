@@ -40,6 +40,7 @@ public class EngineFactory {
         streamingEngines = new ImplementationSwitch<IStreamingCubingEngine>(impls, IStreamingCubingEngine.class); // TODO
     }
 
+    //查找对应的实现引擎
     public static IBatchCubingEngine batchEngine(IEngineAware aware) {
         return batchEngines.get(aware.getEngineType());
     }

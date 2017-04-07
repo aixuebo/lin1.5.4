@@ -20,6 +20,9 @@ package org.apache.kylin.engine;
 
 import org.apache.kylin.cube.CubeSegment;
 
+/**
+ * 流处理引擎接口
+ */
 public interface IStreamingCubingEngine {
 
     public Runnable createStreamingCubingBuilder(CubeSegment seg);

@@ -195,6 +195,7 @@ public class JobService extends BasicService {
         }
     }
 
+    //提交一个任务
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN + " or hasPermission(#cube, 'ADMINISTRATION') or hasPermission(#cube, 'OPERATION') or hasPermission(#cube, 'MANAGEMENT')")
     public JobInstance submitJob(CubeInstance cube, long startDate, long endDate, long startOffset, long endOffset, //
             CubeBuildTypeEnum buildType, boolean force, String submitter) throws IOException, JobException {

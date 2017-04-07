@@ -124,7 +124,7 @@ public class FactDistinctHiveColumnsMapper<KEYIN> extends FactDistinctColumnsMap
             handleErrorRecord(row, ex);
         }
 
-        if (collectStatistics && rowCount < samplingPercentage) {
+        if (collectStatistics && rowCount < samplingPercentage) {//抽样百分比,比如是5,则每100条数据,都要前5条数据
             putRowKeyToHLL(row);
         }
 

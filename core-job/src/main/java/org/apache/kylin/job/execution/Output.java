@@ -21,6 +21,7 @@ package org.apache.kylin.job.execution;
 import java.util.Map;
 
 /**
+ * 描述一个任务的输出信息
  */
 public interface Output {
 
