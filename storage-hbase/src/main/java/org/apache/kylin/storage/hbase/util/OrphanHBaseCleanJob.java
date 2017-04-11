@@ -38,28 +38,32 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 有报名单的删除,删除非白名单的数据
  */
 public class OrphanHBaseCleanJob extends AbstractApplication {
 
     @SuppressWarnings("static-access")
     private static final Option OPTION_DELETE = OptionBuilder.withArgName("delete").hasArg().isRequired(false).withDescription("Delete the unused storage").create("delete");
+
+    //逗号拆分
     @SuppressWarnings("static-access")
     private static final Option OPTION_WHITELIST = OptionBuilder.withArgName("whitelist").hasArg().isRequired(true).withDescription("metadata store whitelist, separated with comma").create("whitelist");
 
     protected static final Logger logger = LoggerFactory.getLogger(OrphanHBaseCleanJob.class);
 
     boolean delete = false;
+
     Set<String> metastoreWhitelistSet = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
 
     private void cleanUnusedHBaseTables(Configuration conf) throws IOException {
 
         // get all kylin hbase tables
         HBaseAdmin hbaseAdmin = new HBaseAdmin(conf);
-        String tableNamePrefix = IRealizationConstants.SharedHbaseStorageLocationPrefix;
-        HTableDescriptor[] tableDescriptors = hbaseAdmin.listTables(tableNamePrefix + ".*");
+        String tableNamePrefix = IRealizationConstants.SharedHbaseStorageLocationPrefix;//KYLIN_
+        HTableDescriptor[] tableDescriptors = hbaseAdmin.listTables(tableNamePrefix + ".*");//获取表集合
         List<String> allTablesNeedToBeDropped = new ArrayList<String>();
         for (HTableDescriptor desc : tableDescriptors) {
-            String host = desc.getValue(IRealizationConstants.HTableTag);
+            String host = desc.getValue(IRealizationConstants.HTableTag);//获取KYLIN_HOST对应的属性值
             if (!metastoreWhitelistSet.contains(host)) {
                 logger.info("HTable {} is recognized as orphan because its tag is {}", desc.getTableName(), host);
                 //collect orphans
@@ -69,6 +73,7 @@ public class OrphanHBaseCleanJob extends AbstractApplication {
             }
         }
 
+        //删除
         if (delete == true) {
             // drop tables
             for (String htableName : allTablesNeedToBeDropped) {

@@ -126,7 +126,7 @@ public class ExtendCubeToHybridCLI {
 
         CubeDesc cubeDesc = cubeDescManager.getCubeDesc(cubeInstance.getDescName());
         DataModelDesc dataModelDesc = metadataManager.getDataModelDesc(cubeDesc.getModelName());
-        if (StringUtils.isEmpty(dataModelDesc.getPartitionDesc().getPartitionDateColumn())) {
+        if (StringUtils.isEmpty(dataModelDesc.getPartitionDesc().getPartitionDateColumn())) {//必须要有分区
             logger.error("No incremental cube, no need to extend.");
             return;
         }

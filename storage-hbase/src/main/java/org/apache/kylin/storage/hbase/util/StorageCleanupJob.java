@@ -66,19 +66,20 @@ public class StorageCleanupJob extends AbstractApplication {
     public static final int TIME_THRESHOLD_DELETE_HTABLE = 10; // Unit minute
 
     protected boolean delete = false;
-    protected static ExecutableManager executableManager = ExecutableManager.getInstance(KylinConfig.getInstanceFromEnv());
+    protected static ExecutableManager executableManager = ExecutableManager.getInstance(KylinConfig.getInstanceFromEnv());//线程池去删除hbase的表
 
+    //删除hbase的表
     private void cleanUnusedHBaseTables(Configuration conf) throws IOException {
         CubeManager cubeMgr = CubeManager.getInstance(KylinConfig.getInstanceFromEnv());
-        long TIME_THREADSHOLD = KylinConfig.getInstanceFromEnv().getStorageCleanupTimeThreshold();
+        long TIME_THREADSHOLD = KylinConfig.getInstanceFromEnv().getStorageCleanupTimeThreshold();//存储周期伐值
         // get all kylin hbase tables
         HBaseAdmin hbaseAdmin = new HBaseAdmin(conf);
         String tableNamePrefix = IRealizationConstants.SharedHbaseStorageLocationPrefix;
-        HTableDescriptor[] tableDescriptors = hbaseAdmin.listTables(tableNamePrefix + ".*");
-        List<String> allTablesNeedToBeDropped = new ArrayList<String>();
+        HTableDescriptor[] tableDescriptors = hbaseAdmin.listTables(tableNamePrefix + ".*");//全部hbase的表
+        List<String> allTablesNeedToBeDropped = new ArrayList<String>();//需要被删除的hbase表
         for (HTableDescriptor desc : tableDescriptors) {
-            String host = desc.getValue(IRealizationConstants.HTableTag);
-            String creationTime = desc.getValue(IRealizationConstants.HTableCreationTime);
+            String host = desc.getValue(IRealizationConstants.HTableTag);//获取该表的key为KYLIN_HOST的属性值
+            String creationTime = desc.getValue(IRealizationConstants.HTableCreationTime);//创建时间
             if (KylinConfig.getInstanceFromEnv().getMetadataUrlPrefix().equalsIgnoreCase(host)) {
                 //only take care htables that belongs to self, and created more than 2 days
                 if (StringUtils.isEmpty(creationTime) || (System.currentTimeMillis() - Long.valueOf(creationTime) > TIME_THREADSHOLD)) {
@@ -100,6 +101,7 @@ public class StorageCleanupJob extends AbstractApplication {
             }
         }
 
+        //删除操作
         if (delete == true) {
             // drop tables
             ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -143,12 +145,13 @@ public class StorageCleanupJob extends AbstractApplication {
 
         Configuration conf = HBaseConfiguration.create();
 
-        cleanUnusedIntermediateHiveTable(conf);
-        cleanUnusedHdfsFiles(conf);
-        cleanUnusedHBaseTables(conf);
+        cleanUnusedIntermediateHiveTable(conf);//删除已经jobid不是在工作中的数据库表
+        cleanUnusedHdfsFiles(conf);//删除HDFS上的内容
+        cleanUnusedHBaseTables(conf);//删除hbase的表
 
     }
 
+    //删除一个habse的表线程
     class DeleteHTableRunnable implements Callable {
         HBaseAdmin hbaseAdmin;
         String htableName;
@@ -183,6 +186,7 @@ public class StorageCleanupJob extends AbstractApplication {
         // GlobFilter filter = new
         // GlobFilter(KylinConfig.getInstanceFromEnv().getHdfsWorkingDirectory()
         // + "/kylin-.*");
+        //查目录下是kylin-开头的目录,即可以被删除的kylin下的KDFS目录
         FileStatus[] fStatus = fs.listStatus(new Path(KylinConfig.getInstanceFromEnv().getHdfsWorkingDirectory()));
         for (FileStatus status : fStatus) {
             String path = status.getPath().getName();
@@ -193,7 +197,8 @@ public class StorageCleanupJob extends AbstractApplication {
             }
         }
 
-        List<String> allJobs = executableManager.getAllJobIds();
+        //将运行中的job从删除集合中删除,即不能删除这些job的信息
+        List<String> allJobs = executableManager.getAllJobIds();//所有执行的job
         for (String jobId : allJobs) {
             // only remove FINISHED and DISCARDED job intermediate files
             final ExecutableState state = executableManager.getOutput(jobId).getState();
@@ -205,6 +210,7 @@ public class StorageCleanupJob extends AbstractApplication {
         }
 
         // remove every segment working dir from deletion list
+        //segment不能被删除
         for (CubeInstance cube : cubeMgr.listAllCubes()) {
             for (CubeSegment seg : cube.getSegments()) {
                 String jobUuid = seg.getLastBuildJobID();
@@ -216,6 +222,7 @@ public class StorageCleanupJob extends AbstractApplication {
             }
         }
 
+        //删除或者打印
         if (delete == true) {
             // remove files
             for (String hdfsPath : allHdfsPathsNeedToBeDeleted) {
@@ -235,27 +242,28 @@ public class StorageCleanupJob extends AbstractApplication {
             }
             System.out.println("-------------------------------------------------------");
         }
-
     }
 
+    //删除已经jobid不是在工作中的数据库表
     private void cleanUnusedIntermediateHiveTable(Configuration conf) throws IOException {
         final KylinConfig config = KylinConfig.getInstanceFromEnv();
         final CliCommandExecutor cmdExec = config.getCliCommandExecutor();
-        final int uuidLength = 36;
+        final int uuidLength = 36;//uuid的长度
 
-        final String useDatabaseHql = "USE " + config.getHiveDatabaseForIntermediateTable() + ";";
+        final String useDatabaseHql = "USE " + config.getHiveDatabaseForIntermediateTable() + ";";//hive的use 数据库
         final HiveCmdBuilder hiveCmdBuilder = new HiveCmdBuilder();
         hiveCmdBuilder.addStatement(useDatabaseHql);
-        hiveCmdBuilder.addStatement("show tables " + "\'kylin_intermediate_*\'" + "; ");
+        hiveCmdBuilder.addStatement("show tables " + "\'kylin_intermediate_*\'" + "; ");//展示kylin_intermediate开头的临时表
 
         Pair<Integer, String> result = cmdExec.execute(hiveCmdBuilder.build());
 
-        String outputStr = result.getSecond();
+        String outputStr = result.getSecond();//返回的查询结果集
         BufferedReader reader = new BufferedReader(new StringReader(outputStr));
         String line = null;
-        List<String> allJobs = executableManager.getAllJobIds();
-        List<String> allHiveTablesNeedToBeDeleted = new ArrayList<String>();
-        List<String> workingJobList = new ArrayList<String>();
+        List<String> allJobs = executableManager.getAllJobIds();//所有的jobid集合
+        List<String> workingJobList = new ArrayList<String>();//工作中的job,不能被删除
+        List<String> allHiveTablesNeedToBeDeleted = new ArrayList<String>();//要准备去删除的job
+
 
         for (String jobId : allJobs) {
             // only remove FINISHED and DISCARDED job intermediate table
@@ -270,7 +278,7 @@ public class StorageCleanupJob extends AbstractApplication {
         while ((line = reader.readLine()) != null) {
             if (line.startsWith("kylin_intermediate_")) {
                 boolean isNeedDel = false;
-                String uuid = line.substring(line.length() - uuidLength, line.length());
+                String uuid = line.substring(line.length() - uuidLength, line.length());//获取uuid
                 uuid = uuid.replace("_", "-");
                 //Check whether it's a hive table in use
                 if (allJobs.contains(uuid) && !workingJobList.contains(uuid)) {
@@ -285,6 +293,7 @@ public class StorageCleanupJob extends AbstractApplication {
 
         if (delete == true) {
             hiveCmdBuilder.reset();
+            //执行删除hive表操作
             hiveCmdBuilder.addStatement(useDatabaseHql);
             for (String delHive : allHiveTablesNeedToBeDeleted) {
                 hiveCmdBuilder.addStatement("drop table if exists " + delHive + "; ");
@@ -297,6 +306,7 @@ public class StorageCleanupJob extends AbstractApplication {
                 e.printStackTrace();
             }
         } else {
+            //打印信息
             System.out.println("------ Intermediate Hive Tables To Be Dropped ------");
             for (String hiveTable : allHiveTablesNeedToBeDeleted) {
                 System.out.println(hiveTable);

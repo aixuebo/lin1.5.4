@@ -74,8 +74,8 @@ public class QueryController extends BasicController {
 
     private static final Logger logger = LoggerFactory.getLogger(QueryController.class);
 
-    public static final String SUCCESS_QUERY_CACHE = "StorageCache";
-    public static final String EXCEPTION_QUERY_CACHE = "ExceptionQueryCache";
+    public static final String SUCCESS_QUERY_CACHE = "StorageCache";//成功的请求被缓存
+    public static final String EXCEPTION_QUERY_CACHE = "ExceptionQueryCache";//失败的请求被缓存
 
     @Autowired
     private QueryService queryService;
@@ -174,20 +174,20 @@ public class QueryController extends BasicController {
             logger.info("The original query:  " + sql);
 
             String serverMode = KylinConfig.getInstanceFromEnv().getServerMode();
-            if (!(Constant.SERVER_MODE_QUERY.equals(serverMode.toLowerCase()) || Constant.SERVER_MODE_ALL.equals(serverMode.toLowerCase()))) {
+            if (!(Constant.SERVER_MODE_QUERY.equals(serverMode.toLowerCase()) || Constant.SERVER_MODE_ALL.equals(serverMode.toLowerCase()))) {//必须是all或者query
                 throw new InternalErrorException("Query is not allowed in " + serverMode + " mode.");
             }
 
-            if (!sql.toLowerCase().contains("select")) {
+            if (!sql.toLowerCase().contains("select")) {//必须是select语法
                 logger.debug("Directly return exception as not supported");
                 throw new InternalErrorException("Not Supported SQL.");
             }
 
             long startTime = System.currentTimeMillis();
 
-            SQLResponse sqlResponse = searchQueryInCache(sqlRequest);
+            SQLResponse sqlResponse = searchQueryInCache(sqlRequest);//在缓存中查找结果
             try {
-                if (null == sqlResponse) {
+                if (null == sqlResponse) {//说明没有缓存
                     sqlResponse = queryService.query(sqlRequest);
 
                     long durationThreshold = KylinConfig.getInstanceFromEnv().getQueryDurationCacheThreshold();
@@ -196,7 +196,7 @@ public class QueryController extends BasicController {
                     logger.info("Stats of SQL response: isException: {}, duration: {}, total scan count {}", //
                             String.valueOf(sqlResponse.getIsException()), String.valueOf(sqlResponse.getDuration()), String.valueOf(sqlResponse.getTotalScanCount()));
                     if (!sqlResponse.getIsException() && (sqlResponse.getDuration() > durationThreshold || sqlResponse.getTotalScanCount() > scancountThreshold)) {
-                        cacheManager.getCache(SUCCESS_QUERY_CACHE).put(new Element(sqlRequest, sqlResponse));
+                        cacheManager.getCache(SUCCESS_QUERY_CACHE).put(new Element(sqlRequest, sqlResponse));//缓存成功的请求
                     }
                 } else {
                     sqlResponse.setDuration(System.currentTimeMillis() - startTime);

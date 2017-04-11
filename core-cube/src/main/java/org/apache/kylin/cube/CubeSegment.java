@@ -100,9 +100,9 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
     private String binarySignature; // a hash of cube schema and dictionary ID, used for sanity check
 
     @JsonProperty("dictionaries")
-    private ConcurrentHashMap<String, String> dictionaries; // table/column ==> dictionary resource path
+    private ConcurrentHashMap<String, String> dictionaries; // table/column ==> dictionary resource path 存储cube的字典
     @JsonProperty("snapshots")
-    private ConcurrentHashMap<String, String> snapshots; // table name ==> snapshot resource path
+    private ConcurrentHashMap<String, String> snapshots; // table name ==> snapshot resource path 存储cube的快照
 
     @JsonProperty("index_path")
     private String indexPath;

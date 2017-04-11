@@ -49,6 +49,7 @@ public class GridTableHBaseBenchmark {
     private static final byte[] QN = "C".getBytes();
     private static final int N_ROWS = 10000;
     private static final int CELL_SIZE = 128 * 1024; // 128 KB
+    //默认值
     private static final double DFT_HIT_RATIO = 0.3;
     private static final double DFT_INDEX_RATIO = 0.1;
     private static final int ROUND = 3;

@@ -62,10 +62,11 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
 
     protected String cubeName;
     protected String segmentID;//CubeSegment对应的uuid
-    protected Cuboid baseCuboid;
     protected CubeInstance cube;
     protected CubeDesc cubeDesc;//cube页面的配置信息组成的对象
     protected CubeSegment cubeSegment;
+
+    protected Cuboid baseCuboid;
 
     protected List<byte[]> nullBytes;//存储所有的null对应的字节数组
     protected CubeJoinedFlatTableEnrich intermediateTableDesc;
@@ -78,7 +79,7 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
     protected MeasureIngester<?>[] aggrIngesters;
     protected Map<TblColRef, Dictionary<String>> dictionaryMap;
     protected Object[] measures;
-    protected byte[][] keyBytesBuf;
+    protected byte[][] keyBytesBuf;//存储key的每一个字段对应的字节数组内容
     protected BytesSplitter bytesSplitter;//代表如何将一行数据拆分成多列
     protected AbstractRowKeyEncoder rowKeyEncoder;
     protected BufferedMeasureEncoder measureCodec;
@@ -94,15 +95,15 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
 
         cubeName = context.getConfiguration().get(BatchConstants.CFG_CUBE_NAME).toUpperCase();
         segmentID = context.getConfiguration().get(BatchConstants.CFG_CUBE_SEGMENT_ID);
-        intermediateTableRowDelimiter = context.getConfiguration().get(BatchConstants.CFG_CUBE_INTERMEDIATE_TABLE_ROW_DELIMITER, Character.toString(BatchConstants.INTERMEDIATE_TABLE_ROW_DELIMITER));
+        intermediateTableRowDelimiter = context.getConfiguration().get(BatchConstants.CFG_CUBE_INTERMEDIATE_TABLE_ROW_DELIMITER, Character.toString(BatchConstants.INTERMEDIATE_TABLE_ROW_DELIMITER));//行分隔符
         if (Bytes.toBytes(intermediateTableRowDelimiter).length > 1) {//分隔符只能是一个字节
             throw new RuntimeException("Expected delimiter byte length is 1, but got " + Bytes.toBytes(intermediateTableRowDelimiter).length);
         }
-
         byteRowDelimiter = Bytes.toBytes(intermediateTableRowDelimiter)[0];
 
         KylinConfig config = AbstractHadoopJob.loadKylinPropsAndMetadata();
 
+        //加载转换成cube对象相关信息
         cube = CubeManager.getInstance(config).getCube(cubeName);
         cubeDesc = cube.getDescriptor();
         cubeSegment = cube.getSegmentById(segmentID);//获取对应的segment
@@ -173,7 +174,7 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
     }
 
     private Object buildValueOf(int idxOfMeasure, SplittedBytes[] splitBuffers) {
-        MeasureDesc measure = cubeDesc.getMeasures().get(idxOfMeasure);
+        MeasureDesc measure = cubeDesc.getMeasures().get(idxOfMeasure);//获取第index个度量对象
         FunctionDesc function = measure.getFunction();
         int[] colIdxOnFlatTable = intermediateTableDesc.getMeasureColumnIndexes()[idxOfMeasure];
 

@@ -33,6 +33,7 @@ import com.google.common.collect.Lists;
 
 /**
  * Created by dongli on 2/29/16.
+ * 如何执行hive命令
  */
 public class HiveCmdBuilder {
     private static final Logger logger = LoggerFactory.getLogger(HiveCmdBuilder.class);

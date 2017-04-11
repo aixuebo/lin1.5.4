@@ -44,6 +44,7 @@ import com.google.common.collect.Lists;
 
 public class Cuboid implements Comparable<Cuboid> {
 
+    //key是cubeName,value是该cube对应的每一种Cuboid
     private final static Map<String, Map<Long, Cuboid>> CUBOID_CACHE = new ConcurrentHashMap<String, Map<Long, Cuboid>>();
 
     //smaller is better
@@ -68,10 +69,12 @@ public class Cuboid implements Comparable<Cuboid> {
         return Cuboid.findById(cubeDesc, cuboidID);
     }
 
+    //字节数组转换成long
     public static Cuboid findById(CubeDesc cube, byte[] cuboidID) {
         return findById(cube, Bytes.toLong(cuboidID));
     }
 
+    //获取对应的Cuboid对象
     public static Cuboid findById(CubeDesc cube, long cuboidID) {
         Map<Long, Cuboid> cubeCache = CUBOID_CACHE.get(cube.getName());
         if (cubeCache == null) {
@@ -128,6 +131,7 @@ public class Cuboid implements Comparable<Cuboid> {
         return cube.getRowkey().getFullMask();
     }
 
+    //获取基础cube对应的Cuboid对象
     public static Cuboid getBaseCuboid(CubeDesc cube) {
         return findById(cube, getBaseCuboidId(cube));
     }
@@ -153,6 +157,11 @@ public class Cuboid implements Comparable<Cuboid> {
     }
 
     private static Long translateToValidCuboid(AggregationGroup agg, long cuboidID) {
+        /**
+         * 1.agg.getPartialCubeFullMask()表示该agg需要哪些字段
+         * 2.~ 表示该agg不需要哪些字段
+         * 3.与cuboidID进行&操作,找到哪些字段不需要
+         */
         if ((cuboidID & ~agg.getPartialCubeFullMask()) > 0) {
             //the partial cube might not contain all required dims
             return null;
@@ -164,8 +173,8 @@ public class Cuboid implements Comparable<Cuboid> {
         // add hierarchy
         for (HierarchyMask hierarchyMask : agg.getHierarchyMasks()) {
             long fullMask = hierarchyMask.fullMask;
-            long intersect = cuboidID & fullMask;
-            if (intersect != 0 && intersect != fullMask) {
+            long intersect = cuboidID & fullMask;//交集
+            if (intersect != 0 && intersect != fullMask) {//说明有交集,并且交集的内容是fullMask的子集
 
                 boolean startToFill = false;
                 for (int i = hierarchyMask.dims.length - 1; i >= 0; i--) {
@@ -275,7 +284,7 @@ public class Cuboid implements Comparable<Cuboid> {
     private final long id;
     private final byte[] idBytes;
     private final boolean requirePostAggregation;
-    private List<TblColRef> dimensionColumns;
+    private List<TblColRef> dimensionColumns;//该cubeid对应的所有的列集合
 
     private volatile CuboidToGridTableMapping cuboidToGridTableMapping = null;
 
@@ -289,6 +298,7 @@ public class Cuboid implements Comparable<Cuboid> {
         this.requirePostAggregation = calcExtraAggregation(this.inputID, this.id) != 0;
     }
 
+    //找到所有的列集合
     private List<TblColRef> translateIdToColumns(long cuboidID) {
         List<TblColRef> dimesnions = new ArrayList<TblColRef>();
         RowKeyColDesc[] allColumns = cubeDesc.getRowkey().getRowKeyColumns();

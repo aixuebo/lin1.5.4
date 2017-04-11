@@ -39,6 +39,9 @@ import org.apache.calcite.avatica.UnregisteredDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * jdbc:kylin://<hostname>:<port>/<kylin_project_name>
+ */
 public class KylinConnection extends AvaticaConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(KylinConnection.class);

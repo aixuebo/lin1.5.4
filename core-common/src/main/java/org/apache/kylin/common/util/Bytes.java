@@ -273,6 +273,7 @@ public class Bytes {
      * @param off offset to start at
      * @param len length to write
      * @return string output
+     * 只有数字 字母 特殊字符才会转换成字符串,其他的还是转换成16进制,比如33转换成16进制的\x21
      */
     public static String toStringBinary(final byte[] b, int off, int len) {
         StringBuilder result = new StringBuilder();
@@ -282,11 +283,11 @@ public class Bytes {
         if (off + len > b.length)
             len = b.length - off;
         for (int i = off; i < off + len; ++i) {
-            int ch = b[i] & 0xFF;
+            int ch = b[i] & 0xFF;//与255进行&,即返回该字节
             if ((ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || " `~!@#$%^&*()-_=+[]{}|;:'\",.<>/?".indexOf(ch) >= 0) {
                 result.append((char) ch);
             } else {
-                result.append(String.format("\\x%02X", ch));
+                result.append(String.format("\\x%02X", ch));//如果不是以上的数字和字母和特殊符号.则依然转换成16进制
             }
         }
         return result.toString();

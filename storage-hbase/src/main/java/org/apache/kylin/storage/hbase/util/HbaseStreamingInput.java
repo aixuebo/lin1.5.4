@@ -48,14 +48,16 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Lists;
 
 /**
+ * hbase的流式处理,每隔一定时间产生一组数据插入到hbase中
  */
 public class HbaseStreamingInput {
     private static final Logger logger = LoggerFactory.getLogger(HbaseStreamingInput.class);
 
     private static final int CELL_SIZE = 128 * 1024; // 128 KB
-    private static final byte[] CF = "F".getBytes();
-    private static final byte[] QN = "C".getBytes();
+    private static final byte[] CF = "F".getBytes();//列族
+    private static final byte[] QN = "C".getBytes();//列族中的一个列
 
+    //创建表
     public static void createTable(String tableName) throws IOException {
         HConnection conn = getConnection();
         HBaseAdmin hadmin = new HBaseAdmin(conn);
@@ -95,11 +97,14 @@ public class HbaseStreamingInput {
         }
     }
 
+    //向tableName表插入随机的数据
     public static void addData(String tableName) throws IOException {
 
         createTable(tableName);
 
         final Semaphore semaphore = new Semaphore(0);
+
+        //一个线程,每隔几分钟就释放一下锁,让下一批处理进行处理
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -109,7 +114,7 @@ public class HbaseStreamingInput {
 
         while (true) {
             try {
-                semaphore.acquire();
+                semaphore.acquire();//每隔5分钟就可以执行一次批处理
                 int waiting = semaphore.availablePermits();
                 if (waiting > 0) {
                     logger.warn("There are another " + waiting + " batches waiting to be added");
@@ -121,23 +126,24 @@ public class HbaseStreamingInput {
             HConnection conn = getConnection();
             HTableInterface table = conn.getTable(tableName);
 
-            byte[] key = new byte[8 + 4];//time + id
+            byte[] key = new byte[8 + 4];//time + id //存储8个字节的时间戳,以及4个字节的数据
 
             logger.info("============================================");
             long startTime = System.currentTimeMillis();
             logger.info("data load start time in millis: " + startTime);
             logger.info("data load start at " + formatTime(startTime));
-            List<Put> buffer = Lists.newArrayList();
-            for (int i = 0; i < (1 << 10); ++i) {
+            List<Put> buffer = Lists.newArrayList();//批处理插入若干行数据
+            for (int i = 0; i < (1 << 10); ++i) {//循环2的10次方,即1024次循环
                 long time = System.currentTimeMillis();
+                //填满key
                 Bytes.putLong(key, 0, time);
                 Bytes.putInt(key, 8, i);
-                Put put = new Put(key);
-                byte[] cell = randomBytes(CELL_SIZE);
-                put.add(CF, QN, cell);
+                Put put = new Put(key);//作为rowkey
+                byte[] cell = randomBytes(CELL_SIZE);//随机产生128k内容
+                put.add(CF, QN, cell);//添加内容
                 buffer.add(put);
             }
-            table.put(buffer);
+            table.put(buffer);//执行若干行数据的插入
             table.close();
             conn.close();
             long endTime = System.currentTimeMillis();
@@ -150,6 +156,8 @@ public class HbaseStreamingInput {
     public static void randomScan(String tableName) throws IOException {
 
         final Semaphore semaphore = new Semaphore(0);
+
+        //一个线程,每隔几分钟就释放一下锁,让下一批处理进行处理
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -159,7 +167,7 @@ public class HbaseStreamingInput {
 
         while (true) {
             try {
-                semaphore.acquire();
+                semaphore.acquire();//每隔一定时间进行逻辑流式处理
                 int waiting = semaphore.drainPermits();
                 if (waiting > 0) {
                     logger.warn("Too many queries to handle! Blocking " + waiting + " sets of scan requests");
@@ -172,7 +180,7 @@ public class HbaseStreamingInput {
             HConnection conn = getConnection();
             HTableInterface table = conn.getTable(tableName);
 
-            long leftBound = getFirstKeyTime(table);
+            long leftBound = getFirstKeyTime(table);//获取开始时间的时间戳
             long rightBound = System.currentTimeMillis();
 
             for (int t = 0; t < 5; ++t) {
@@ -186,7 +194,7 @@ public class HbaseStreamingInput {
                 scan.addFamily(CF);
                 ResultScanner scanner = table.getScanner(scan);
                 long hash = 0;
-                int rowCount = 0;
+                int rowCount = 0;//循环的记录数
                 for (Result result : scanner) {
                     Cell cell = result.getColumnLatestCell(CF, QN);
                     byte[] value = cell.getValueArray();
@@ -205,6 +213,7 @@ public class HbaseStreamingInput {
         }
     }
 
+    //获取开始位置的时间戳
     private static long getFirstKeyTime(HTableInterface table) throws IOException {
         long startTime = 0;
 
@@ -213,8 +222,8 @@ public class HbaseStreamingInput {
         ResultScanner scanner = table.getScanner(scan);
         for (Result result : scanner) {
             Cell cell = result.getColumnLatestCell(CF, QN);
-            byte[] key = cell.getRowArray();
-            startTime = Bytes.toLong(key, cell.getRowOffset(), 8);
+            byte[] key = cell.getRowArray();//rowkey对应的字节数组
+            startTime = Bytes.toLong(key, cell.getRowOffset(), 8);//获取钱8位时间戳
             logger.info("Retrieved first record time: " + formatTime(startTime));
             break;//only get first one
         }
@@ -227,6 +236,7 @@ public class HbaseStreamingInput {
         return HConnectionManager.createConnection(HBaseConnection.getCurrentHBaseConfiguration());
     }
 
+    //时间戳格式化
     private static String formatTime(long time) {
         DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
         Calendar cal = Calendar.getInstance();
@@ -234,6 +244,7 @@ public class HbaseStreamingInput {
         return dateFormat.format(cal.getTime());
     }
 
+    //随机产生一些字节数组
     private static byte[] randomBytes(int lenth) {
         byte[] bytes = new byte[lenth];
         Random rand = new Random();

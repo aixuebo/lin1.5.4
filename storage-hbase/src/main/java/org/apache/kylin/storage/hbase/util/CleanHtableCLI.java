@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 没什么用,就是更新hbase的table的所属者为DL-eBay-Kylin@ebay.com
  */
 public class CleanHtableCLI extends AbstractApplication {
 
@@ -41,9 +42,9 @@ public class CleanHtableCLI extends AbstractApplication {
         Configuration conf = HBaseConnection.getCurrentHBaseConfiguration();
         HBaseAdmin hbaseAdmin = new HBaseAdmin(conf);
 
-        for (HTableDescriptor descriptor : hbaseAdmin.listTables()) {
+        for (HTableDescriptor descriptor : hbaseAdmin.listTables()) {//所有table
             String name = descriptor.getNameAsString().toLowerCase();
-            if (name.startsWith("kylin") || name.startsWith("_kylin")) {
+            if (name.startsWith("kylin") || name.startsWith("_kylin")) {//kylin的表
                 String x = descriptor.getValue(IRealizationConstants.HTableTag);
                 System.out.println("table name " + descriptor.getNameAsString() + " host: " + x);
                 System.out.println(descriptor);

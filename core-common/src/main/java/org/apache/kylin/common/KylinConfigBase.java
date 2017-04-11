@@ -147,6 +147,7 @@ abstract public class KylinConfigBase implements Serializable {
         return "DEV".equals(getOptional("deploy.env", "DEV"));
     }
 
+    //使用hbase的table@hbase连接串
     public String getMetadataUrl() {
         return getOptional("kylin.metadata.url");
     }
@@ -804,7 +805,7 @@ abstract public class KylinConfigBase implements Serializable {
     }
 
     public long getStorageCleanupTimeThreshold() {
-        return Long.valueOf(this.getOptional("kylin.storage.cleanup.time.threshold", "172800000")); //default two days
+        return Long.valueOf(this.getOptional("kylin.storage.cleanup.time.threshold", "172800000")); //default two days  存储周期伐值
     }
 
     public int getAppendDictEntrySize() {

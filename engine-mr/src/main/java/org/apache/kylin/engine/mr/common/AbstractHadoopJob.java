@@ -118,7 +118,7 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
     // ============================================================================
 
     protected String name;
-    protected boolean isAsync = false;
+    protected boolean isAsync = false;//true表示异步,即MR操作提交后不用等待完成
     protected OptionsHelper optionsHelper = new OptionsHelper();
 
     protected Job job;
@@ -155,9 +155,9 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
     protected int waitForCompletion(Job job) throws IOException, InterruptedException, ClassNotFoundException {
         int retVal = 0;
         long start = System.nanoTime();
-        if (isAsync) {
+        if (isAsync) {//true表示异步,即提交后不用等待完成
             job.submit();
-        } else {
+        } else {//默认是提交后等待完成,即同步方式
             job.waitForCompletion(true);
             retVal = job.isSuccessful() ? 0 : 1;
             logger.debug("Job '" + job.getJobName() + "' finished " + (job.isSuccessful() ? "successfully in " : "with failures.  Time taken ") + formatTime((System.nanoTime() - start) / 1000000L));

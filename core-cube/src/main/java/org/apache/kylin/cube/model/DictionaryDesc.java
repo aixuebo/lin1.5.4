@@ -26,16 +26,21 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * 用于对度量进行编码
+ */
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
 public class DictionaryDesc {
 
     @JsonProperty("column")
-    private String column;
+    private String column;//度量中涉及到的列
+
     @JsonProperty("reuse")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String reuseColumn;
+
     @JsonProperty("builder")
-    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonInclude(JsonInclude.Include.NON_NULL) //比如org.apache.kylin.dict.GlobalDictionaryBuilder
     private String builderClass;
 
     // computed content

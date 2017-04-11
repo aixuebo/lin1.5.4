@@ -51,10 +51,10 @@ public class CubeJoinedFlatTableEnrich implements IJoinedFlatTableDesc {
     // check what columns from hive tables are required, and index them
     private void parseCubeDesc() {
         long baseCuboidId = Cuboid.getBaseCuboidId(cubeDesc);
-        Cuboid baseCuboid = Cuboid.findById(cubeDesc, baseCuboidId);
+        Cuboid baseCuboid = Cuboid.findById(cubeDesc, baseCuboidId);//基础cube
 
         // build index for rowkey columns
-        List<TblColRef> cuboidColumns = baseCuboid.getColumns();
+        List<TblColRef> cuboidColumns = baseCuboid.getColumns();//该cubeid对应的所有的列集合
         int rowkeyColCount = cubeDesc.getRowkey().getRowKeyColumns().length;
         rowKeyColumnIndexes = new int[rowkeyColCount];
         for (int i = 0; i < rowkeyColCount; i++) {
@@ -64,14 +64,14 @@ public class CubeJoinedFlatTableEnrich implements IJoinedFlatTableDesc {
 
         List<MeasureDesc> measures = cubeDesc.getMeasures();
         int measureSize = measures.size();
-        measureColumnIndexes = new int[measureSize][];
+        measureColumnIndexes = new int[measureSize][];//每一个度量占用一个数组,每一个度量的数组内存储需要的字段下标集合
         for (int i = 0; i < measureSize; i++) {
             FunctionDesc func = measures.get(i).getFunction();
             List<TblColRef> colRefs = func.getParameter().getColRefs();
             if (colRefs == null) {
-                measureColumnIndexes[i] = null;
+                measureColumnIndexes[i] = null;//该度量不需要字段
             } else {
-                measureColumnIndexes[i] = new int[colRefs.size()];
+                measureColumnIndexes[i] = new int[colRefs.size()];//该度量需要的字段集合组成数组
                 for (int j = 0; j < colRefs.size(); j++) {
                     TblColRef c = colRefs.get(j);
                     measureColumnIndexes[i][j] = flatDesc.getColumnIndex(c);

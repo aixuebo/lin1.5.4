@@ -21,6 +21,7 @@ package org.apache.kylin.common.persistence;
 import java.io.InputStream;
 
 /**
+ * 代表hbase中字节数组的原始内容
  */
 public class RawResource {
 

@@ -42,7 +42,7 @@ public class FactDistinctHiveColumnsMapper<KEYIN> extends FactDistinctColumnsMap
 
     protected boolean collectStatistics = false;
     protected CuboidScheduler cuboidScheduler = null;
-    protected int nRowKey;
+    protected int nRowKey;//rowkey的长度,即需要多少个字段作为rowkey
     private Integer[][] allCuboidsBitSet = null;
     private HyperLogLogPlusCounter[] allCuboidsHLL = null;
     private Long[] cuboidIds;

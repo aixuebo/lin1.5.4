@@ -24,10 +24,12 @@ import java.util.Map;
 public class SQLRequest implements Serializable {
     protected static final long serialVersionUID = 1L;
 
-    private String sql;
-    private String project;
+    private String sql;//查询的sql
+    private String project;//用于查询某个项目
+    //用于limit
     private Integer offset = 0;
     private Integer limit = 0;
+
     private boolean acceptPartial = false;
 
     private Map<String, String> backdoorToggles;

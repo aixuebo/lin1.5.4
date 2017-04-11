@@ -41,17 +41,23 @@ import com.google.common.collect.Lists;
 
 /**
  * Created by dongli on 1/18/16.
+ *
+ * 对一组hbase的表进行更新属性KYLIN_HOST=value
+ *
+ *
+ * 例如  ./kylin.sh org.apache.kylin.storage.hbase.util.UpdateHTableHostCLI -from 老值 类型 一组若干个具体表名或者cube名字
+ *
  */
 public class UpdateHTableHostCLI {
     private static final Logger logger = LoggerFactory.getLogger(UpdateHTableHostCLI.class);
 
-    private List<String> updatedResources = Lists.newArrayList();
-    private List<String> errorMsgs = Lists.newArrayList();
+    private List<String> updatedResources = Lists.newArrayList();//已经成功更新过的表集合
+    private List<String> errorMsgs = Lists.newArrayList();//更新过程中的错误信息
 
-    private List<String> htables;
+    private List<String> htables;//所有要更新的hbase中表名
     private HBaseAdmin hbaseAdmin;
     private KylinConfig kylinConfig;
-    private String oldHostValue;
+    private String oldHostValue;//老的值
 
     public UpdateHTableHostCLI(List<String> htables, String oldHostValue) throws IOException {
         this.htables = htables;
@@ -65,16 +71,17 @@ public class UpdateHTableHostCLI {
             printUsageAndExit();
         }
 
-        List<String> tableNames = getHTableNames(KylinConfig.getInstanceFromEnv());
+        List<String> tableNames = getHTableNames(KylinConfig.getInstanceFromEnv());//获取所有的cube在ready状态下的所有segment对应的hbase表集合
         if (!args[0].toLowerCase().equals("-from")) {
             printUsageAndExit();
         }
         String oldHostValue = args[1].toLowerCase();
         String filterType = args[2].toLowerCase();
         if (filterType.equals("-table")) {
-            tableNames = filterByTables(tableNames, Arrays.asList(args).subList(3, args.length));
+            //Arrays.asList(args).subList(3, args.length) 获取参数第3个之后的所有集合
+            tableNames = filterByTables(tableNames, Arrays.asList(args).subList(3, args.length)); //返回两个集合的交集
         } else if (filterType.equals("-cube")) {
-            tableNames = filterByCubes(tableNames, Arrays.asList(args).subList(3, args.length));
+            tableNames = filterByCubes(tableNames, Arrays.asList(args).subList(3, args.length));//返回cube对应的segment的交集
         } else if (!filterType.equals("-all")) {
             printUsageAndExit();
         }
@@ -112,6 +119,9 @@ public class UpdateHTableHostCLI {
         System.exit(0);
     }
 
+    /**
+     * 获取所有的cube在ready状态下的所有segment对应的hbase表集合
+     */
     private static List<String> getHTableNames(KylinConfig config) {
         CubeManager cubeMgr = CubeManager.getInstance(config);
 
@@ -129,6 +139,7 @@ public class UpdateHTableHostCLI {
         return result;
     }
 
+    //返回cube对应的segment的交集
     private static List<String> filterByCubes(List<String> allTableNames, List<String> cubeNames) {
         CubeManager cubeManager = CubeManager.getInstance(KylinConfig.getInstanceFromEnv());
         List<String> result = Lists.newArrayList();
@@ -148,6 +159,9 @@ public class UpdateHTableHostCLI {
         return result;
     }
 
+    /**
+     * 返回两个集合的交集
+     */
     private static List<String> filterByTables(List<String> allTableNames, List<String> tableNames) {
         List<String> result = Lists.newArrayList();
         for (String t : tableNames) {
@@ -162,10 +176,11 @@ public class UpdateHTableHostCLI {
         return result;
     }
 
+    //更新hbase的一个表
     private void updateHtable(String tableName) throws IOException {
         HTableDescriptor desc = hbaseAdmin.getTableDescriptor(TableName.valueOf(tableName));
         if (oldHostValue.equals(desc.getValue(IRealizationConstants.HTableTag))) {
-            desc.setValue(IRealizationConstants.HTableTag, kylinConfig.getMetadataUrlPrefix());
+            desc.setValue(IRealizationConstants.HTableTag, kylinConfig.getMetadataUrlPrefix());//更新
             hbaseAdmin.disableTable(tableName);
             hbaseAdmin.modifyTable(tableName, desc);
             hbaseAdmin.enableTable(tableName);
@@ -175,12 +190,12 @@ public class UpdateHTableHostCLI {
     }
 
     public void execute() {
-        for (String htable : htables) {
+        for (String htable : htables) {//循环每一个hbase的table,对其更新
             try {
                 updateHtable(htable);
             } catch (IOException ex) {
                 ex.printStackTrace();
-                errorMsgs.add("Update HTable[" + htable + "] failed: " + ex.getMessage());
+                errorMsgs.add("Update HTable[" + htable + "] failed: " + ex.getMessage());//输出错误信息
             }
         }
     }

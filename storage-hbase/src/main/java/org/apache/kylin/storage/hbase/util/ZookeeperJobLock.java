@@ -42,6 +42,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 
 /**
+ * 使用zookeeper对文件进行锁
  */
 public class ZookeeperJobLock implements JobLock {
     private Logger logger = LoggerFactory.getLogger(ZookeeperJobLock.class);
@@ -49,30 +50,31 @@ public class ZookeeperJobLock implements JobLock {
     private static final String ZOOKEEPER_LOCK_PATH = "/kylin/job_engine/lock";
 
     private String scheduleID;
-    private InterProcessMutex sharedLock;
+    private InterProcessMutex sharedLock;//锁对象关注在scheduleID节点上
     private CuratorFramework zkClient;
 
+    //获取锁
     @Override
     public boolean lock() {
         this.scheduleID = schedulerId();
-        String zkConnectString = getZKConnectString();
+        String zkConnectString = getZKConnectString();//连接zookeeper的串
         logger.info("zk connection string:" + zkConnectString);
         logger.info("schedulerId:" + scheduleID);
         if (StringUtils.isEmpty(zkConnectString)) {
             throw new IllegalArgumentException("ZOOKEEPER_QUORUM is empty!");
         }
 
-        RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
+        RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);//尝试3次.每次间隔1秒
         this.zkClient = CuratorFrameworkFactory.newClient(zkConnectString, retryPolicy);
         this.zkClient.start();
         this.sharedLock = new InterProcessMutex(zkClient, this.scheduleID);
         boolean hasLock = false;
         try {
-            hasLock = sharedLock.acquire(3, TimeUnit.SECONDS);
+            hasLock = sharedLock.acquire(3, TimeUnit.SECONDS);//获取锁
         } catch (Exception e) {
             logger.warn("error acquire lock", e);
         }
-        if (!hasLock) {
+        if (!hasLock) {//说明获取锁失败
             logger.warn("fail to acquire lock, scheduler has not been started; maybe another kylin process is still running?");
             zkClient.close();
             return false;
@@ -85,6 +87,7 @@ public class ZookeeperJobLock implements JobLock {
         releaseLock();
     }
 
+    //连接zookeeper的串
     private String getZKConnectString() {
         Configuration conf = HBaseConnection.getCurrentHBaseConfiguration();
         final String serverList = conf.get(HConstants.ZOOKEEPER_QUORUM);
@@ -98,6 +101,7 @@ public class ZookeeperJobLock implements JobLock {
         }), ",");
     }
 
+    //释放锁
     private void releaseLock() {
         try {
             if (zkClient.getState().equals(CuratorFrameworkState.STARTED)) {
@@ -112,6 +116,7 @@ public class ZookeeperJobLock implements JobLock {
         }
     }
 
+    //锁对应的path节点
     private String schedulerId() {
         return ZOOKEEPER_LOCK_PATH + "/" + KylinConfig.getInstanceFromEnv().getMetadataUrlPrefix();
     }

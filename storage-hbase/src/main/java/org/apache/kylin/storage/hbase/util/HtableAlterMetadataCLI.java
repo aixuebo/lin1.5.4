@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 对hbase的表进行设置key=value
  */
 @SuppressWarnings("static-access")
 public class HtableAlterMetadataCLI extends AbstractApplication {
@@ -54,10 +55,10 @@ public class HtableAlterMetadataCLI extends AbstractApplication {
         HBaseAdmin hbaseAdmin = new HBaseAdmin(conf);
         HTableDescriptor table = hbaseAdmin.getTableDescriptor(TableName.valueOf(tableName));
 
-        hbaseAdmin.disableTable(table.getTableName());
-        table.setValue(metadataKey, metadataValue);
+        hbaseAdmin.disableTable(table.getTableName());//先将表失效,因为要修改表数据
+        table.setValue(metadataKey, metadataValue);//设置表key=value属性
         hbaseAdmin.modifyTable(table.getTableName(), table);
-        hbaseAdmin.enableTable(table.getTableName());
+        hbaseAdmin.enableTable(table.getTableName());//将表设置为有效
         hbaseAdmin.close();
     }
 

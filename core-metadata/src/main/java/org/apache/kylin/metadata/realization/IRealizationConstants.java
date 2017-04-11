@@ -30,7 +30,7 @@ public class IRealizationConstants {
      * For each cube htable, we leverage htable's metadata to keep track of
      * which kylin server(represented by its kylin_metadata prefix) owns this htable
      */
-    public final static String HTableTag = "KYLIN_HOST";
+    public final static String HTableTag = "KYLIN_HOST";//可能对应的值是kylin_metadata
 
     public final static String HTableOwner = "OWNER";
 

@@ -31,15 +31,23 @@ import org.apache.kylin.common.util.Bytes;
  * calls it.
  */
 public class Results {
+
+    /**
+     *
+     * @param hbaseRow 查询结果
+     * @param cf 要查询的是哪个列族,此时指代一个列族
+     * @param cq 要查询的是哪个属性
+     * @return 返回该列族+属性对应的属性值对应的字节数组
+     */
     public static ByteBuffer getValueAsByteBuffer(Result hbaseRow, byte[] cf, byte[] cq) {
         List<Cell> cells = hbaseRow.listCells();
         if (cells == null || cells.size() == 0) {
             return null;
         } else {
-            for (Cell c : cells) {
-                if (Bytes.compareTo(cf, 0, cf.length, c.getFamilyArray(), c.getFamilyOffset(), c.getFamilyLength()) == 0 && //
-                        Bytes.compareTo(cq, 0, cq.length, c.getQualifierArray(), c.getQualifierOffset(), c.getQualifierLength()) == 0) {
-                    return ByteBuffer.wrap(c.getValueArray(), c.getValueOffset(), c.getValueLength());
+            for (Cell c : cells) {//循环每一个cell
+                if (Bytes.compareTo(cf, 0, cf.length, c.getFamilyArray(), c.getFamilyOffset(), c.getFamilyLength()) == 0 && //说明该cell的列族是参数给的列族
+                        Bytes.compareTo(cq, 0, cq.length, c.getQualifierArray(), c.getQualifierOffset(), c.getQualifierLength()) == 0) {//属性也对上了
+                    return ByteBuffer.wrap(c.getValueArray(), c.getValueOffset(), c.getValueLength());//获取该属性对应的属性值
                 }
             }
         }

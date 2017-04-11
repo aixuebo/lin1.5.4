@@ -41,6 +41,9 @@ import org.apache.kylin.common.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 计算hbase的一个表的region占用的大小
+ */
 public class HBaseRegionSizeCalculator {
 
     private static final Logger logger = LoggerFactory.getLogger(HBaseRegionSizeCalculator.class);
@@ -52,7 +55,7 @@ public class HBaseRegionSizeCalculator {
 
     private final Map<byte[], Pair<Integer, Integer>> countMap = new TreeMap<>(Bytes.BYTES_COMPARATOR);
 
-    static final String ENABLE_REGIONSIZECALCULATOR = "hbase.regionsizecalculator.enable";
+    static final String ENABLE_REGIONSIZECALCULATOR = "hbase.regionsizecalculator.enable";//该表是否可用
 
     /**
      * Computes size of each region for table and given column families.
@@ -73,7 +76,9 @@ public class HBaseRegionSizeCalculator {
             logger.info("Calculating region sizes for table \"" + new String(table.getTableName()) + "\".");
 
             // Get regions for table.
-            Set<HRegionInfo> tableRegionInfos = table.getRegionLocations().keySet();
+            Set<HRegionInfo> tableRegionInfos = table.getRegionLocations().keySet();//该表的region集合
+
+            //表的region的name集合,按照顺序排序
             Set<byte[]> tableRegions = new TreeSet<byte[]>(Bytes.BYTES_COMPARATOR);
 
             for (HRegionInfo regionInfo : tableRegionInfos) {

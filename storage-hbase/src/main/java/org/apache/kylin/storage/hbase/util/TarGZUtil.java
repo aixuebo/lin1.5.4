@@ -29,8 +29,10 @@ import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 
+//解压缩tar包的操作
 public class TarGZUtil {
 
+    //将tar包解压缩到dest中
     public static void uncompressTarGZ(File tarFile, File dest) throws IOException {
         dest.mkdir();
         TarArchiveInputStream tarIn = null;

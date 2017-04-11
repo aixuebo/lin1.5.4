@@ -34,6 +34,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 计算一个表,从开始位置到结束位置有多少条数据
+ * 例如:
+ *  ./kylin.sh org.apache.kylin.storage.hbase.util.RowCounterCLI KYLIN_YLBKVYK3QO "\x00\x00\x00\x00\x00\x00\x00\x08\x00\x1C\x00\x04\x04\x02" "\x00\x00\x00\x00\x00\x00\x00\x08\x00\x1C\x00\x04\x05\x05"
+ *  注意 命令行必须加上"",否则会丢弃转义字符,导致解析失败,因为解析是按照\x去解析的,取消了转义字符后,就会导致只有x,因此解析失败
  */
 public class RowCounterCLI {
     private static final Logger logger = LoggerFactory.getLogger(RowCounterCLI.class);
@@ -45,11 +49,11 @@ public class RowCounterCLI {
         }
 
         System.out.println(args[0]);
-        String htableName = args[0];
+        String htableName = args[0];//表名
         System.out.println(args[1]);
-        byte[] startKey = BytesUtil.fromReadableText(args[1]);
+        byte[] startKey = BytesUtil.fromReadableText(args[1]);//可读的16进制内容,输入参数是16进制的数据
         System.out.println(args[2]);
-        byte[] endKey = BytesUtil.fromReadableText(args[2]);
+        byte[] endKey = BytesUtil.fromReadableText(args[2]);//可读的16进制内容
 
         if (startKey == null) {
             System.out.println("startkey is null ");
@@ -74,7 +78,7 @@ public class RowCounterCLI {
         HTableInterface tableInterface = conn.getTable(htableName);
 
         Iterator<Result> iterator = tableInterface.getScanner(scan).iterator();
-        int counter = 0;
+        int counter = 0;//计数器
         while (iterator.hasNext()) {
             iterator.next();
             counter++;

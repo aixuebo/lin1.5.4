@@ -405,15 +405,16 @@ public class BytesUtil {
 
     /**
      * this method only works for hex strings
+     * 比如16进制的21,转换成10进制是33
      */
     public static byte[] fromReadableText(String text) {
-        String[] tokens = text.split("\\\\x");
-        byte[] ret = new byte[tokens.length - 1];
+        String[] tokens = text.split("\\\\x");//按x进行拆分,每一个部分都是16进制的
+        byte[] ret = new byte[tokens.length - 1];//第0个位置不写入,因此长度是tokens.length - 1
         for (int i = 1; i < tokens.length; ++i) {
-            int x = Bytes.toBinaryFromHex((byte) tokens[i].charAt(0));
-            x = x << 4;
-            int y = Bytes.toBinaryFromHex((byte) tokens[i].charAt(1));
-            ret[i - 1] = (byte) (x + y);
+            int x = Bytes.toBinaryFromHex((byte) tokens[i].charAt(0));//拿出16进制的2
+            x = x << 4;//提高16进制
+            int y = Bytes.toBinaryFromHex((byte) tokens[i].charAt(1));//拿出16进制的1
+            ret[i - 1] = (byte) (x + y);//因此该位置是33
         }
         return ret;
     }
@@ -422,11 +423,13 @@ public class BytesUtil {
         return toHex(array, 0, array.length);
     }
 
+    //将每一个字节转换成16进制,并且用\x拆分字节
     public static String toHex(byte[] array, int offset, int length) {
         StringBuilder sb = new StringBuilder(length * 4);
         for (int i = 0; i < length; i++) {
-            int b = array[offset + i];
-            sb.append(String.format("\\x%02X", b & 0xFF));
+            int b = array[offset + i];//拿到一个字节
+            //0xFF为255.即11111111 , b & 0xFF 确保是b字节而已,等于废话,\x%02X含义是将b字节转换成16进制的值
+            sb.append(String.format("\\x%02X", b & 0xFF));//比如b=33,转换成16进制是21,因此结果就是\x21
         }
         return sb.toString();
     }

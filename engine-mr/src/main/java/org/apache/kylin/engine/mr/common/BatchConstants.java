@@ -40,7 +40,7 @@ public interface BatchConstants {
     String CFG_OUTPUT_PATH = "output.path";
     String CFG_TABLE_NAME = "table.name";
     String CFG_IS_MERGE = "is.merge";
-    String CFG_CUBE_INTERMEDIATE_TABLE_ROW_DELIMITER = "cube.intermediate.table.row.delimiter";
+    String CFG_CUBE_INTERMEDIATE_TABLE_ROW_DELIMITER = "cube.intermediate.table.row.delimiter";//行分隔符
     String CFG_REGION_NUMBER_MIN = "region.number.min";
     String CFG_REGION_NUMBER_MAX = "region.number.max";
     String CFG_REGION_SPLIT_SIZE = "region.split.size";

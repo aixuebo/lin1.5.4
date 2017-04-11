@@ -57,6 +57,8 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Lists;
 
 /**
+ * 部署hbase的协处理程序
+ * 将自己的jar包提交到集群上
  */
 public class DeployCoprocessorCLI {
 
@@ -78,6 +80,7 @@ public class DeployCoprocessorCLI {
         FileSystem fileSystem = FileSystem.get(hconf);
         HBaseAdmin hbaseAdmin = new HBaseAdmin(hconf);
 
+        //本地的jar包路径
         String localCoprocessorJar;
         if ("default".equals(args[0])) {
             localCoprocessorJar = kylinConfig.getCoprocessorLocalJar();
@@ -87,7 +90,7 @@ public class DeployCoprocessorCLI {
 
         logger.info("Identify coprocessor jar " + localCoprocessorJar);
 
-        List<String> tableNames = getHTableNames(kylinConfig);
+        List<String> tableNames = getHTableNames(kylinConfig);//返回hbase目前所有的cube对应segment所用的表集合
         logger.info("Identify tables " + tableNames);
 
         String filterType = args[1].toLowerCase();
@@ -101,10 +104,10 @@ public class DeployCoprocessorCLI {
 
         logger.info("Will execute tables " + tableNames);
 
-        Set<String> oldJarPaths = getCoprocessorJarPaths(hbaseAdmin, tableNames);
+        Set<String> oldJarPaths = getCoprocessorJarPaths(hbaseAdmin, tableNames);//获取已经存在的jar包
         logger.info("Old coprocessor jar: " + oldJarPaths);
 
-        Path hdfsCoprocessorJar = uploadCoprocessorJar(localCoprocessorJar, fileSystem, oldJarPaths);
+        Path hdfsCoprocessorJar = uploadCoprocessorJar(localCoprocessorJar, fileSystem, oldJarPaths);//上传到hdfs上
         logger.info("New coprocessor jar: " + hdfsCoprocessorJar);
 
         List<String> processedTables = resetCoprocessorOnHTables(hbaseAdmin, hdfsCoprocessorJar, tableNames);
@@ -123,6 +126,7 @@ public class DeployCoprocessorCLI {
         System.exit(0);
     }
 
+    //获取cubeName对应的segment所使用的hbase 的table表集合  最终获取交集
     private static List<String> filterByCubes(List<String> allTableNames, List<String> cubeNames) {
         CubeManager cubeManager = CubeManager.getInstance(KylinConfig.getInstanceFromEnv());
         List<String> result = Lists.newArrayList();
@@ -142,6 +146,7 @@ public class DeployCoprocessorCLI {
         return result;
     }
 
+    //获取交集
     private static List<String> filterByTables(List<String> allTableNames, List<String> tableNames) {
         List<String> result = Lists.newArrayList();
         for (String t : tableNames) {
@@ -156,6 +161,7 @@ public class DeployCoprocessorCLI {
         return result;
     }
 
+    //为该table部署协处理器
     public static void deployCoprocessor(HTableDescriptor tableDesc) {
         try {
             initHTableCoprocessor(tableDesc);
@@ -178,12 +184,14 @@ public class DeployCoprocessorCLI {
         DeployCoprocessorCLI.addCoprocessorOnHTable(desc, hdfsCoprocessorJar);
     }
 
+    //设置协处理器主要class执行入口以及路径和优先级还有环境Map
     public static void addCoprocessorOnHTable(HTableDescriptor desc, Path hdfsCoprocessorJar) throws IOException {
         logger.info("Add coprocessor on " + desc.getNameAsString());
-        desc.addCoprocessor(CubeEndpointClass, hdfsCoprocessorJar, 1001, null);
+        desc.addCoprocessor(CubeEndpointClass, hdfsCoprocessorJar, 1001, null);//设置协处理器主要class执行入口以及路径和优先级还有环境Map
         desc.addCoprocessor(CubeObserverClass, hdfsCoprocessorJar, 1002, null);
     }
 
+    //重新更新hbase的属性
     public static void resetCoprocessor(String tableName, HBaseAdmin hbaseAdmin, Path hdfsCoprocessorJar) throws IOException {
         logger.info("Disable " + tableName);
         hbaseAdmin.disableTable(tableName);
@@ -206,6 +214,8 @@ public class DeployCoprocessorCLI {
         while (desc.hasCoprocessor(IIEndpointClassOld)) {
             desc.removeCoprocessor(IIEndpointClassOld);
         }
+
+        //更新新的属性值
         addCoprocessorOnHTable(desc, hdfsCoprocessorJar);
 
         // update commit tags
@@ -234,6 +244,7 @@ public class DeployCoprocessorCLI {
         return processed;
     }
 
+    //返回HDFS上最后一次上传的文件路径
     public static Path getNewestCoprocessorJar(KylinConfig config, FileSystem fileSystem) throws IOException {
         Path coprocessorDir = getCoprocessorHDFSDir(fileSystem, config);
         FileStatus newestJar = null;
@@ -255,17 +266,18 @@ public class DeployCoprocessorCLI {
         return path;
     }
 
+    //上传新的jar包  返回hdfs上传后的路径
     public synchronized static Path uploadCoprocessorJar(String localCoprocessorJar, FileSystem fileSystem, Set<String> oldJarPaths) throws IOException {
         Path uploadPath = null;
         File localCoprocessorFile = new File(localCoprocessorJar);
 
-        // check existing jars
+        // check existing jars 检查jar是否已经存在了
         if (oldJarPaths == null) {
             oldJarPaths = new HashSet<String>();
         }
-        Path coprocessorDir = getCoprocessorHDFSDir(fileSystem, KylinConfig.getInstanceFromEnv());
+        Path coprocessorDir = getCoprocessorHDFSDir(fileSystem, KylinConfig.getInstanceFromEnv());//获取协处理器对应的hdfs路径
         for (FileStatus fileStatus : fileSystem.listStatus(coprocessorDir)) {
-            if (isSame(localCoprocessorFile, fileStatus)) {
+            if (isSame(localCoprocessorFile, fileStatus)) {//说明存在,则直接返回
                 uploadPath = fileStatus.getPath();
                 break;
             }
@@ -275,23 +287,24 @@ public class DeployCoprocessorCLI {
             }
         }
 
-        // upload if not existing
+        // upload if not existing  说明该文件hdfs上不存在
         if (uploadPath == null) {
             // figure out a unique new jar file name
+            //旧的jar包名字
             Set<String> oldJarNames = new HashSet<String>();
             for (String path : oldJarPaths) {
                 oldJarNames.add(new Path(path).getName());
             }
-            String baseName = getBaseFileName(localCoprocessorJar);
+            String baseName = getBaseFileName(localCoprocessorJar);//新的jar名字
             String newName = null;
             int i = 0;
-            while (newName == null) {
+            while (newName == null) {//创建一个新的文件名字
                 newName = baseName + "-" + (i++) + ".jar";
                 if (oldJarNames.contains(newName))
                     newName = null;
             }
 
-            // upload
+            // upload 真正的上传文件到hdfs上
             uploadPath = new Path(coprocessorDir, newName);
             FileInputStream in = null;
             FSDataOutputStream out = null;
@@ -312,10 +325,12 @@ public class DeployCoprocessorCLI {
         return uploadPath;
     }
 
+    //说明文件没有变化--不看名字,只是看文件大小和最后修改时间,因为文件名字后续会自动变化成新的名字
     private static boolean isSame(File localCoprocessorFile, FileStatus fileStatus) {
         return fileStatus.getLen() == localCoprocessorFile.length() && fileStatus.getModificationTime() == localCoprocessorFile.lastModified();
     }
 
+    //获取jar的文件名
     private static String getBaseFileName(String localCoprocessorJar) {
         File localJar = new File(localCoprocessorJar);
         String baseName = localJar.getName();
@@ -324,6 +339,7 @@ public class DeployCoprocessorCLI {
         return baseName;
     }
 
+    //获取协处理器对应的hdfs路径
     private static Path getCoprocessorHDFSDir(FileSystem fileSystem, KylinConfig config) throws IOException {
         String hdfsWorkingDirectory = config.getHdfsWorkingDirectory();
         Path coprocessorDir = new Path(hdfsWorkingDirectory, "coprocessor");
@@ -331,6 +347,7 @@ public class DeployCoprocessorCLI {
         return coprocessorDir;
     }
 
+    //获取jar包路径集合
     private static Set<String> getCoprocessorJarPaths(HBaseAdmin hbaseAdmin, List<String> tableNames) throws IOException {
         HashSet<String> result = new HashSet<String>();
 
@@ -365,6 +382,7 @@ public class DeployCoprocessorCLI {
         return result;
     }
 
+    //返回hbase目前所有的cube对应segment所用的表集合
     private static List<String> getHTableNames(KylinConfig config) {
         CubeManager cubeMgr = CubeManager.getInstance(config);
 

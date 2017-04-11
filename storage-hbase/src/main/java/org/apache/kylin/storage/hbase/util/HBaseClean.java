@@ -38,6 +38,7 @@ import com.google.common.collect.Lists;
 
 /**
  * clean hbase tables by tag
+ * 删除bbase的指定tag的数据
  */
 public class HBaseClean extends AbstractApplication {
 
@@ -58,22 +59,22 @@ public class HBaseClean extends AbstractApplication {
             Configuration conf = HBaseConnection.getCurrentHBaseConfiguration();
             HBaseAdmin hbaseAdmin = new HBaseAdmin(conf);
             String tableNamePrefix = IRealizationConstants.SharedHbaseStorageLocationPrefix;
-            HTableDescriptor[] tableDescriptors = hbaseAdmin.listTables(tableNamePrefix + ".*");
+            HTableDescriptor[] tableDescriptors = hbaseAdmin.listTables(tableNamePrefix + ".*");//查找前缀为KYLIN_的表集合
             List<String> allTablesNeedToBeDropped = Lists.newArrayList();
             for (HTableDescriptor desc : tableDescriptors) {
-                String host = desc.getValue(IRealizationConstants.HTableTag);
+                String host = desc.getValue(IRealizationConstants.HTableTag);//key是KYLIN_HOST对应的值
                 if (tag.equalsIgnoreCase(host)) {
-                    allTablesNeedToBeDropped.add(desc.getTableName().getNameAsString());
+                    allTablesNeedToBeDropped.add(desc.getTableName().getNameAsString());//添加该表名
                 }
             }
 
-            if (delete) {
+            if (delete) {//删除该table集合
                 // drop tables
                 for (String htableName : allTablesNeedToBeDropped) {
                     logger.info("Deleting HBase table " + htableName);
                     if (hbaseAdmin.tableExists(htableName)) {
                         if (hbaseAdmin.isTableEnabled(htableName)) {
-                            hbaseAdmin.disableTable(htableName);
+                            hbaseAdmin.disableTable(htableName);//先变不可用
                         }
 
                         hbaseAdmin.deleteTable(htableName);
@@ -83,7 +84,7 @@ public class HBaseClean extends AbstractApplication {
                     }
                 }
             } else {
-                System.out.println("--------------- Tables To Be Dropped ---------------");
+                System.out.println("--------------- Tables To Be Dropped ---------------");//打印要删除的内容
                 for (String htableName : allTablesNeedToBeDropped) {
                     System.out.println(htableName);
                 }

@@ -67,7 +67,7 @@ public class HBaseConnection {
     private static final Map<String, HConnection> connPool = new ConcurrentHashMap<String, HConnection>();//hbase的连接池
     private static final ThreadLocal<Configuration> configThreadLocal = new ThreadLocal<>();//线程持有配置信息
 
-    private static ExecutorService coprocessorPool = null;
+    private static ExecutorService coprocessorPool = null;//数据库连接池
 
     static {
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -86,6 +86,7 @@ public class HBaseConnection {
         });
     }
 
+    //创建数据库连接池
     public static ExecutorService getCoprocessorPool() {
         if (coprocessorPool != null) {
             return coprocessorPool;
@@ -103,6 +104,7 @@ public class HBaseConnection {
             int coreThreads = config.getHBaseCoreConnectionThreads();
             long keepAliveTime = config.getHBaseConnectionThreadPoolAliveSeconds();
             LinkedBlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<Runnable>(maxThreads * 100);
+            //使用java的线程池,因此要初始化线程池的参数
             ThreadPoolExecutor tpe = new ThreadPoolExecutor(coreThreads, maxThreads, keepAliveTime, TimeUnit.SECONDS, workQueue, //
                     Threads.newDaemonThreadFactory("kylin-coproc-"));
             tpe.allowCoreThreadTimeOut(true);
@@ -114,6 +116,7 @@ public class HBaseConnection {
         }
     }
 
+    //关闭数据库连接池
     private static void closeCoprocessorPool() {
         if (coprocessorPool == null)
             return;
@@ -174,6 +177,7 @@ public class HBaseConnection {
     // See YARN-3021. Copy here in case of missing in dependency MR client jars
     public static final String JOB_NAMENODES_TOKEN_RENEWAL_EXCLUDE = "mapreduce.job.hdfs-servers.token-renewal.exclude";
 
+    //追加hbase的附加配置服务
     public static void addHBaseClusterNNHAConfiguration(Configuration conf) {
         String hdfsConfigFile = KylinConfig.getInstanceFromEnv().getHBaseClusterHDFSConfigFile();
         if (hdfsConfigFile == null || hdfsConfigFile.isEmpty()) {
@@ -181,7 +185,7 @@ public class HBaseConnection {
         }
         Configuration hdfsConf = new Configuration(false);
         hdfsConf.addResource(hdfsConfigFile);
-        Collection<String> nameServices = hdfsConf.getTrimmedStringCollection(DFSConfigKeys.DFS_NAMESERVICES);
+        Collection<String> nameServices = hdfsConf.getTrimmedStringCollection(DFSConfigKeys.DFS_NAMESERVICES);//hbase的附加服务集合
         Collection<String> mainNameServices = conf.getTrimmedStringCollection(DFSConfigKeys.DFS_NAMESERVICES);
         for (String serviceId : nameServices) {
             mainNameServices.add(serviceId);
@@ -250,6 +254,7 @@ public class HBaseConnection {
         return connection;
     }
 
+    //该tbale是否存在
     public static boolean tableExists(HConnection conn, String tableName) throws IOException {
         HBaseAdmin hbase = new HBaseAdmin(conn);
         try {
@@ -259,6 +264,7 @@ public class HBaseConnection {
         }
     }
 
+    //该tbale是否存在
     public static boolean tableExists(String hbaseUrl, String tableName) throws IOException {
         return tableExists(HBaseConnection.get(hbaseUrl), tableName);
     }
@@ -341,6 +347,7 @@ public class HBaseConnection {
         return fd;
     }
 
+    //删除一个表
     public static void deleteTable(HConnection conn, String tableName) throws IOException {
         HBaseAdmin hbase = new HBaseAdmin(conn);
 

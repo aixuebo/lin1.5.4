@@ -35,7 +35,8 @@ import org.apache.kylin.storage.hbase.HBaseConnection;
 
 /**
  * @author yangli9
- * 
+ * 例如 ./kylin.sh org.apache.kylin.storage.hbase.util.PingHBaseCLI KYLIN_YLBKVYK3QO
+ * 输出 前20个rowkey
  */
 public class PingHBaseCLI {
 
@@ -62,12 +63,12 @@ public class PingHBaseCLI {
         ResultScanner scanner = null;
         try {
             conn = HConnectionManager.createConnection(hconf);
-            table = conn.getTable(hbaseTable);
+            table = conn.getTable(hbaseTable);//扫描一个表
             scanner = table.getScanner(scan);
             int count = 0;
             for (Result r : scanner) {
-                byte[] rowkey = r.getRow();
-                System.out.println(Bytes.toStringBinary(rowkey));
+                byte[] rowkey = r.getRow();//获取rowkey
+                System.out.println(Bytes.toStringBinary(rowkey));//将rowkey的16进制转换一下,如果是字母 数字 特殊字符可以看到具体内容,否则还是16进制
                 count++;
                 if (count == limit)
                     break;

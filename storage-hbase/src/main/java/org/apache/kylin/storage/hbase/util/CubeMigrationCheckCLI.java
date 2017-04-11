@@ -48,6 +48,7 @@ import com.google.common.collect.Lists;
  * checking the "KYLIN_HOST" property to be consistent with the dst's MetadataUrlPrefix
  * for all of cube segments' corresponding HTables after migrating a cube
  * <p/>
+ * 迁移cube
  */
 public class CubeMigrationCheckCLI {
 
@@ -55,15 +56,15 @@ public class CubeMigrationCheckCLI {
 
     private static final Option OPTION_FIX = OptionBuilder.withArgName("fix").hasArg().isRequired(false).withDescription("Fix the inconsistent cube segments' HOST").create("fix");
 
-    private static final Option OPTION_DST_CFG_URI = OptionBuilder.withArgName("dstCfgUri").hasArg().isRequired(false).withDescription("The KylinConfig of the cube’s new home").create("dstCfgUri");
+    private static final Option OPTION_DST_CFG_URI = OptionBuilder.withArgName("dstCfgUri").hasArg().isRequired(false).withDescription("The KylinConfig of the cube’s new home").create("dstCfgUri");//从url上读取配置信息
 
     private static final Option OPTION_CUBE = OptionBuilder.withArgName("cube").hasArg().isRequired(false).withDescription("The name of cube migrated").create("cube");
 
     private KylinConfig dstCfg;
     private HBaseAdmin hbaseAdmin;
 
-    private List<String> issueExistHTables;
-    private List<String> inconsistentHTables;
+    private List<String> issueExistHTables;//有问题的
+    private List<String> inconsistentHTables;//正确的
 
     private boolean ifFix = false;
 
@@ -103,7 +104,7 @@ public class CubeMigrationCheckCLI {
         if (dstCfgUri == null) {
             kylinConfig = KylinConfig.getInstanceFromEnv();
         } else {
-            kylinConfig = KylinConfig.createInstanceFromUri(dstCfgUri);
+            kylinConfig = KylinConfig.createInstanceFromUri(dstCfgUri);//从url上读取配置信息
         }
 
         CubeMigrationCheckCLI checkCLI = new CubeMigrationCheckCLI(kylinConfig, ifFix);
@@ -145,6 +146,7 @@ public class CubeMigrationCheckCLI {
     }
 
     public void checkAll() {
+        //存储cube的segment对应的hbase的table 以及cube的name
         List<String> segFullNameList = Lists.newArrayList();
 
         CubeManager cubeMgr = CubeManager.getInstance(dstCfg);
@@ -162,6 +164,7 @@ public class CubeMigrationCheckCLI {
         }
     }
 
+    //校验正确的和错误的两个集合
     public void check(List<String> segFullNameList) {
         issueExistHTables = Lists.newArrayList();
         inconsistentHTables = Lists.newArrayList();
@@ -169,7 +172,7 @@ public class CubeMigrationCheckCLI {
         for (String segFullName : segFullNameList) {
             String[] sepNameList = segFullName.split(",");
             try {
-                HTableDescriptor hTableDescriptor = hbaseAdmin.getTableDescriptor(TableName.valueOf(sepNameList[0]));
+                HTableDescriptor hTableDescriptor = hbaseAdmin.getTableDescriptor(TableName.valueOf(sepNameList[0]));//表名字
                 String host = hTableDescriptor.getValue(IRealizationConstants.HTableTag);
                 if (!dstCfg.getMetadataUrlPrefix().equalsIgnoreCase(host)) {
                     inconsistentHTables.add(segFullName);
@@ -181,6 +184,7 @@ public class CubeMigrationCheckCLI {
         }
     }
 
+    //对正确的进行修复
     public void fixInconsistent() throws IOException {
         if (ifFix == true) {
             for (String segFullName : inconsistentHTables) {
@@ -202,6 +206,7 @@ public class CubeMigrationCheckCLI {
         }
     }
 
+    //对错误的进行打印
     public void printIssueExistingHTables() {
         logger.info("------ HTables exist issues in hbase : not existing, metadata broken ------");
         for (String segFullName : issueExistHTables) {

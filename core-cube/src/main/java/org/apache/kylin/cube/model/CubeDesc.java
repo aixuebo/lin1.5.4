@@ -1219,7 +1219,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
     }
 
     /** Get columns that have dictionary
-     * 获取所有有字段的列
+     * 获取所有字典列,即设置为dict的列
      **/
     public Set<TblColRef> getAllColumnsHaveDictionary() {
         Set<TblColRef> result = Sets.newLinkedHashSet();
@@ -1254,7 +1254,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
      * 即获取需要构建字典的列的集合
      **/
     public Set<TblColRef> getAllColumnsNeedDictionaryBuilt() {
-        Set<TblColRef> result = getAllColumnsHaveDictionary();//获取所有有字段的列
+        Set<TblColRef> result = getAllColumnsHaveDictionary();//获取所有字典列,即设置为dict的列
 
         // remove columns that reuse other's dictionary
         if (dictionaries != null) {

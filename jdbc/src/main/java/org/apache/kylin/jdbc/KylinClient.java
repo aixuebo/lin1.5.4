@@ -68,6 +68,10 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * jdbc:kylin://<hostname>:<port>/<kylin_project_name>
+ * 连接ip:port,使用http去连接一个节点
+ */
 public class KylinClient implements IRemoteClient {
 
     private static final Logger logger = LoggerFactory.getLogger(KylinClient.class);
@@ -99,6 +103,7 @@ public class KylinClient implements IRemoteClient {
         }
     }
 
+    //mysql类型转换成java的类
     @SuppressWarnings("rawtypes")
     public static Class convertType(int sqlType) {
         Class result = Object.class;
@@ -155,6 +160,7 @@ public class KylinClient implements IRemoteClient {
         return result;
     }
 
+    //根据sql的类型转换成java的类型,并且将该java对象初始化value
     public static Object wrapObject(String value, int sqlType) {
         if (null == value) {
             return null;
@@ -210,16 +216,19 @@ public class KylinClient implements IRemoteClient {
         return (isSSL() ? "https://" : "http://") + conn.getBaseUrl();
     }
 
+    //设置http请求头
     private void addHttpHeaders(HttpRequestBase method) {
-        method.addHeader("Accept", "application/json, text/plain, */*");
+        method.addHeader("Accept", "application/json, text/plain, */*");//接收json数据
         method.addHeader("Content-Type", "application/json");
 
+        //用户名和密码转换成base64
         String username = connProps.getProperty("user");
         String password = connProps.getProperty("password");
         String basicAuth = DatatypeConverter.printBase64Binary((username + ":" + password).getBytes());
         method.addHeader("Authorization", "Basic " + basicAuth);
     }
 
+    //发送用户名和密码,去连接服务器
     @Override
     public void connect() throws IOException {
         HttpPost post = new HttpPost(baseUrl() + "/kylin/api/user/authentication");
@@ -235,6 +244,7 @@ public class KylinClient implements IRemoteClient {
         response.close();
     }
 
+    //获取project下的结果
     @Override
     public KMetaProject retrieveMetaData(String project) throws IOException {
         assert conn.getProject().equals(project);
@@ -249,6 +259,7 @@ public class KylinClient implements IRemoteClient {
             throw asIOException(get, response);
         }
 
+        //解析返回的json
         List<TableMetaStub> tableMetaStubs = jsonMapper.readValue(response.getEntity().getContent(), new TypeReference<List<TableMetaStub>>() {
         });
 

@@ -75,16 +75,17 @@ import org.slf4j.LoggerFactory;
  * <p/>
  * Note that different envs are assumed to share the same hadoop cluster,
  * including hdfs, hbase and hive.
+ * cube的迁移
  */
 public class CubeMigrationCLI {
 
     private static final Logger logger = LoggerFactory.getLogger(CubeMigrationCLI.class);
 
     private static List<Opt> operations;
-    private static KylinConfig srcConfig;
-    private static KylinConfig dstConfig;
-    private static ResourceStore srcStore;
-    private static ResourceStore dstStore;
+    private static KylinConfig srcConfig;//原始的配置文件
+    private static KylinConfig dstConfig;//新的配置文件
+    private static ResourceStore srcStore;//原始的存储方式
+    private static ResourceStore dstStore;//新的存储方式
     private static FileSystem hdfsFS;
     private static HBaseAdmin hbaseAdmin;
 
@@ -108,20 +109,37 @@ public class CubeMigrationCLI {
 
     }
 
+    /**
+     *
+     * @param srcCfg 原始的配置文件
+     * @param dstCfg 新的配置文件
+     * @param cubeName 迁移的cube
+     * @param projectName cube所属项目
+     * @param copyAcl  true 或者false 表示是否复制cube的权限信息
+     * @param purgeAndDisable //true或者false表示
+     * @param overwriteIfExists  true或者false 表示如果dst中存在了,是否覆盖
+     * @param realExecute  true或者false表示是否真正的执行
+     * @throws IOException
+     * @throws InterruptedException
+     */
     public static void moveCube(KylinConfig srcCfg, KylinConfig dstCfg, String cubeName, String projectName, String copyAcl, String purgeAndDisable, String overwriteIfExists, String realExecute) throws IOException, InterruptedException {
 
+        //获取原始的配置文件和存储方式 以及新的
         srcConfig = srcCfg;
         srcStore = ResourceStore.getStore(srcConfig);
         dstConfig = dstCfg;
         dstStore = ResourceStore.getStore(dstConfig);
 
+        //获取呀un是的cube对象
         CubeManager cubeManager = CubeManager.getInstance(srcConfig);
         CubeInstance cube = cubeManager.getCube(cubeName);
         logger.info("cube to be moved is : " + cubeName);
 
+        //cube必须是ready状态
         if (cube.getStatus() != RealizationStatusEnum.READY)
             throw new IllegalStateException("Cannot migrate cube that is not in READY state.");
 
+        //cube的segment必须也是ready状态
         for (CubeSegment segment : cube.getSegments()) {
             if (segment.getStatus() != SegmentStatusEnum.READY) {
                 throw new IllegalStateException("At least one segment is not in READY state");
@@ -137,11 +155,11 @@ public class CubeMigrationCLI {
 
         operations = new ArrayList<Opt>();
 
-        copyFilesInMetaStore(cube, overwriteIfExists);
-        renameFoldersInHdfs(cube);
-        changeHtableHost(cube);
-        addCubeAndModelIntoProject(cube, cubeName, projectName);
-        if (Boolean.parseBoolean(copyAcl) == true) {
+        copyFilesInMetaStore(cube, overwriteIfExists);//copy元数据和字典、快照
+        renameFoldersInHdfs(cube);//切换cube的segment目录
+        changeHtableHost(cube);//更改cube的segment对应的hbase的数据库表
+        addCubeAndModelIntoProject(cube, cubeName, projectName);//更新cube的原始cube name以及projectName
+        if (Boolean.parseBoolean(copyAcl) == true) { //复制cube的权限
             copyACL(cube, projectName);
         }
 
@@ -149,6 +167,7 @@ public class CubeMigrationCLI {
             purgeAndDisable(cubeName); // this should be the last action
         }
 
+        //true或者false表示是否真正的执行
         if (realExecute.equalsIgnoreCase("true")) {
             doOpts();
             checkMigrationSuccess(dstConfig, cubeName, true);
@@ -168,6 +187,7 @@ public class CubeMigrationCLI {
         checkCLI.execute(cubeName);
     }
 
+    //校验hbase的数据连接串必须相同
     private static String checkAndGetHbaseUrl() {
         String srcMetadataUrl = srcConfig.getMetadataUrl();
         String dstMetadataUrl = dstConfig.getMetadataUrl();
@@ -190,6 +210,7 @@ public class CubeMigrationCLI {
         return srcHbaseUrl.trim();
     }
 
+    //切换cube的segment目录
     private static void renameFoldersInHdfs(CubeInstance cube) {
         for (CubeSegment segment : cube.getSegments()) {
 
@@ -202,33 +223,38 @@ public class CubeMigrationCLI {
 
     }
 
+    //更改cube的segment对应的hbase的数据库表
     private static void changeHtableHost(CubeInstance cube) {
         for (CubeSegment segment : cube.getSegments()) {
             operations.add(new Opt(OptType.CHANGE_HTABLE_HOST, new Object[] { segment.getStorageLocationIdentifier() }));
         }
     }
 
+    //复制cube的权限
     private static void copyACL(CubeInstance cube, String projectName) {
         operations.add(new Opt(OptType.COPY_ACL, new Object[] { cube.getUuid(), cube.getDescriptor().getModel().getUuid(), projectName }));
     }
 
+    //copy元数据和字典、快照
     private static void copyFilesInMetaStore(CubeInstance cube, String overwriteIfExists) throws IOException {
 
-        List<String> metaItems = new ArrayList<String>();
-        Set<String> dictAndSnapshot = new HashSet<String>();
+        List<String> metaItems = new ArrayList<String>();//存储cube的元数据
+        Set<String> dictAndSnapshot = new HashSet<String>();//存储cube的字典和快照数据
         listCubeRelatedResources(cube, metaItems, dictAndSnapshot);
 
-        if (dstStore.exists(cube.getResourcePath()) && !overwriteIfExists.equalsIgnoreCase("true"))
+        if (dstStore.exists(cube.getResourcePath()) && !overwriteIfExists.equalsIgnoreCase("true")) //存在 但是不覆盖,则抛异常
             throw new IllegalStateException("The cube named " + cube.getName() + " already exists on target metadata store. Use overwriteIfExists to overwrite it");
 
-        for (String item : metaItems) {
+        for (String item : metaItems) {//循环元数据
             operations.add(new Opt(OptType.COPY_FILE_IN_META, new Object[] { item }));
         }
 
-        for (String item : dictAndSnapshot) {
+        for (String item : dictAndSnapshot) {//循环字典和快照
             operations.add(new Opt(OptType.COPY_DICT_OR_SNAPSHOT, new Object[] { item, cube.getName() }));
         }
     }
+
+    //更新cube的原始cube name以及projectName
     private static void addCubeAndModelIntoProject(CubeInstance srcCube, String cubeName, String projectName) throws IOException {
         String projectResPath = ProjectInstance.concatResourcePath(projectName);
         if (!dstStore.exists(projectResPath))
@@ -241,6 +267,13 @@ public class CubeMigrationCLI {
         operations.add(new Opt(OptType.PURGE_AND_DISABLE, new Object[] { cubeName }));
     }
 
+    /**
+     * 存储cube的信息
+     * @param cube
+     * @param metaResource cube的元数据内容
+     * @param dictAndSnapshot cube的快照和字典元数据内容
+     * @throws IOException
+     */
     private static void listCubeRelatedResources(CubeInstance cube, List<String> metaResource, Set<String> dictAndSnapshot) throws IOException {
 
         CubeDesc cubeDesc = cube.getDescriptor();
@@ -259,8 +292,15 @@ public class CubeMigrationCLI {
         }
     }
 
+    //操作类型
     private static enum OptType {
-        COPY_FILE_IN_META, COPY_DICT_OR_SNAPSHOT, RENAME_FOLDER_IN_HDFS, ADD_INTO_PROJECT, CHANGE_HTABLE_HOST, COPY_ACL, PURGE_AND_DISABLE
+        COPY_FILE_IN_META,//元数据对应的路径
+        COPY_DICT_OR_SNAPSHOT,//存储快照或者字典 对应的每一个cube
+        RENAME_FOLDER_IN_HDFS,//切换cube的segment目录
+        ADD_INTO_PROJECT,//更新cube的原始cube name以及projectName
+        CHANGE_HTABLE_HOST,//更改cube的segment对应的hbase的数据库表
+        COPY_ACL,//复制cube的权限
+        PURGE_AND_DISABLE
     }
 
     private static class Opt {
