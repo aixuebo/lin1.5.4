@@ -38,9 +38,10 @@ public final class ExecutableConstants {
 
     public static final int DEFAULT_SCHEDULER_INTERVAL_SECONDS = 60;
 
+    //JOB监控中的job名字
     public static final String STEP_NAME_BUILD_DICTIONARY = "Build Dimension Dictionary";
     public static final String STEP_NAME_CREATE_FLAT_HIVE_TABLE = "Create Intermediate Flat Hive Table";//创建hive的临时表执行任务,即执行hive的sql
-    public static final String STEP_NAME_MATERIALIZE_HIVE_VIEW_IN_LOOKUP = "Materialize Hive View in Lookup Tables";
+    public static final String STEP_NAME_MATERIALIZE_HIVE_VIEW_IN_LOOKUP = "Materialize Hive View in Lookup Tables";//针对lookup表是视图表的时候进行操作的job
     public static final String STEP_NAME_COUNT_HIVE_TABLE = "Count Source Table";//表的记录条数
     public static final String STEP_NAME_FACT_DISTINCT_COLUMNS = "Extract Fact Table Distinct Columns";
     public static final String STEP_NAME_BUILD_BASE_CUBOID = "Build Base Cuboid Data";
@@ -55,7 +56,7 @@ public final class ExecutableConstants {
     public static final String STEP_NAME_SAVE_STATISTICS = "Save Cuboid Statistics";
     public static final String STEP_NAME_MERGE_CUBOID = "Merge Cuboid Data";
     public static final String STEP_NAME_UPDATE_CUBE_INFO = "Update Cube Info";
-    public static final String STEP_NAME_GARBAGE_COLLECTION = "Garbage Collection";
+    public static final String STEP_NAME_GARBAGE_COLLECTION = "Garbage Collection";//删除数据库以及HDFS的内容任务
     public static final String STEP_NAME_GARBAGE_COLLECTION_HDFS = "Garbage Collection on HDFS";
     public static final String STEP_NAME_BUILD_II = "Build Inverted Index";
     public static final String STEP_NAME_CONVERT_II_TO_HFILE = "Convert Inverted Index Data to HFile";

@@ -33,10 +33,11 @@ import com.google.common.collect.Lists;
 
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
 public class AggregationGroup {
+    //用于继承设置中
     public static class HierarchyMask {
-        public long fullMask;// 00000111
-        public long[] allMasks;// 00000100,00000110,00000111
-        public long[] dims;// 00000100,00000010,00000001
+        public long fullMask;// 00000111 如果有3个属性安排了继承关系,因此该字段可以得到是哪三个属性安排了继承关系
+        public long[] allMasks;// 00000100,00000110,00000111 用于表示继承关系中的顺序,是先谁后谁
+        public long[] dims;// 00000100,00000010,00000001  比如有三个继承关系,因此该size为3,每一个元素表示每一个字段在rowkey中的对应的值,即只有一个位置是1
     }
 
     @JsonProperty("includes")
@@ -53,14 +54,18 @@ public class AggregationGroup {
     private SelectRule selectRule;//维度组内的列是什么方式可以优化
 
     //computed 计算编码----在hbase的rowkey的位置
-    private long partialCubeFullMask;
-    private long mandatoryColumnMask;
+    //比如rowkey有8个字段,因此是111111110
+    //如果iclude值有3个字段,并且相对位置也知道,因此该值为100000110
+    private long partialCubeFullMask;//includes中字段
+    private long mandatoryColumnMask;//mandatory中字段
     private List<HierarchyMask> hierarchyMasks;
-    private List<Long> joints;//each long is a group
-    private long jointDimsMask;
-    private long normalDimsMask;
-    private long hierarchyDimsMask;
-    private List<Long> normalDims;//each long is a single dim
+    private List<Long> joints;//each long is a group,joint中字段
+
+
+    private long jointDimsMask;//所有参与joint的字段集合,该参数的字段位置是1
+    private long hierarchyDimsMask;//所有参数继承的字段集合,该参数的字段位置是1
+    private long normalDimsMask;//includes中字段 除了参与mandatory、joint、hierarch字段外的字段的位置设置为1
+    private List<Long> normalDims;//each long is a single dim  将每一个normal的字段的位置 转换成整数,即该集合内的元素,每一个元素都只有一个位置是1,所有的元素都表示为normal的字段
 
     private CubeDesc cubeDesc;//该聚合组所属的cube对象
     private boolean isMandatoryOnlyValid;
@@ -93,10 +98,71 @@ public class AggregationGroup {
         partialCubeFullMask = 0L;
         for (String dim : this.includes) {
             TblColRef hColumn = colNameAbbr.get(dim);
-            Integer index = rowKeyDesc.getColumnBitIndex(hColumn);
+            Integer index = rowKeyDesc.getColumnBitIndex(hColumn);//该列的对应的序号
             long bit = 1L << index;//2的index次方
             partialCubeFullMask |= bit;
         }
+    }
+
+
+    private void buildMandatoryColumnMask(Map<String, TblColRef> colNameAbbr, RowKeyDesc rowKeyDesc) {
+        mandatoryColumnMask = 0L;
+
+        String[] mandatory_dims = this.selectRule.mandatory_dims;//必须存在的维度集合
+        if (mandatory_dims == null || mandatory_dims.length == 0) {
+            return;
+        }
+
+        for (String dim : mandatory_dims) {
+            TblColRef hColumn = colNameAbbr.get(dim);
+            Integer index = rowKeyDesc.getColumnBitIndex(hColumn);
+            mandatoryColumnMask |= 1 << index;
+        }
+
+    }
+
+    private void buildHierarchyMasks(Map<String, TblColRef> colNameAbbr, RowKeyDesc rowKeyDesc) {
+        this.hierarchyMasks = new ArrayList<HierarchyMask>();
+
+        if (this.selectRule.hierarchy_dims == null || this.selectRule.hierarchy_dims.length == 0) {
+            return;
+        }
+
+        for (String[] hierarchy_dims : this.selectRule.hierarchy_dims) {
+            HierarchyMask mask = new HierarchyMask();//每一组继承关系创建一个该对象
+            if (hierarchy_dims == null || hierarchy_dims.length == 0) {
+                continue;
+            }
+
+            ArrayList<Long> allMaskList = new ArrayList<Long>();//用于表示继承关系中的顺序,是先谁后谁
+            ArrayList<Long> dimList = new ArrayList<Long>();//比如有三个继承关系,因此该size为3,每一个元素表示每一个字段在rowkey中的对应的值,即只有一个位置是1
+            for (int i = 0; i < hierarchy_dims.length; i++) {//每一个继承中的元素
+                TblColRef hColumn = colNameAbbr.get(hierarchy_dims[i]);
+                Integer index = rowKeyDesc.getColumnBitIndex(hColumn);
+                long bit = 1L << index;
+
+                //                if ((tailMask & bit) > 0)
+                //                    continue; // ignore levels in tail, they don't participate
+                //                // aggregation group combination anyway
+
+                mask.fullMask |= bit;
+                allMaskList.add(mask.fullMask);
+                dimList.add(bit);
+            }
+
+            //将List转换成数组
+            Preconditions.checkState(allMaskList.size() == dimList.size());
+            mask.allMasks = new long[allMaskList.size()];
+            mask.dims = new long[dimList.size()];
+            for (int i = 0; i < allMaskList.size(); i++) {
+                mask.allMasks[i] = allMaskList.get(i);
+                mask.dims[i] = dimList.get(i);
+            }
+
+            this.hierarchyMasks.add(mask);
+
+        }
+
     }
 
     private void buildJointColumnMask(Map<String, TblColRef> colNameAbbr, RowKeyDesc rowKeyDesc) {
@@ -124,67 +190,23 @@ public class AggregationGroup {
         }
     }
 
-    private void buildMandatoryColumnMask(Map<String, TblColRef> colNameAbbr, RowKeyDesc rowKeyDesc) {
-        mandatoryColumnMask = 0L;
-
-        String[] mandatory_dims = this.selectRule.mandatory_dims;//必须存在的维度集合
-        if (mandatory_dims == null || mandatory_dims.length == 0) {
-            return;
+    //-------------------------
+    public void buildJointDimsMask() {
+        long ret = 0;
+        for (long x : joints) {
+            ret |= x;
         }
-
-        for (String dim : mandatory_dims) {
-            TblColRef hColumn = colNameAbbr.get(dim);
-            Integer index = rowKeyDesc.getColumnBitIndex(hColumn);
-            mandatoryColumnMask |= 1 << index;
-        }
-
-    }
-
-    private void buildHierarchyMasks(Map<String, TblColRef> colNameAbbr, RowKeyDesc rowKeyDesc) {
-        this.hierarchyMasks = new ArrayList<HierarchyMask>();
-
-        if (this.selectRule.hierarchy_dims == null || this.selectRule.hierarchy_dims.length == 0) {
-            return;
-        }
-
-        for (String[] hierarchy_dims : this.selectRule.hierarchy_dims) {
-            HierarchyMask mask = new HierarchyMask();
-            if (hierarchy_dims == null || hierarchy_dims.length == 0) {
-                continue;
-            }
-
-            ArrayList<Long> allMaskList = new ArrayList<Long>();
-            ArrayList<Long> dimList = new ArrayList<Long>();
-            for (int i = 0; i < hierarchy_dims.length; i++) {
-                TblColRef hColumn = colNameAbbr.get(hierarchy_dims[i]);
-                Integer index = rowKeyDesc.getColumnBitIndex(hColumn);
-                long bit = 1L << index;
-
-                //                if ((tailMask & bit) > 0)
-                //                    continue; // ignore levels in tail, they don't participate
-                //                // aggregation group combination anyway
-
-                mask.fullMask |= bit;
-                allMaskList.add(mask.fullMask);
-                dimList.add(bit);
-            }
-
-            Preconditions.checkState(allMaskList.size() == dimList.size());
-            mask.allMasks = new long[allMaskList.size()];
-            mask.dims = new long[dimList.size()];
-            for (int i = 0; i < allMaskList.size(); i++) {
-                mask.allMasks[i] = allMaskList.get(i);
-                mask.dims[i] = dimList.get(i);
-            }
-
-            this.hierarchyMasks.add(mask);
-
-        }
-
+        this.jointDimsMask = ret;
     }
 
     private void buildNormalDimsMask() {
         //no joint, no hierarchy, no mandatory
+        /**
+         * 1.~mandatoryColumnMask;表示反转,即1转换成0,0转换成1
+         * 2.与该组内所有的字段全都是1的进行&,即返回依然是1的,此时返回的值就是:includes中字段 刨除 mandatory的字段
+         * 3.再继续刨除jointDimsMask字段
+         * 4.再继续刨除继承的字段
+         */
         long leftover = partialCubeFullMask & ~mandatoryColumnMask;
         leftover &= ~this.jointDimsMask;
         for (HierarchyMask hierarchyMask : this.hierarchyMasks) {
@@ -203,23 +225,18 @@ public class AggregationGroup {
         this.hierarchyDimsMask = ret;
     }
 
+    //-------------------------
+
+    //将每一个normal的字段的位置 转换成整数,即该集合内的元素,每一个元素都只有一个位置是1,所有的元素都表示为normal的字段
     private List<Long> bits(long x) {
         List<Long> r = Lists.newArrayList();
         long l = x;
         while (l != 0) {
-            long bit = Long.lowestOneBit(l);
+            long bit = Long.lowestOneBit(l);//获取长整数二进制最低位1的索引
             r.add(bit);
             l ^= bit;
         }
         return r;
-    }
-
-    public void buildJointDimsMask() {
-        long ret = 0;
-        for (long x : joints) {
-            ret |= x;
-        }
-        this.jointDimsMask = ret;
     }
 
     public long getMandatoryColumnMask() {
@@ -230,19 +247,24 @@ public class AggregationGroup {
         return hierarchyMasks;
     }
 
+    //返回的结果就是有多少个字段
     public int getBuildLevel() {
         int ret = 1;//base cuboid => partial cube root
-        if (this.getPartialCubeFullMask() == Cuboid.getBaseCuboidId(cubeDesc)) {
+        if (this.getPartialCubeFullMask() == Cuboid.getBaseCuboidId(cubeDesc)) {//不考虑base级别的
             ret -= 1;//if partial cube's root is base cuboid, then one round less agg
         }
 
-        ret += getNormalDims().size();
+        ret += getNormalDims().size();//表示有多少个Normal字段---每一个normal字段都是一个字段
+
+        //每一个继承字段也是一个字段
         for (HierarchyMask hierarchyMask : this.hierarchyMasks) {
-            ret += hierarchyMask.allMasks.length;
+            ret += hierarchyMask.allMasks.length;//有多少个字段参与了继承
         }
+
+        //每一组联合字段作为一个字段
         for (Long joint : joints) {
-            if ((joint & this.getHierarchyDimsMask()) == 0) {
-                ret += 1;
+            if ((joint & this.getHierarchyDimsMask()) == 0) {//说明两个字段没有公共部分,这个应该是必须的
+                ret += 1;//有多少个join部分
             }
         }
 

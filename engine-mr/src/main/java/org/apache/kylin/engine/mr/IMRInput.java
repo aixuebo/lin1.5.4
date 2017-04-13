@@ -32,7 +32,9 @@ public interface IMRInput {
     /** Return a helper to participate in batch cubing job flow. */
     public IMRBatchCubingInputSide getBatchCubingInputSide(IJoinedFlatTableDesc flatDesc);
 
-    /** Return an InputFormat that reads from specified table. */
+    /** Return an InputFormat that reads from specified table.
+     * 如何读取hive表,返回读取hive表的一个InputFormat
+     **/
     public IMRTableInputFormat getTableInputFormat(TableDesc table);
 
     /**
@@ -55,7 +57,7 @@ public interface IMRInput {
     /**
      * Participate the batch cubing flow as the input side. Responsible for creating
      * intermediate flat table (Phase 1) and clean up any leftover (Phase 4).
-     * 
+     * 用于对一个cube的segment创建一个临时的hive表,存储该cube需要的列集合,日后处理只需要处理该临时表即可
      * - Phase 1: Create Flat Table
      * - Phase 2: Build Dictionary (with FlatTableInputFormat)
      * - Phase 3: Build Cube (with FlatTableInputFormat)
@@ -64,12 +66,16 @@ public interface IMRInput {
     public interface IMRBatchCubingInputSide {
 
         /** Return an InputFormat that reads from the intermediate flat table */
-        public IMRTableInputFormat getFlatTableInputFormat();
+        public IMRTableInputFormat getFlatTableInputFormat();//如何读取hive表中临时数据表中数据
 
-        /** Add step that creates an intermediate flat table as defined by CubeJoinedFlatTableDesc */
+        /** Add step that creates an intermediate flat table as defined by CubeJoinedFlatTableDesc
+         * 根据cube的segment内容,将cube的内容创建到一个临时表中,并且按照一个字段进行分片处理,让每一个都很均匀分布
+         **/
         public void addStepPhase1_CreateFlatTable(DefaultChainedExecutable jobFlow);
 
-        /** Add step that does necessary clean up, like delete the intermediate flat table */
+        /** Add step that does necessary clean up, like delete the intermediate flat table
+         * 最终处理数据,让临时表清空
+         **/
         public void addStepPhase4_Cleanup(DefaultChainedExecutable jobFlow);
     }
 

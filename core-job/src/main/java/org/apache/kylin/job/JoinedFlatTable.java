@@ -44,7 +44,6 @@ import com.google.common.collect.Sets;
 /**
  *
  */
-
 public class JoinedFlatTable {
 
     public static String getTableDir(IJoinedFlatTableDesc intermediateTableDesc, String storageDfsDir) {
@@ -159,7 +158,7 @@ public class JoinedFlatTable {
         return sql.toString();
     }
 
-    //dfs -mkdir -p  outputDir;  INSERT OVERWRITE DIRECTORY  outputDir SELECT count(*) FROM biao
+    //dfs -mkdir -p  outputDir;  INSERT OVERWRITE DIRECTORY  outputDir SELECT count(*) FROM fact表
     //重新计算数据数量
     public static String generateCountDataStatement(IJoinedFlatTableDesc flatDesc, final String outputDir) {
         final Map<String, String> tableAliasMap = buildTableAliasMap(flatDesc.getDataModel());

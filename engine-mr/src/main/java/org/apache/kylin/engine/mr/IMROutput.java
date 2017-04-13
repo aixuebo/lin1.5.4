@@ -26,6 +26,9 @@ public interface IMROutput {
     /** Return a helper to participate in batch cubing job flow. */
     public IMRBatchCubingOutputSide getBatchCubingOutputSide(CubeSegment seg);
 
+    /** Return a helper to participate in batch merge job flow. */
+    public IMRBatchMergeOutputSide getBatchMergeOutputSide(CubeSegment seg);
+
     /**
      * Participate the batch cubing flow as the output side. Responsible for savg
      * the cuboid output to storage (Phase 3).
@@ -49,9 +52,6 @@ public interface IMROutput {
         /** Add step that does any necessary clean up. */
         public void addStepPhase4_Cleanup(DefaultChainedExecutable jobFlow);
     }
-
-    /** Return a helper to participate in batch merge job flow. */
-    public IMRBatchMergeOutputSide getBatchMergeOutputSide(CubeSegment seg);
 
     /**
      * Participate the batch cubing flow as the output side. Responsible for saving

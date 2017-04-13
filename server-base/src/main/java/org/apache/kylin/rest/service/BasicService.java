@@ -100,6 +100,11 @@ public abstract class BasicService {
         return listAllCubingJobs(cubeName, projectName, statusList, -1L, -1L, allOutputs);
     }
 
+    /**
+     * 1.查找execute在timeStartInMillis和timeEndInMillis时间范围内的结果集
+     * 2.进行过滤,只选择是cubeName和projectName的结果,或者cubeName=null和projectName=null的结果也会被选择
+     * 3.在进行过滤,该job的状态必须在参数statusList集合中存在
+     */
     protected List<CubingJob> listAllCubingJobs(final String cubeName, final String projectName, final Set<ExecutableState> statusList, long timeStartInMillis, long timeEndInMillis, final Map<String, Output> allOutputs) {
         List<CubingJob> results = Lists.newArrayList(FluentIterable.from(getExecutableManager().getAllExecutables(timeStartInMillis, timeEndInMillis)).filter(new Predicate<AbstractExecutable>() {
             @Override
@@ -108,33 +113,33 @@ public abstract class BasicService {
                     if (cubeName == null) {
                         return true;
                     }
-                    return CubingExecutableUtil.getCubeName(executable.getParams()).equalsIgnoreCase(cubeName);
+                    return CubingExecutableUtil.getCubeName(executable.getParams()).equalsIgnoreCase(cubeName);//必须cube名称与参数相同 或者匹配cubeName=null的结果
                 } else {
                     return false;
                 }
             }
-        }).transform(new Function<AbstractExecutable, CubingJob>() {
+        }).transform(new Function<AbstractExecutable, CubingJob>() {//转换,将 AbstractExecutable对象转换成CubingJob对象
             @Override
-            public CubingJob apply(AbstractExecutable executable) {
+            public CubingJob apply(AbstractExecutable executable) {//进行强制转换
                 return (CubingJob) executable;
             }
-        }).filter(Predicates.and(new Predicate<CubingJob>() {
+        }).filter(Predicates.and(new Predicate<CubingJob>() {//选择必须projectName也匹配参数的,或者projectName=null的
             @Override
             public boolean apply(CubingJob executable) {
                 if (null == projectName || null == getProjectManager().getProject(projectName)) {
                     return true;
                 } else {
                     ProjectInstance project = getProjectManager().getProject(projectName);
-                    return project.containsRealization(RealizationType.CUBE, CubingExecutableUtil.getCubeName(executable.getParams()));
+                    return project.containsRealization(RealizationType.CUBE, CubingExecutableUtil.getCubeName(executable.getParams()));//说明该project包含该cube
                 }
             }
-        }, new Predicate<CubingJob>() {
+        }, new Predicate<CubingJob>() {//选择该job的输出状态在参数的状态集合中
             @Override
             public boolean apply(CubingJob executable) {
                 try {
                     Output output = allOutputs.get(executable.getId());
-                    ExecutableState state = output.getState();
-                    boolean ret = statusList.contains(state);
+                    ExecutableState state = output.getState();//获取该job对应的状态
+                    boolean ret = statusList.contains(state);//该状态是否在参数集合中
                     return ret;
                 } catch (Exception e) {
                     throw e;

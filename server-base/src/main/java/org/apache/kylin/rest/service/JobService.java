@@ -200,14 +200,17 @@ public class JobService extends BasicService {
     public JobInstance submitJob(CubeInstance cube, long startDate, long endDate, long startOffset, long endOffset, //
             CubeBuildTypeEnum buildType, boolean force, String submitter) throws IOException, JobException {
 
-        checkCubeDescSignature(cube);
-        checkNoRunningJob(cube);
+        checkCubeDescSignature(cube);//检查cube的MD5签名
+        checkNoRunningJob(cube);//确保该cube的任务没有ready和running和error的状态
 
         DefaultChainedExecutable job;
 
+        /**
+         * 根据时间范围 划分一个cube的segment,然后进行处理
+         */
         if (buildType == CubeBuildTypeEnum.BUILD) {
             CubeSegment newSeg = getCubeManager().appendSegment(cube, startDate, endDate, startOffset, endOffset);
-            job = EngineFactory.createBatchCubingJob(newSeg, submitter);
+            job = EngineFactory.createBatchCubingJob(newSeg, submitter);//执行org.apache.kylin.engine.mr.BatchCubingJobBuilder的build方法
         } else if (buildType == CubeBuildTypeEnum.MERGE) {
             CubeSegment newSeg = getCubeManager().mergeSegments(cube, startDate, endDate, startOffset, endOffset, force);
             job = EngineFactory.createBatchMergeJob(newSeg, submitter);
@@ -217,7 +220,7 @@ public class JobService extends BasicService {
         } else {
             throw new JobException("invalid build type:" + buildType);
         }
-        getExecutableManager().addJob(job);
+        getExecutableManager().addJob(job);//添加该job的内容在磁盘上
         JobInstance jobInstance = getSingleJobInstance(job);
 
         accessService.init(jobInstance, null);
@@ -226,16 +229,20 @@ public class JobService extends BasicService {
         return jobInstance;
     }
 
+    /**
+     * 检查cube的MD5签名
+     */
     private void checkCubeDescSignature(CubeInstance cube) {
         if (!cube.getDescriptor().checkSignature())
             throw new IllegalStateException("Inconsistent cube desc signature for " + cube.getDescriptor());
     }
 
+    //确保该cube的任务没有ready和running和error的状态
     private void checkNoRunningJob(CubeInstance cube) throws JobException {
-        final List<CubingJob> cubingJobs = listAllCubingJobs(cube.getName(), null, EnumSet.allOf(ExecutableState.class));
+        final List<CubingJob> cubingJobs = listAllCubingJobs(cube.getName(), null, EnumSet.allOf(ExecutableState.class));//返回所有满足的cube集合
         for (CubingJob job : cubingJobs) {
             if (job.getStatus() == ExecutableState.READY || job.getStatus() == ExecutableState.RUNNING || job.getStatus() == ExecutableState.ERROR) {
-                throw new JobException("The cube " + cube.getName() + " has running job(" + job.getId() + ") please discard it and try again.");
+                throw new JobException("The cube " + cube.getName() + " has running job(" + job.getId() + ") please discard it and try again.");//注意:如果一个job是error了,因此要先discard,然后此时该方法才能通过
             }
         }
     }
@@ -252,7 +259,7 @@ public class JobService extends BasicService {
         if (job == null) {
             return null;
         }
-        Preconditions.checkState(job instanceof CubingJob, "illegal job type, id:" + job.getId());
+        Preconditions.checkState(job instanceof CubingJob, "illegal job type, id:" + job.getId());//job必须是CubingJob类型的
         CubingJob cubeJob = (CubingJob) job;
         final JobInstance result = new JobInstance();
         result.setName(job.getName());
@@ -265,7 +272,7 @@ public class JobService extends BasicService {
         result.setStatus(parseToJobStatus(job.getStatus()));
         result.setMrWaiting(cubeJob.getMapReduceWaitTime() / 1000);
         result.setDuration(cubeJob.getDuration() / 1000);
-        for (int i = 0; i < cubeJob.getTasks().size(); ++i) {
+        for (int i = 0; i < cubeJob.getTasks().size(); ++i) {//如果该job有很多子任务
             AbstractExecutable task = cubeJob.getTasks().get(i);
             result.addStep(parseToJobStep(task, i, getExecutableManager().getOutput(task.getId())));
         }
@@ -299,6 +306,7 @@ public class JobService extends BasicService {
         return result;
     }
 
+    //job的子任务
     private JobInstance.JobStep parseToJobStep(AbstractExecutable task, int i, Output stepOutput) {
         Preconditions.checkNotNull(stepOutput);
         JobInstance.JobStep result = new JobInstance.JobStep();
@@ -326,6 +334,7 @@ public class JobService extends BasicService {
         return result;
     }
 
+    //通过执行的状态,转换成job的状态
     private JobStatusEnum parseToJobStatus(ExecutableState state) {
         switch (state) {
         case READY:
@@ -344,6 +353,7 @@ public class JobService extends BasicService {
         }
     }
 
+    //用于表示一个job中的某一个小步骤job对应的状态
     private JobStepStatusEnum parseToJobStepStatus(ExecutableState state) {
         switch (state) {
         case READY:
@@ -362,6 +372,7 @@ public class JobService extends BasicService {
         }
     }
 
+    //为job设置成READY状态
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN + " or hasPermission(#job, 'ADMINISTRATION') or hasPermission(#job, 'OPERATION') or hasPermission(#job, 'MANAGEMENT')")
     public void resumeJob(JobInstance job) throws IOException, JobException {
         getExecutableManager().resumeJob(job.getId());
@@ -373,7 +384,7 @@ public class JobService extends BasicService {
         //        for (BuildCubeJob cubeJob: listAllCubingJobs(cube.getName(), null, EnumSet.of(ExecutableState.READY, ExecutableState.RUNNING))) {
         //            getExecutableManager().stopJob(cubeJob.getId());
         //        }
-        CubeInstance cubeInstance = getCubeManager().getCube(job.getRelatedCube());
+        CubeInstance cubeInstance = getCubeManager().getCube(job.getRelatedCube());//该job关联的cube对象
         final String segmentIds = job.getRelatedSegment();
         for (String segmentId : StringUtils.split(segmentIds)) {
             final CubeSegment segment = cubeInstance.getSegmentById(segmentId);

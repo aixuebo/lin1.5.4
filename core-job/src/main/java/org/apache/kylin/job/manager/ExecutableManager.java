@@ -45,6 +45,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 /**
+ * 管理如何将job的信息和job的输出信息存储到磁盘上
  */
 public class ExecutableManager {
 
@@ -81,8 +82,8 @@ public class ExecutableManager {
     //添加一个任务
     public void addJob(AbstractExecutable executable) {
         try {
-            executableDao.addJob(parse(executable));
-            addJobOutput(executable);
+            executableDao.addJob(parse(executable));//保存任务内容
+            addJobOutput(executable);//保存任务的输出内容
         } catch (PersistentException e) {
             logger.error("fail to submit job:" + executable.getId(), e);
             throw new RuntimeException(e);
@@ -92,7 +93,7 @@ public class ExecutableManager {
     //为一个任务添加输出
     private void addJobOutput(AbstractExecutable executable) throws PersistentException {
         ExecutableOutputPO executableOutputPO = new ExecutableOutputPO();
-        executableOutputPO.setUuid(executable.getId());
+        executableOutputPO.setUuid(executable.getId());//将uuid更改为非自动生成,而是与相关联的jobid匹配
         executableDao.addJobOutput(executableOutputPO);
         if (executable instanceof DefaultChainedExecutable) {//可能由于多个任务组成,因此要为每一个子任务添加输出
             for (AbstractExecutable subTask : ((DefaultChainedExecutable) executable).getTasks()) {
@@ -276,7 +277,7 @@ public class ExecutableManager {
                 }
             }
         }
-        updateJobOutput(jobId, ExecutableState.DISCARDED, null, null);
+        updateJobOutput(jobId, ExecutableState.DISCARDED, null, null);//更新输出内容
     }
 
     //更新一个任务的所有信息
@@ -307,7 +308,7 @@ public class ExecutableManager {
 
     //for migration only
     //TODO delete when migration finished
-    //重新为该job设置任务和输出内容
+    //重新为该job设置job的输出内容
     public void resetJobOutput(String jobId, ExecutableState state, String output) {
         try {
             final ExecutableOutputPO jobOutput = executableDao.getJobOutput(jobId);
@@ -322,7 +323,7 @@ public class ExecutableManager {
     }
 
     /**
-     * 为一个任务添加额外信息
+     * 为一个任务添加额外信息,作为job的额外的输出
      * @param id 任务的uuid
      * @param info 要追加的信息
      */
@@ -343,7 +344,7 @@ public class ExecutableManager {
     }
 
     /**
-     * 为任务uuid 追加key-value信息
+     * 为任务uuid 追加key-value信息到job的输出
      * @param id 任务的uuid
      * @param key 要追加的key
      * @param value 要追加的value
@@ -389,7 +390,7 @@ public class ExecutableManager {
             if (tasks != null && !tasks.isEmpty()) {
                 Preconditions.checkArgument(result instanceof ChainedExecutable);
                 for (ExecutablePO subTask : tasks) {
-                    ((ChainedExecutable) result).addTask(parseTo(subTask));
+                    ((ChainedExecutable) result).addTask(parseTo(subTask));//继续追加子job
                 }
             }
             return result;

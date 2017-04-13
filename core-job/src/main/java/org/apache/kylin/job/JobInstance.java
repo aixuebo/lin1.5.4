@@ -36,6 +36,9 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
 
+/**
+ * 表示kylin监控中的一个job任务
+ */
 @SuppressWarnings("serial")
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
 public class JobInstance extends RootPersistentEntity implements Comparable<JobInstance> {
@@ -44,30 +47,31 @@ public class JobInstance extends RootPersistentEntity implements Comparable<JobI
     public static final String MR_JOB_ID = "mr_job_id";
 
     @JsonProperty("name")
-    private String name;
+    private String name;//cubeName - 20170412063000_20170413063000 - BUILD - GMT+08:00 2017-04-13 09:22:07
 
     @JsonProperty("type")
-    private CubeBuildTypeEnum type; // java implementation
+    private CubeBuildTypeEnum type; // java implementation  该job操作的形式:BUILD  MERGE  REFRESH
     @JsonProperty("duration")
-    private long duration;
+    private long duration;//该job已经执行的时间
     @JsonProperty("related_cube")
-    private String relatedCube;
+    private String relatedCube;//该job关联的cube
     @JsonProperty("related_segment")
-    private String relatedSegment;
+    private String relatedSegment;//该job处理的cube的segmentid是哪个
     @JsonProperty("exec_start_time")
     private long execStartTime;
     @JsonProperty("exec_end_time")
     private long execEndTime;
     @JsonProperty("mr_waiting")
-    private long mrWaiting = 0;
+    private long mrWaiting = 0;//cubeJob.getMapReduceWaitTime() / 1000
     @JsonManagedReference
     @JsonProperty("steps")
-    private List<JobStep> steps;
+    private List<JobStep> steps;//job的子任务集合
     @JsonProperty("submitter")
-    private String submitter;
+    private String submitter;//该job的提交人
     @JsonProperty("job_status")
-    private JobStatusEnum status;
+    private JobStatusEnum status;//job的运行状态
 
+    //获取运行中或者等待的job,就是此时执行的子job
     public JobStep getRunningStep() {
         for (JobStep step : this.getSteps()) {
             if (step.getStatus().equals(JobStepStatusEnum.RUNNING) || step.getStatus().equals(JobStepStatusEnum.WAITING)) {
@@ -78,9 +82,12 @@ public class JobInstance extends RootPersistentEntity implements Comparable<JobI
         return null;
     }
 
+    /**
+     * 完成的job数量所占用的百分比
+     */
     @JsonProperty("progress")
     public double getProgress() {
-        int completedStepCount = 0;
+        int completedStepCount = 0;//完成的子job数
         for (JobStep step : this.getSteps()) {
             if (step.getStatus().equals(JobStepStatusEnum.FINISHED)) {
                 completedStepCount++;
@@ -240,6 +247,7 @@ public class JobInstance extends RootPersistentEntity implements Comparable<JobI
         getSteps().add(index, step);
     }
 
+    //通过子任务,查找对应的子job对象
     public JobStep findStep(String stepName) {
         for (JobStep step : getSteps()) {
             if (stepName.equals(step.getName())) {
@@ -257,6 +265,13 @@ public class JobInstance extends RootPersistentEntity implements Comparable<JobI
         this.submitter = submitter;
     }
 
+    //按照最后更新时间排序
+    @Override
+    public int compareTo(JobInstance o) {
+        return o.lastModified < this.lastModified ? -1 : o.lastModified > this.lastModified ? 1 : 0;
+    }
+
+    //代表一个子job
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class JobStep implements Comparable<JobStep> {
 
@@ -270,18 +285,18 @@ public class JobInstance extends RootPersistentEntity implements Comparable<JobI
         private String name;
 
         @JsonProperty("sequence_id")
-        private int sequenceID;
+        private int sequenceID;//子job的序号
 
         @JsonProperty("exec_cmd")
-        private String execCmd;
+        private String execCmd;//执行job的输入参数集合,比如-table xxx -output xxx
 
         @JsonProperty("interrupt_cmd")
         private String InterruptCmd;
 
         @JsonProperty("exec_start_time")
-        private long execStartTime;
+        private long execStartTime;//该子任务的开始时间
         @JsonProperty("exec_end_time")
-        private long execEndTime;
+        private long execEndTime;//该子任务的结束时间
         @JsonProperty("exec_wait_time")
         private long execWaitTime;
 
@@ -291,6 +306,7 @@ public class JobInstance extends RootPersistentEntity implements Comparable<JobI
         @JsonProperty("cmd_type")
         private JobStepCmdTypeEnum cmdType = JobStepCmdTypeEnum.SHELL_CMD_HADOOP;
 
+        //该job的输出内容
         @JsonProperty("info")
         private ConcurrentHashMap<String, String> info = new ConcurrentHashMap<String, String>();
 
@@ -464,11 +480,6 @@ public class JobInstance extends RootPersistentEntity implements Comparable<JobI
                 return 0;
             }
         }
-    }
-
-    @Override
-    public int compareTo(JobInstance o) {
-        return o.lastModified < this.lastModified ? -1 : o.lastModified > this.lastModified ? 1 : 0;
     }
 
 }

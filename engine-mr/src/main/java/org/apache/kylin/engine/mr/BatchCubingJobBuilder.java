@@ -55,7 +55,7 @@ public class BatchCubingJobBuilder extends JobBuilderSupport {
         final String jobId = result.getId();
         final String cuboidRootPath = getCuboidRootPath(jobId);
 
-        // Phase 1: Create Flat Table
+        // Phase 1: Create Flat Table 为任务添加创建hive临时表的任务
         inputSide.addStepPhase1_CreateFlatTable(result);
 
         // Phase 2: Build Dictionary
@@ -78,7 +78,7 @@ public class BatchCubingJobBuilder extends JobBuilderSupport {
 
         // Phase 4: Update Metadata & Cleanup
         result.addTask(createUpdateCubeInfoAfterBuildStep(jobId));
-        inputSide.addStepPhase4_Cleanup(result);
+        inputSide.addStepPhase4_Cleanup(result);//添加清理临时表的任务
         outputSide.addStepPhase4_Cleanup(result);
 
         return result;

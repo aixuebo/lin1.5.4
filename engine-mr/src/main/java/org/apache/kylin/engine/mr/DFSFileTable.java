@@ -37,9 +37,9 @@ public class DFSFileTable implements ReadableTable {
     public static final String DELIM_AUTO = "auto";//如果是auto是期望的拆分符号,则可以按照177  |   \t  ,都可以作为拆分符号
     public static final String DELIM_COMMA = ",";//说明是csv文件
 
-    String path;
-    String delim;
-    int nColumns;
+    String path;//读取路径
+    String delim;//列的分隔符
+    int nColumns;//一行有多少列
 
     public DFSFileTable(String path, int nColumns) {
         this(path, DELIM_AUTO, nColumns);

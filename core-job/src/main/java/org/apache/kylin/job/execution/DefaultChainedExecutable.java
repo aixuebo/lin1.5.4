@@ -51,7 +51,7 @@ public class DefaultChainedExecutable extends AbstractExecutable implements Chai
             Executable subTask = executables.get(i);
             ExecutableState state = subTask.getStatus();
             if (state == ExecutableState.RUNNING) {
-                // there is already running subtask, no need to start a new subtask
+                // there is already running subtask, no need to start a new subtask 已经运行了,不需要重新开启,因此其实是一种错误,退出即可
                 break;
             } else if (state == ExecutableState.ERROR) {
                 throw new IllegalStateException("invalid subtask state, subtask:" + subTask.getName() + ", state:" + subTask.getStatus());

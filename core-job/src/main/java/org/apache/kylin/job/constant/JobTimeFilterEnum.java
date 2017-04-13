@@ -22,7 +22,9 @@ package org.apache.kylin.job.constant;
 public enum JobTimeFilterEnum {
     LAST_ONE_DAY(0),//昨天
     LAST_ONE_WEEK(1),//上周
-    LAST_ONE_MONTH(2), LAST_ONE_YEAR(3), ALL(4);
+    LAST_ONE_MONTH(2),
+    LAST_ONE_YEAR(3),
+    ALL(4);
 
     private final int code;
 

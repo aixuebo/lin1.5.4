@@ -30,6 +30,10 @@ import org.apache.kylin.metadata.model.IJoinedFlatTableDesc;
 
 public class EngineFactory {
 
+    /**
+     r.put(0, "org.apache.kylin.engine.mr.MRBatchCubingEngine");
+     r.put(2, "org.apache.kylin.engine.mr.MRBatchCubingEngine2");
+     */
     private static ImplementationSwitch<IBatchCubingEngine> batchEngines;
     private static ImplementationSwitch<IStreamingCubingEngine> streamingEngines;
     static {
@@ -50,11 +54,13 @@ public class EngineFactory {
     }
 
     /** Mark deprecated to indicate for test purpose only */
+    //为一个cube的segment产生一个hive的临时中间表,用于存储该build需要的数据内容
     @Deprecated
     public static IJoinedFlatTableDesc getJoinedFlatTableDesc(CubeDesc cubeDesc) {
         return batchEngine(cubeDesc).getJoinedFlatTableDesc(cubeDesc);
     }
-    
+
+    //为一个cube的segment产生一个hive的临时中间表,用于存储该build需要的数据内容
     public static IJoinedFlatTableDesc getJoinedFlatTableDesc(CubeSegment newSegment) {
         return batchEngine(newSegment).getJoinedFlatTableDesc(newSegment);
     }

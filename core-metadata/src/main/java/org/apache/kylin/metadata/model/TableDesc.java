@@ -48,7 +48,7 @@ public class TableDesc extends RootPersistentEntity implements ISourceAware {
     @JsonProperty("source_type")
     private int sourceType = ISourceAware.ID_HIVE;//数据来源于哪里
     @JsonProperty("table_type")
-    private String tableType;//是内部表还是外部表
+    private String tableType;//是内部表还是外部表  也可能是视图
 
     private static final String materializedTableNamePrefix = "kylin_intermediate_";
 

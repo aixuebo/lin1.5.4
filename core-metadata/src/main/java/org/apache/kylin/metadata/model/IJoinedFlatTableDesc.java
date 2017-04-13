@@ -21,20 +21,22 @@ package org.apache.kylin.metadata.model;
 import java.util.List;
 
 /**
+ * 为一个cube的segment产生一个hive的临时中间表,用于存储该build需要的数据内容
+ * 参见org.apache.kylin.cube.model.CubeJoinedFlatTableDesc
  */
 public interface IJoinedFlatTableDesc {
 
-    String getTableName();//表名字
+    String getTableName();//临时表的名字
 
-    DataModelDesc getDataModel();
+    DataModelDesc getDataModel();//该cube需要哪个模型
     
-    List<TblColRef> getAllColumns();//所有的列对象
+    List<TblColRef> getAllColumns();//该cube需要的列集合
     
-    int getColumnIndex(TblColRef colRef);
+    int getColumnIndex(TblColRef colRef);//获取一个列在列集合中的下标
 
-    long getSourceOffsetStart();
+    long getSourceOffsetStart();//该segment的开始日期
     
-    long getSourceOffsetEnd();
+    long getSourceOffsetEnd();//该segment的结束日期
     
-    TblColRef getDistributedBy();//hive的Distributed by对应的字段
+    TblColRef getDistributedBy();//kylin的rowkey中第一个设置shareBy为true的字段
 }

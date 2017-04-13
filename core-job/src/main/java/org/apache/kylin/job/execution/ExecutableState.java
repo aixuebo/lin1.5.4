@@ -28,12 +28,14 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
 /**
+ * 状态以及状态转换流程
  */
 public enum ExecutableState {
 
-    READY, RUNNING, ERROR, STOPPED,
+    READY,//准备可以执行了,即条件都准备好了,只有ready的状态可以进一步进行去执行
+    RUNNING, ERROR, STOPPED,
     DISCARDED,//丢弃
-    SUCCEED;
+    SUCCEED;//成功执行
 
     //定义状态机
     private static Multimap<ExecutableState, ExecutableState> VALID_STATE_TRANSFER;

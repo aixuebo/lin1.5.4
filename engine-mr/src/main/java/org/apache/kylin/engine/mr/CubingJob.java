@@ -80,6 +80,9 @@ public class CubingJob extends DefaultChainedExecutable {
         return initCubingJob(seg, "MERGE", submitter, config);
     }
 
+    /**
+     * @param jobType  BUILD 或者 MERGE
+     */
     private static CubingJob initCubingJob(CubeSegment seg, String jobType, String submitter, JobEngineConfig config) {
         KylinConfig kylinConfig = config.getConfig();
         CubeInstance cube = seg.getCubeInstance();
@@ -124,6 +127,9 @@ public class CubingJob extends DefaultChainedExecutable {
         return getParam(PROJECT_INSTANCE_NAME);
     }
 
+    /**
+     * 邮件通知内容,返回主题和内容
+     */
     @Override
     protected Pair<String, String> formatNotifications(ExecutableContext context, ExecutableState state) {
         CubeInstance cubeInstance = CubeManager.getInstance(context.getConfig()).getCube(CubingExecutableUtil.getCubeName(this.getParams()));
@@ -178,7 +184,7 @@ public class CubingJob extends DefaultChainedExecutable {
 
     @Override
     protected void onExecuteFinished(ExecuteResult result, ExecutableContext executableContext) {
-        long time = 0L;
+        long time = 0L;//等待的总时间
         for (AbstractExecutable task : getTasks()) {
             final ExecutableState status = task.getStatus();
             if (status != ExecutableState.SUCCEED) {
@@ -188,7 +194,7 @@ public class CubingJob extends DefaultChainedExecutable {
                 time += ((MapReduceExecutable) task).getMapReduceWaitTime();
             }
         }
-        setMapReduceWaitTime(time);
+        setMapReduceWaitTime(time);//设置等待的总时间
         super.onExecuteFinished(result, executableContext);
     }
 
@@ -276,18 +282,22 @@ public class CubingJob extends DefaultChainedExecutable {
         return findExtraInfo(key, dft, true);
     }
 
+    /**
+     * 查找key对应的输出的value信息
+     * @param backward 表示任务集合从前往后找,还是从后往前找
+     */
     private String findExtraInfo(String key, String dft, boolean backward) {
-        ArrayList<AbstractExecutable> tasks = new ArrayList<AbstractExecutable>(getTasks());
+        ArrayList<AbstractExecutable> tasks = new ArrayList<AbstractExecutable>(getTasks());//任务集合
 
         if (backward) {
-            Collections.reverse(tasks);
+            Collections.reverse(tasks);//反转集合顺序
         }
 
         for (AbstractExecutable child : tasks) {
-            Output output = executableManager.getOutput(child.getId());
-            String value = output.getExtra().get(key);
+            Output output = executableManager.getOutput(child.getId());//每一个job的输出
+            String value = output.getExtra().get(key);//获取该key对应的value
             if (value != null)
-                return value;
+                return value;//返回第一次出现key对应的value
         }
         return dft;
     }

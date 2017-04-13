@@ -75,7 +75,9 @@ abstract public class MeasureType<T> {
     /** Return a MeasureAggregator which does aggregation. */
     abstract public MeasureAggregator<T> newAggregator();
 
-    /** Some special measures need dictionary to encode column values for optimal storage. TopN is an example. */
+    /** Some special measures need dictionary to encode column values for optimal storage. TopN is an example.
+     * 获取度量中需要编码的列集合
+     **/
     public List<TblColRef> getColumnsNeedDictionary(FunctionDesc functionDesc) {
         return Collections.emptyList();
     }

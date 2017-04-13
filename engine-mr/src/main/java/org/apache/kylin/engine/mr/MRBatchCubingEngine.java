@@ -27,21 +27,33 @@ import org.apache.kylin.metadata.model.IJoinedFlatTableDesc;
 
 public class MRBatchCubingEngine implements IBatchCubingEngine {
 
+    /**
+     * 为一个cube的segment产生一个hive的临时中间表,用于存储该build需要的数据内容
+     */
     @Override
     public IJoinedFlatTableDesc getJoinedFlatTableDesc(CubeDesc cubeDesc) {
         return new CubeJoinedFlatTableDesc(cubeDesc);
     }
 
+    /**
+     * 为一个cube的segment产生一个hive的临时中间表,用于存储该build需要的数据内容
+     */
     @Override
     public IJoinedFlatTableDesc getJoinedFlatTableDesc(CubeSegment newSegment) {
         return new CubeJoinedFlatTableDesc(newSegment);
     }
 
+    /**
+     * 进行cube的build工厂类
+     */
     @Override
     public DefaultChainedExecutable createBatchCubingJob(CubeSegment newSegment, String submitter) {
         return new BatchCubingJobBuilder(newSegment, submitter).build();
     }
 
+    /**
+     * 进行cube的merge工厂类
+     */
     @Override
     public DefaultChainedExecutable createBatchMergeJob(CubeSegment mergeSegment, String submitter) {
         return new BatchMergeJobBuilder(mergeSegment, submitter).build();

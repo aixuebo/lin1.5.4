@@ -38,19 +38,25 @@ import org.apache.kylin.storage.StorageFactory;
 
 public class MRUtil {
 
+
     public static IMRBatchCubingInputSide getBatchCubingInputSide(CubeSegment seg) {
-        IJoinedFlatTableDesc flatDesc = EngineFactory.getJoinedFlatTableDesc(seg);
+        IJoinedFlatTableDesc flatDesc = EngineFactory.getJoinedFlatTableDesc(seg);//为一个cube的segment产生一个hive的临时中间表,用于存储该build需要的数据内容
         return SourceFactory.createEngineAdapter(seg, IMRInput.class).getBatchCubingInputSide(flatDesc);
     }
 
+    //给定一个hive表名字,去读取hive数据
     public static IMRTableInputFormat getTableInputFormat(String tableName) {
         return getTableInputFormat(getTableDesc(tableName));
     }
 
+    //给定一个hive表名字,去读取hive数据
     public static IMRTableInputFormat getTableInputFormat(TableDesc tableDesc) {
         return SourceFactory.createEngineAdapter(tableDesc, IMRInput.class).getTableInputFormat(tableDesc);
     }
 
+    /**
+     * 返回hive中存储的表对象在kylin中的引用类型
+     */
     private static TableDesc getTableDesc(String tableName) {
         return MetadataManager.getInstance(KylinConfig.getInstanceFromEnv()).getTableDesc(tableName);
     }

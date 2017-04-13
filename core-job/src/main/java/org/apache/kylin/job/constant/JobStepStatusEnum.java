@@ -18,8 +18,17 @@
 
 package org.apache.kylin.job.constant;
 
+//因为一个kylin的job有若干个步骤,因此每一个步骤又相当于一个小job,也是有状态的,该状态就是本类的意义
 public enum JobStepStatusEnum {
-    NEW(0), PENDING(1), RUNNING(2), FINISHED(4), ERROR(8), DISCARDED(16), WAITING(32), KILLED(64);
+    NEW(0), //job的最开始的状态
+    PENDING(1),//对应ExecutableState的状态是Ready,此时job是等待状态
+    RUNNING(2),//对应的是ExecutableState的状态是RUNNING
+    FINISHED(4),//对应的是ExecutableState的状态是SUCCESS,说明job完成了
+    ERROR(8),//对应的是ExecutableState的状态是ERROR
+    DISCARDED(16),//丢弃  对应的是ExecutableState的状态是DISCARDED
+
+    WAITING(32),
+    KILLED(64);
 
     private final int code;
 

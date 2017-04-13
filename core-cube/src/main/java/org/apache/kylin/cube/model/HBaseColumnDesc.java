@@ -39,9 +39,9 @@ public class HBaseColumnDesc {
     private String[] measureRefs;//度量的名字集合.即该列族下该属性存储哪些度量值
 
     // these two will be assembled at runtime
-    private MeasureDesc[] measures;
-    private int[] measureIndex; // the index on CubeDesc.getMeasures()
-    private String columnFamilyName;
+    private MeasureDesc[] measures;//该字段下存储的measureRefs度量对应的度量对象集合
+    private int[] measureIndex; // the index on CubeDesc.getMeasures()  该字段下存储的measureRefs度量对应的在度量集合中的序号
+    private String columnFamilyName;//该列所在的列族
 
     public String getQualifier() {
         return qualifier;

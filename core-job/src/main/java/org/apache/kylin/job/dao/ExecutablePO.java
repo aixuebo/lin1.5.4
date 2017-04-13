@@ -38,10 +38,10 @@ public class ExecutablePO extends RootPersistentEntity {
     private String name;
 
     @JsonProperty("tasks")
-    private List<ExecutablePO> tasks;//如果该AbstractExecutable是一个ChainedExecutable任务,因此会包含多个子任务,这个集合就是存储子任务的
+    private List<ExecutablePO> tasks;//如果该AbstractExecutable是一个ChainedExecutable任务,因此会包含多个子任务,这个集合就是存储子任务的,这集合里面的任务也是每一个任务有一个任务的输出对象的
 
     @JsonProperty("type")
-    private String type;//AbstractExecutable对应的class全路径
+    private String type;//AbstractExecutable对应的class全路径,该class一定是AbstractExecutable的子类
 
     @JsonProperty("params")
     private Map<String, String> params = Maps.newHashMap();//任务的执行命令参数集合

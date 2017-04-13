@@ -33,15 +33,15 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 /**
- * 过滤cube需要哪些列
+ * 为一个cube的segment产生一个hive的临时中间表,用于存储该build需要的数据内容
  */
 public class CubeJoinedFlatTableDesc implements IJoinedFlatTableDesc {
 
-    private String tableName;//中间表名
+    private String tableName;//hive的中间表名
     private final CubeDesc cubeDesc;
     private final CubeSegment cubeSegment;//处理属于该cube对应的一段数据,即segment,如果不分区,则该属性为null
 
-    private int columnCount;//一个多少个属性
+    private int columnCount;//列的数量
 
     private List<TblColRef> columnList = Lists.newArrayList();//所需要的属性集合
     private Map<TblColRef, Integer> columnIndexMap;//属性对应的序号映射
@@ -63,6 +63,8 @@ public class CubeJoinedFlatTableDesc implements IJoinedFlatTableDesc {
 
     // check what columns from hive tables are required, and index them
     private void parseCubeDesc() {
+
+        //临时表
         if (cubeSegment == null) {
             this.tableName = "kylin_intermediate_" + cubeDesc.getName();
         } else {
@@ -76,6 +78,7 @@ public class CubeJoinedFlatTableDesc implements IJoinedFlatTableDesc {
             columnIndex++;
         }
 
+        //添加度量需要的列
         List<MeasureDesc> measures = cubeDesc.getMeasures();
         int measureSize = measures.size();
         for (int i = 0; i < measureSize; i++) {
@@ -93,6 +96,7 @@ public class CubeJoinedFlatTableDesc implements IJoinedFlatTableDesc {
             }
         }
 
+        //添加字典需要的列
         if (cubeDesc.getDictionaries() != null) {
             for (DictionaryDesc dictDesc : cubeDesc.getDictionaries()) {
                 TblColRef c = dictDesc.getColumnRef();
@@ -139,6 +143,7 @@ public class CubeJoinedFlatTableDesc implements IJoinedFlatTableDesc {
         return cubeDesc.getModel();
     }
 
+    //获取一个列对应的序号
     @Override
     public int getColumnIndex(TblColRef colRef) {
         Integer index = columnIndexMap.get(colRef);

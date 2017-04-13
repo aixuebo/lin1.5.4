@@ -40,8 +40,8 @@ public class CubingExecutableUtil {
     /**
      * cube执行过程中的参数信息
      */
-    public static final String CUBE_NAME = "cubeName";
-    public static final String SEGMENT_ID = "segmentId";
+    public static final String CUBE_NAME = "cubeName";//设置cube的名字
+    public static final String SEGMENT_ID = "segmentId";//设置要执行的segment的uuid
     public static final String MERGING_SEGMENT_IDS = "mergingSegmentIds";
     public static final String STATISTICS_PATH = "statisticsPath";
     public static final String CUBING_JOB_ID = "cubingJobId";

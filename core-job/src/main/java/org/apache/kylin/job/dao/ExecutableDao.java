@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Lists;
 
 /**
- * 用于将任务的执行内容存储到磁盘上
+ * 用于将任务的执行job内容和输出内容存储到磁盘上
  */
 public class ExecutableDao {
 
@@ -93,16 +93,17 @@ public class ExecutableDao {
         store.putResource(path, job, JOB_SERIALIZER);
     }
 
-    //序列化与反序列化输出对象
+    //读取job的输出对象内容
     private ExecutableOutputPO readJobOutputResource(String path) throws IOException {
         return store.getResource(path, ExecutableOutputPO.class, JOB_OUTPUT_SERIALIZER);
     }
 
+    //写入job的输出内容
     private long writeJobOutputResource(String path, ExecutableOutputPO output) throws IOException {
         return store.putResource(path, output, JOB_OUTPUT_SERIALIZER);
     }
 
-    //获取所有的任务内容集合
+    //获取所有的job输出集合
     public List<ExecutableOutputPO> getJobOutputs() throws PersistentException {
         try {
             return store.getAllResources(ResourceStore.EXECUTE_OUTPUT_RESOURCE_ROOT, ExecutableOutputPO.class, JOB_OUTPUT_SERIALIZER);
@@ -112,7 +113,7 @@ public class ExecutableDao {
         }
     }
 
-    //获取任务的所有输出内容集合
+    //获取所有的job输出集合-------有过滤条件
     public List<ExecutableOutputPO> getJobOutputs(long timeStart, long timeEndExclusive) throws PersistentException {
         try {
             return store.getAllResources(ResourceStore.EXECUTE_OUTPUT_RESOURCE_ROOT, timeStart, timeEndExclusive, ExecutableOutputPO.class, JOB_OUTPUT_SERIALIZER);
@@ -132,7 +133,7 @@ public class ExecutableDao {
         }
     }
 
-    //获取所有任务
+    //获取所有任务---有过滤条件
     public List<ExecutablePO> getJobs(long timeStart, long timeEndExclusive) throws PersistentException {
         try {
             return store.getAllResources(ResourceStore.EXECUTE_RESOURCE_ROOT, timeStart, timeEndExclusive, ExecutablePO.class, JOB_SERIALIZER);
@@ -210,7 +211,7 @@ public class ExecutableDao {
             ExecutableOutputPO result = readJobOutputResource(pathOfJobOutput(uuid));
             if (result == null) {
                 result = new ExecutableOutputPO();
-                result.setUuid(uuid);
+                result.setUuid(uuid);//设置输出id不再是以前的输出id,要设置为任务job的id,表示该jobid对应的输出
                 return result;
             }
             return result;

@@ -51,7 +51,14 @@ public class DimensionDesc {
     private TableDesc tableDesc;//table对应的表对象
     private JoinDesc join;//找到该model中该表的join关系
     // computed
-    private TblColRef[] columnRefs;//该维度涉及到的column对象或者是与derived相当应的fact_table中属性column对象集合
+    /**
+     * 1.当该维度不是normal,而是derived时候,该字段表示该loook up表对应的fact表中 出现在on语句中的fact表字段集合,即也就是通过fact表的on 条件字段,就可以推测出关联该表的数据
+     * 2.如果该维度是normal,但是该字段是fact表字段,则该字段就是column字段本身对应的对象
+     * 3.如果该维度是normal,但是该字段是lookup表字段,并且该字段是lookup表中与fact表on条件中的字段,则该字段就是lookup表在column字段与fact表对应的fact表字段
+     * 4.如果该维度是normal,但是该字段是lookup表字段,并且该字段不是lookup表中与fact表on条件中的字段,则该字段就是column字段本身对应的对象,即look up表中字段
+     * 总结:前三种情况都是使用fact表中字段代替,只有最后一个情况是使用look up表中字段
+     */
+    private TblColRef[] columnRefs;
 
     public void init(CubeDesc cubeDesc, Map<String, TableDesc> tables) {
         if (name != null)

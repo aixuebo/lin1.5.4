@@ -21,8 +21,12 @@ package org.apache.kylin.job.constant;
 //一个job的状态
 public enum JobStatusEnum {
 
-    NEW(0), PENDING(1), RUNNING(2), FINISHED(4), ERROR(8),
-    DISCARDED(16);//丢弃
+    NEW(0), //job的最开始的状态
+    PENDING(1),//对应ExecutableState的状态是Ready,此时job是等待状态
+    RUNNING(2),//对应的是ExecutableState的状态是RUNNING
+    FINISHED(4),//对应的是ExecutableState的状态是SUCCESS,说明job完成了
+    ERROR(8),//对应的是ExecutableState的状态是ERROR
+    DISCARDED(16);//丢弃  对应的是ExecutableState的状态是DISCARDED
 
     private final int code;
 
@@ -44,6 +48,7 @@ public enum JobStatusEnum {
         return this.code;
     }
 
+    //成功、失败、丢弃都是完成的状态
     public boolean isComplete() {
         return code == JobStatusEnum.FINISHED.getCode() || code == JobStatusEnum.ERROR.getCode() || code == JobStatusEnum.DISCARDED.getCode();
     }

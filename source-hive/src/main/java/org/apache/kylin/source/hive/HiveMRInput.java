@@ -113,13 +113,16 @@ public class HiveMRInput implements IMRInput {
 
         final JobEngineConfig conf;
         final IJoinedFlatTableDesc flatDesc;
-        String hiveViewIntermediateTables = "";
+        String hiveViewIntermediateTables = "";//视图表集合
 
         public BatchCubingInputSide(IJoinedFlatTableDesc flatDesc) {
             this.conf = new JobEngineConfig(KylinConfig.getInstanceFromEnv());
             this.flatDesc = flatDesc;
         }
 
+        /**
+         * 根据cube的segment内容,将cube的内容创建到一个临时表中,并且按照一个字段进行分片处理,让每一个都很均匀分布
+         */
         @Override
         public void addStepPhase1_CreateFlatTable(DefaultChainedExecutable jobFlow) {
             final String cubeName = CubingExecutableUtil.getCubeName(jobFlow.getParams());//获取cube名字
@@ -129,18 +132,19 @@ public class HiveMRInput implements IMRInput {
             String createFlatTableMethod = kylinConfig.getCreateFlatHiveTableMethod();
             if ("1".equals(createFlatTableMethod)) {
                 // create flat table first, then count and redistribute
-                jobFlow.addTask(createFlatHiveTableStep(conf, flatDesc, jobFlow.getId(), cubeName, false, ""));//创建执行hive sql的执行器
+                jobFlow.addTask(createFlatHiveTableStep(conf, flatDesc, jobFlow.getId(), cubeName, false, ""));//创建执行hive sql的执行器,将segment中的数据生成原始的hive临时表任务
                 jobFlow.addTask(createRedistributeFlatHiveTableStep(conf, flatDesc, jobFlow.getId(), cubeName));
             } else if ("2".equals(createFlatTableMethod)) {
                 // count from source table first, and then redistribute, suitable for partitioned table
-                final String rowCountOutputDir = JobBuilderSupport.getJobWorkingDir(conf, jobFlow.getId()) + "/row_count";
-                jobFlow.addTask(createCountHiveTableStep(conf, flatDesc, jobFlow.getId(), rowCountOutputDir));
-                jobFlow.addTask(createFlatHiveTableStep(conf, flatDesc, jobFlow.getId(), cubeName, true, rowCountOutputDir));
+                //先计算fact原是表有多少条数据,然后进行排序处理
+                final String rowCountOutputDir = JobBuilderSupport.getJobWorkingDir(conf, jobFlow.getId()) + "/row_count";//行数存储目录
+                jobFlow.addTask(createCountHiveTableStep(conf, flatDesc, jobFlow.getId(), rowCountOutputDir));//计算fact表符合条件的记录总共有多少行数据任务
+                jobFlow.addTask(createFlatHiveTableStep(conf, flatDesc, jobFlow.getId(), cubeName, true, rowCountOutputDir));//创建执行hive sql的执行器,将segment中的数据生成原始的hive临时表任务
             } else {
                 throw new IllegalArgumentException("Unknown value for kylin.hive.create.flat.table.method: " + createFlatTableMethod);
             }
 
-            AbstractExecutable task = createLookupHiveViewMaterializationStep(jobFlow.getId());
+            AbstractExecutable task = createLookupHiveViewMaterializationStep(jobFlow.getId());//视图任务
             if (task != null) {
                 jobFlow.addTask(task);
             }
@@ -165,6 +169,7 @@ public class HiveMRInput implements IMRInput {
         }
 
 
+        //计算fact表符合条件的记录总共有多少行数据任务
         public static AbstractExecutable createCountHiveTableStep(JobEngineConfig conf, IJoinedFlatTableDesc flatTableDesc, String jobId, String rowCountOutputDir) {
             final ShellExecutable step = new ShellExecutable();
 
@@ -179,6 +184,7 @@ public class HiveMRInput implements IMRInput {
             return step;
         }
 
+        //针对lookup表是视图表的时候进行操作的job
         public ShellExecutable createLookupHiveViewMaterializationStep(String jobId) {
             ShellExecutable step = new ShellExecutable();
             step.setName(ExecutableConstants.STEP_NAME_MATERIALIZE_HIVE_VIEW_IN_LOOKUP);
@@ -186,11 +192,12 @@ public class HiveMRInput implements IMRInput {
 
             KylinConfig kylinConfig = KylinConfig.getInstanceFromEnv();
             MetadataManager metadataManager = MetadataManager.getInstance(kylinConfig);
-            final Set<TableDesc> lookupViewsTables = Sets.newHashSet();
+
+            final Set<TableDesc> lookupViewsTables = Sets.newHashSet();//lookup表是视图表的集合
 
             for (LookupDesc lookupDesc : flatDesc.getDataModel().getLookups()) {
                 TableDesc tableDesc = metadataManager.getTableDesc(lookupDesc.getTable());
-                if (TableDesc.TABLE_TYPE_VIRTUAL_VIEW.equalsIgnoreCase(tableDesc.getTableType())) {
+                if (TableDesc.TABLE_TYPE_VIRTUAL_VIEW.equalsIgnoreCase(tableDesc.getTableType())) {//说明lookup表是视图表
                     lookupViewsTables.add(tableDesc);
                 }
             }
@@ -198,12 +205,14 @@ public class HiveMRInput implements IMRInput {
             if (lookupViewsTables.size() == 0) {
                 return null;
             }
+
             final String useDatabaseHql = "USE " + conf.getConfig().getHiveDatabaseForIntermediateTable() + ";";//use 临时数据库
             hiveCmdBuilder.addStatement(useDatabaseHql);
             hiveCmdBuilder.addStatement(JoinedFlatTable.generateHiveSetStatements(conf));//SET name=value;\n name=value;形式
             for (TableDesc lookUpTableDesc : lookupViewsTables) {
                 if (TableDesc.TABLE_TYPE_VIRTUAL_VIEW.equalsIgnoreCase(lookUpTableDesc.getTableType())) {
                     StringBuilder createIntermediateTableHql = new StringBuilder();
+                    //为该视图表创建一个临时hive表
                     createIntermediateTableHql.append("DROP TABLE IF EXISTS " + lookUpTableDesc.getMaterializedName() + ";\n");
                     createIntermediateTableHql.append("CREATE TABLE IF NOT EXISTS " + lookUpTableDesc.getMaterializedName() + "\n");
                     createIntermediateTableHql.append("LOCATION '" + JobBuilderSupport.getJobWorkingDir(conf, jobId) + "/" + lookUpTableDesc.getMaterializedName() + "'\n");
@@ -220,10 +229,10 @@ public class HiveMRInput implements IMRInput {
         }
 
         /**
-         * 创建执行hive sql的执行器
+         * 创建执行hive sql的执行器,将segment中的数据生成原始的hive临时表任务
          * @param flatTableDesc 对该宽表进行hive的sql组装
-         * @param redistribute  true表示使用DISTRIBUTE BY RAND() 或者DISTRIBUTE BY 字段 语法
-         * @param rowCountOutputDir
+         * @param redistribute  true表示使用DISTRIBUTE BY RAND() 或者DISTRIBUTE BY 字段 语法,即最终的hive表是可以根据一个字段进行排序的
+         * @param rowCountOutputDir 表内数量,根据表内数据可以获取使用多少个reduce,只有redistribute是true的时候,才会使用该字段,因此如果redistribute=false,则该字段有没有内容都无所谓
          */
         public static AbstractExecutable createFlatHiveTableStep(JobEngineConfig conf, IJoinedFlatTableDesc flatTableDesc, String jobId, String cubeName, boolean redistribute, String rowCountOutputDir) {
             StringBuilder hiveInitBuf = new StringBuilder();
@@ -245,17 +254,18 @@ public class HiveMRInput implements IMRInput {
             return step;
         }
 
+        //添加删除数据库以及HDFS的内容任务
         @Override
         public void addStepPhase4_Cleanup(DefaultChainedExecutable jobFlow) {
             GarbageCollectionStep step = new GarbageCollectionStep();
             step.setName(ExecutableConstants.STEP_NAME_GARBAGE_COLLECTION);
-            step.setIntermediateTableIdentity(getIntermediateTableIdentity());
-            step.setExternalDataPath(JoinedFlatTable.getTableDir(flatDesc, JobBuilderSupport.getJobWorkingDir(conf, jobFlow.getId())));
+            step.setIntermediateTableIdentity(getIntermediateTableIdentity());//要删除的hive临时中间表
+            step.setExternalDataPath(JoinedFlatTable.getTableDir(flatDesc, JobBuilderSupport.getJobWorkingDir(conf, jobFlow.getId())));//要删除的HDFS上的存储路径
             step.setHiveViewIntermediateTableIdentities(hiveViewIntermediateTables);
             jobFlow.addTask(step);
         }
 
-        //获取一个hive的数据库的信息内容
+        //获取一个hive中临时表如何读取数据的方式
         @Override
         public IMRTableInputFormat getFlatTableInputFormat() {
             return new HiveTableInputFormat(getIntermediateTableIdentity());
@@ -393,7 +403,7 @@ public class HiveMRInput implements IMRInput {
         }
     }
 
-    //删除数据库以及HDFS的内容
+    //删除数据库以及HDFS的内容任务
     public static class GarbageCollectionStep extends AbstractExecutable {
         private static final Logger logger = LoggerFactory.getLogger(GarbageCollectionStep.class);
 
@@ -462,18 +472,18 @@ public class HiveMRInput implements IMRInput {
             return output.toString();
         }
 
+        //要删除的中间hive表
         public void setIntermediateTableIdentity(String tableIdentity) {
             setParam("oldHiveTable", tableIdentity);
         }
-
         private String getIntermediateTableIdentity() {
             return getParam("oldHiveTable");
         }
 
+        //要删除的HDFS上的存储路径
         public void setExternalDataPath(String externalDataPath) {
             setParam("externalDataPath", externalDataPath);
         }
-
         private String getExternalDataPath() {
             return getParam("externalDataPath");
         }

@@ -43,6 +43,10 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 
+/**
+ * 在OLAP分析场景中，经常存在对某个id进行过滤，但查询结果要展示为name的情况，比如user_id和user_name。这类问题通常有三种解决方式:
+ * 将ID设置为维度，Name设置为特殊的Measure，类型为Extended Column
+ */
 public class ExtendedColumnMeasureType extends MeasureType<ByteArray> {
 
     private static final Logger logger = LoggerFactory.getLogger(ExtendedColumnMeasureType.class);

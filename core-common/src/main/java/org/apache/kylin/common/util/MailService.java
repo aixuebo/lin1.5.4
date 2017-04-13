@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author xduo
+ * 邮件发送服务
  */
 public class MailService {
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(MailService.class);

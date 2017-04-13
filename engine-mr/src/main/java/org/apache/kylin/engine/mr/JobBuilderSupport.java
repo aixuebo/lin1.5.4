@@ -133,7 +133,7 @@ public class JobBuilderSupport {
     }
 
     // ============================================================================
-
+    //每一个job的根目录
     public String getJobWorkingDir(String jobId) {
         return getJobWorkingDir(config, jobId);
     }
@@ -142,14 +142,17 @@ public class JobBuilderSupport {
         return getJobWorkingDir(jobId) + "/" + seg.getRealization().getName();
     }
 
+    //获取该job的cuboid目录
     public String getCuboidRootPath(String jobId) {
         return getRealizationRootPath(jobId) + "/cuboid/";
     }
 
+    //通过CubeSegment获得该CubeSegment的jobid,从而得到该CubeSegment的cuboid存储路径
     public String getCuboidRootPath(CubeSegment seg) {
         return getCuboidRootPath(seg.getLastBuildJobID());
     }
 
+    //二级索引目录
     public String getSecondaryIndexPath(String jobId) {
         return getRealizationRootPath(jobId) + "/secondary_index/";
     }
@@ -158,6 +161,7 @@ public class JobBuilderSupport {
         appendMapReduceParameters(buf, JobEngineConfig.DEFAUL_JOB_CONF_SUFFIX);
     }
 
+    //追加-conf path 命令
     public void appendMapReduceParameters(StringBuilder buf, String jobType) {
         try {
             String jobConf = config.getHadoopJobConfFilePath(jobType);
@@ -197,14 +201,19 @@ public class JobBuilderSupport {
         return buf.append(" -").append(paraName).append(" ").append(paraValue);
     }
 
+    /**
+     * @param cuboidRootPath 存储cuboid的根目录
+     * @param totalRowkeyColumnCount 全部维度数
+     * @param groupRowkeyColumnsCount 多少组
+     */
     public String[] getCuboidOutputPaths(String cuboidRootPath, int totalRowkeyColumnCount, int groupRowkeyColumnsCount) {
-        String[] paths = new String[groupRowkeyColumnsCount + 1];
+        String[] paths = new String[groupRowkeyColumnsCount + 1];//路径集合
         for (int i = 0; i <= groupRowkeyColumnsCount; i++) {
-            int dimNum = totalRowkeyColumnCount - i;
+            int dimNum = totalRowkeyColumnCount - i;//总维度
             if (dimNum == totalRowkeyColumnCount) {
-                paths[i] = cuboidRootPath + "base_cuboid";
+                paths[i] = cuboidRootPath + "base_cuboid";//总维度目录
             } else {
-                paths[i] = cuboidRootPath + dimNum + "d_cuboid";
+                paths[i] = cuboidRootPath + dimNum + "d_cuboid";//每一个维度对应的目录
             }
         }
         return paths;

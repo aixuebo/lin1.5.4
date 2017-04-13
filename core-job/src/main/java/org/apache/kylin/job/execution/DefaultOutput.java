@@ -27,7 +27,7 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class DefaultOutput implements Output {
 
-    private ExecutableState state;//输出执行的状态
+    private ExecutableState state;//输出job的状态
     private Map<String, String> extra;//输出的额外信息
     private String verboseMsg;//输出内容
     private long lastModified;//最后修改时间

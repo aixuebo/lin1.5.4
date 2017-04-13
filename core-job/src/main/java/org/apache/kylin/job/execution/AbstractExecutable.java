@@ -46,19 +46,19 @@ import com.google.common.collect.Maps;
  */
 public abstract class AbstractExecutable implements Executable, Idempotent {
 
-    protected static final String SUBMITTER = "submitter";
-    protected static final String NOTIFY_LIST = "notify_list";
+    protected static final String SUBMITTER = "submitter";//任务的提交人
+    protected static final String NOTIFY_LIST = "notify_list";//任务的通知邮件集合
     protected static final String START_TIME = "startTime";//任务执行开始时间
     protected static final String END_TIME = "endTime";//任务的完成时间
 
     protected static final Logger logger = LoggerFactory.getLogger(AbstractExecutable.class);
-    protected int retry = 0;
+    protected int retry = 0;//尝试次数
 
     private String name;
     private String id;
-    private Map<String, String> params = Maps.newHashMap();
+    private Map<String, String> params = Maps.newHashMap();//存储该job的输出额外的信息
 
-    protected static ExecutableManager executableManager = ExecutableManager.getInstance(KylinConfig.getInstanceFromEnv());
+    protected static ExecutableManager executableManager = ExecutableManager.getInstance(KylinConfig.getInstanceFromEnv());//管理如何将job的信息和job的输出信息存储到磁盘上
 
     public AbstractExecutable() {
         setId(UUID.randomUUID().toString());//设置唯一ID
@@ -73,8 +73,8 @@ public abstract class AbstractExecutable implements Executable, Idempotent {
 
     //任务执行完成
     protected void onExecuteFinished(ExecuteResult result, ExecutableContext executableContext) {
-        setEndTime(System.currentTimeMillis());
-        if (!isDiscarded()) {
+        setEndTime(System.currentTimeMillis());//设置完成时间
+        if (!isDiscarded()) {//设置状态
             if (result.succeed()) {
                 executableManager.updateJobOutput(getId(), ExecutableState.SUCCEED, null, result.output());//成功
             } else {
@@ -83,16 +83,17 @@ public abstract class AbstractExecutable implements Executable, Idempotent {
         }
     }
 
+    //出现错误,则job结束
     protected void onExecuteError(Throwable exception, ExecutableContext executableContext) {
         if (!isDiscarded()) {
-            executableManager.addJobInfo(getId(), END_TIME, Long.toString(System.currentTimeMillis()));
+            executableManager.addJobInfo(getId(), END_TIME, Long.toString(System.currentTimeMillis()));//设置结束时间
             String output = null;
-            if (exception != null) {
+            if (exception != null) {//设置错误信息内容
                 final StringWriter out = new StringWriter();
                 exception.printStackTrace(new PrintWriter(out));
                 output = out.toString();
             }
-            executableManager.updateJobOutput(getId(), ExecutableState.ERROR, null, output);
+            executableManager.updateJobOutput(getId(), ExecutableState.ERROR, null, output);//更改状态为error
         }
     }
 
@@ -169,6 +170,7 @@ public abstract class AbstractExecutable implements Executable, Idempotent {
 
     }
 
+    //已经准备好了,则说明可以运行了
     @Override
     public boolean isRunnable() {
         return this.getStatus() == ExecutableState.READY;
@@ -214,6 +216,7 @@ public abstract class AbstractExecutable implements Executable, Idempotent {
         this.params.putAll(params);
     }
 
+    //任务的输出内容,表示任务的最后修改时间
     public final long getLastModified() {
         return executableManager.getOutput(getId()).getLastModified();
     }
@@ -222,6 +225,7 @@ public abstract class AbstractExecutable implements Executable, Idempotent {
         setParam(SUBMITTER, submitter);
     }
 
+    //任务的邮件通知列表集合
     public final List<String> getNotifyList() {
         final String str = getParam(NOTIFY_LIST);
         if (str != null) {
@@ -239,6 +243,7 @@ public abstract class AbstractExecutable implements Executable, Idempotent {
         setNotifyList(StringUtils.join(notifications, ","));
     }
 
+    //格式化邮件内容,返回要发送给邮件的内容  分别表示主题和邮件正文内容
     protected Pair<String, String> formatNotifications(ExecutableContext executableContext, ExecutableState state) {
         return null;
     }
@@ -246,7 +251,7 @@ public abstract class AbstractExecutable implements Executable, Idempotent {
     protected final void notifyUserStatusChange(ExecutableContext context, ExecutableState state) {
         try {
             final KylinConfig kylinConfig = KylinConfig.getInstanceFromEnv();
-            List<String> users = getAllNofifyUsers(kylinConfig);
+            List<String> users = getAllNofifyUsers(kylinConfig);//获取收取邮件的人的集合
             if (users.isEmpty()) {
                 logger.warn("no need to send email, user list is empty");
                 return;
@@ -258,6 +263,7 @@ public abstract class AbstractExecutable implements Executable, Idempotent {
         }
     }
 
+    //获取收取邮件的人的集合
     private List<String> getAllNofifyUsers(KylinConfig kylinConfig) {
         List<String> users = Lists.newArrayList();
         users.addAll(getNotifyList());
@@ -270,6 +276,12 @@ public abstract class AbstractExecutable implements Executable, Idempotent {
         return users;
     }
 
+    /**
+     *
+     * @param kylinConfig
+     * @param users  接收邮件的人集合
+     * @param email 要发送给邮件的内容  分别表示主题和邮件正文内容
+     */
     private void doSendMail(KylinConfig kylinConfig, List<String> users, Pair<String, String> email) {
         if (email == null) {
             logger.warn("no need to send email, content is null");
@@ -282,10 +294,14 @@ public abstract class AbstractExecutable implements Executable, Idempotent {
         new MailService(kylinConfig).sendMail(users, email.getLeft(), email.getRight());
     }
 
+    /**
+     *
+     * @param email 要发送给邮件的内容  分别表示主题和邮件正文内容
+     */
     protected void sendMail(Pair<String, String> email) {
         try {
             final KylinConfig kylinConfig = KylinConfig.getInstanceFromEnv();
-            List<String> users = getAllNofifyUsers(kylinConfig);
+            List<String> users = getAllNofifyUsers(kylinConfig);//获取收取邮件的人的集合
             if (users.isEmpty()) {
                 logger.warn("no need to send email, user list is empty");
                 return;
@@ -337,10 +353,12 @@ public abstract class AbstractExecutable implements Executable, Idempotent {
         }
     }
 
+    //添加job的附加信息,即key=value的附加信息
     protected final void addExtraInfo(String key, String value) {
         executableManager.addJobInfo(getId(), key, value);
     }
 
+    //加载磁盘上已经存在的额外信息
     protected final Map<String, String> getExtraInfo() {
         return executableManager.getOutput(getId()).getExtra();
     }

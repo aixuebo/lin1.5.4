@@ -40,7 +40,7 @@ public class ExecutableOutputPO extends RootPersistentEntity {
     private String status = "READY";//任务输出的状态
 
     @JsonProperty("info")
-    private Map<String, String> info = Maps.newHashMap();//任务的一些信息
+    private Map<String, String> info = Maps.newHashMap();//任务的一些信息-----该job的输出内容集合
 
     public String getContent() {
         return content;

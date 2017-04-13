@@ -31,16 +31,22 @@ import org.apache.kylin.metadata.model.IJoinedFlatTableDesc;
  */
 public interface IBatchCubingEngine {
     
-    /** Mark deprecated to indicate for test purpose only */
+    /** Mark deprecated to indicate for test purpose only
+     * 为一个cube的segment产生一个hive的临时中间表,用于存储该build需要的数据内容
+     **/
     @Deprecated
     public IJoinedFlatTableDesc getJoinedFlatTableDesc(CubeDesc cubeDesc);//cube运行的时候需要哪些列
     
     public IJoinedFlatTableDesc getJoinedFlatTableDesc(CubeSegment newSegment);//cube运行的时候需要哪些列
 
-    /** Build a new cube segment, typically its time range appends to the end of current cube. */
+    /** Build a new cube segment, typically its time range appends to the end of current cube.
+     * 进行cube的build工厂类
+     **/
     public DefaultChainedExecutable createBatchCubingJob(CubeSegment newSegment, String submitter);
 
-    /** Merge multiple small segments into a big one. */
+    /** Merge multiple small segments into a big one.
+     * 进行cube的merge工厂类
+     **/
     public DefaultChainedExecutable createBatchMergeJob(CubeSegment mergeSegment, String submitter);
 
     public Class<?> getSourceInterface();
