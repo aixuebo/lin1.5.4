@@ -944,14 +944,15 @@ public class CubeManager implements IRealizationProvider {
      * @param cubeDesc
      * @return
      * @throws IOException
+     * 字典的列属于fact表中的集合
      */
     public List<TblColRef> getAllDictColumnsOnFact(CubeDesc cubeDesc) throws IOException {
-        List<TblColRef> factDictCols = new ArrayList<TblColRef>();
+        List<TblColRef> factDictCols = new ArrayList<TblColRef>();//字典的列属于fact表中的集合
         DictionaryManager dictMgr = DictionaryManager.getInstance(config);
-        for (TblColRef col : cubeDesc.getAllColumnsNeedDictionaryBuilt()) {
+        for (TblColRef col : cubeDesc.getAllColumnsNeedDictionaryBuilt()) {//获取需要构建字典的列的集合,然后循环
 
-            String scanTable = dictMgr.decideSourceData(cubeDesc.getModel(), col).getTable();
-            if (cubeDesc.getModel().isFactTable(scanTable)) {
+            String scanTable = dictMgr.decideSourceData(cubeDesc.getModel(), col).getTable();//该属性字段对应的表
+            if (cubeDesc.getModel().isFactTable(scanTable)) {//是否是事实表
                 factDictCols.add(col);
             }
         }

@@ -51,21 +51,26 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 /**
+ * 输入是每一个index列对应的列值保留一份
  */
 public class FactDistinctColumnsReducer extends KylinReducer<Text, Text, NullWritable, Text> {
 
     private List<TblColRef> columnList;
-    private String statisticsOutput = null;
+
+    private boolean isStatistics = false;//是否统计
+    private int samplingPercentage;//统计的抽样百分比
+    private String statisticsOutput = null;//统计的输出
+
     private List<Long> baseCuboidRowCountInMappers;
     protected Map<Long, HyperLogLogPlusCounter> cuboidHLLMap = null;
     protected long baseCuboidId;
     protected CubeDesc cubeDesc;
     private long totalRowsBeforeMerge = 0;
-    private int samplingPercentage;
-    private List<ByteArray> colValues;
-    private TblColRef col = null;
-    private boolean isStatistics = false;
-    private boolean outputTouched = false;
+
+    private TblColRef col = null;//该reduce对应的存储的列的数据
+    private List<ByteArray> colValues;//该列产生的列值集合
+
+    private boolean outputTouched = false;//true表示已经建立了输出流
     private KylinConfig cubeConfig;
     protected static final Logger logger = LoggerFactory.getLogger(FactDistinctColumnsReducer.class);
 
@@ -81,11 +86,11 @@ public class FactDistinctColumnsReducer extends KylinReducer<Text, Text, NullWri
         cubeDesc = cube.getDescriptor();
         columnList = CubeManager.getInstance(config).getAllDictColumnsOnFact(cubeDesc);
 
-        boolean collectStatistics = Boolean.parseBoolean(conf.get(BatchConstants.CFG_STATISTICS_ENABLED));
+        boolean collectStatistics = Boolean.parseBoolean(conf.get(BatchConstants.CFG_STATISTICS_ENABLED));//是否统计
         int numberOfTasks = context.getNumReduceTasks();
         int taskId = context.getTaskAttemptID().getTaskID().getId();
 
-        if (collectStatistics && (taskId == numberOfTasks - 1)) {
+        if (collectStatistics && (taskId == numberOfTasks - 1)) {//最后一个reduce
             // hll
             isStatistics = true;
             statisticsOutput = conf.get(BatchConstants.CFG_STATISTICS_OUTPUT);
@@ -103,17 +108,17 @@ public class FactDistinctColumnsReducer extends KylinReducer<Text, Text, NullWri
     @Override
     public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 
-        if (isStatistics == false) {
-            colValues.add(new ByteArray(Bytes.copy(key.getBytes(), 1, key.getLength() - 1)));
+        if (isStatistics == false) {//不统计
+            colValues.add(new ByteArray(Bytes.copy(key.getBytes(), 1, key.getLength() - 1)));//获取列的内容
             if (colValues.size() == 1000000) { //spill every 1 million
                 logger.info("spill values to disk...");
-                outputDistinctValues(col, colValues, context);
+                outputDistinctValues(col, colValues, context);//将字节数组的内容写出到文件中
                 colValues.clear();
             }
-        } else {
+        } else {//说明需要统计
             // for hll
-            long cuboidId = Bytes.toLong(key.getBytes(), 1, Bytes.SIZEOF_LONG);
-            for (Text value : values) {
+            long cuboidId = Bytes.toLong(key.getBytes(), 1, Bytes.SIZEOF_LONG);//获取一个long值
+            for (Text value : values) {//循环每一个统计的值
                 HyperLogLogPlusCounter hll = new HyperLogLogPlusCounter(cubeConfig.getCubeStatsHLLPrecision());
                 ByteBuffer bf = ByteBuffer.wrap(value.getBytes(), 0, value.getLength());
                 hll.readRegisters(bf);
@@ -134,16 +139,17 @@ public class FactDistinctColumnsReducer extends KylinReducer<Text, Text, NullWri
 
     }
 
+    //将字节数组的内容写出到文件中
     private void outputDistinctValues(TblColRef col, Collection<ByteArray> values, Context context) throws IOException {
         final Configuration conf = context.getConfiguration();
         final FileSystem fs = FileSystem.get(conf);
         final String outputPath = conf.get(BatchConstants.CFG_OUTPUT_PATH);
-        final Path outputFile = new Path(outputPath, col.getName());
+        final Path outputFile = new Path(outputPath, col.getName());//创建输出流,以该列名字为准,一个列名字一个文件
 
         FSDataOutputStream out = null;
         try {
             if (fs.exists(outputFile)) {
-                out = fs.append(outputFile);
+                out = fs.append(outputFile);//追加
                 logger.info("append file " + outputFile);
             } else {
                 out = fs.create(outputFile);
@@ -163,12 +169,12 @@ public class FactDistinctColumnsReducer extends KylinReducer<Text, Text, NullWri
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
 
-        if (isStatistics == false) {
+        if (isStatistics == false) {//不统计
             if (!outputTouched || colValues.size() > 0) {
-                outputDistinctValues(col, colValues, context);
+                outputDistinctValues(col, colValues, context);//输出内容到文件中
                 colValues.clear();
             }
-        } else {
+        } else {//统计输出
             //output the hll info;
             long grandTotal = 0;
             for (HyperLogLogPlusCounter hll : cuboidHLLMap.values()) {
@@ -230,6 +236,7 @@ public class FactDistinctColumnsReducer extends KylinReducer<Text, Text, NullWri
         }
     }
 
+    //写出一行字节数组
     private void writeLine(FSDataOutputStream out, String msg) throws IOException {
         out.write(msg.getBytes());
         out.write('\n');

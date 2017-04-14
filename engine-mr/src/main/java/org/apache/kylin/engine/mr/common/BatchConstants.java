@@ -37,7 +37,7 @@ public interface BatchConstants {
     String CFG_II_NAME = "ii.name";
     String CFG_II_SEGMENT_NAME = "ii.segment.name";
 
-    String CFG_OUTPUT_PATH = "output.path";
+    String CFG_OUTPUT_PATH = "output.path";//输出路径
     String CFG_TABLE_NAME = "table.name";
     String CFG_IS_MERGE = "is.merge";
     String CFG_CUBE_INTERMEDIATE_TABLE_ROW_DELIMITER = "cube.intermediate.table.row.delimiter";//行分隔符
@@ -50,9 +50,9 @@ public interface BatchConstants {
     String CFG_KYLIN_HDFS_TEMP_DIR = "/tmp/kylin/";
 
     String CFG_STATISTICS_LOCAL_DIR = CFG_KYLIN_LOCAL_TEMP_DIR + "cuboidstatistics/";
-    String CFG_STATISTICS_ENABLED = "statistics.enabled";
-    String CFG_STATISTICS_OUTPUT = "statistics.ouput";//spell error, for compatibility issue better not change it
-    String CFG_STATISTICS_SAMPLING_PERCENT = "statistics.sampling.percent";
+    String CFG_STATISTICS_ENABLED = "statistics.enabled";//是否进行统计
+    String CFG_STATISTICS_OUTPUT = "statistics.ouput";//spell error, for compatibility issue better not change it //统计的输出目录
+    String CFG_STATISTICS_SAMPLING_PERCENT = "statistics.sampling.percent";//统计抽样的百分比
     String CFG_STATISTICS_CUBE_ESTIMATION_FILENAME = "cube_statistics.txt";
     String CFG_STATISTICS_CUBOID_ESTIMATION_FILENAME = "cuboid_statistics.seq";
 
@@ -75,9 +75,12 @@ public interface BatchConstants {
     String ARG_SEGMENT_ID = "segmentid";
 
     String ARG_PARTITION = "partitions";
-    String ARG_STATS_ENABLED = "statisticsenabled";
-    String ARG_STATS_OUTPUT = "statisticsoutput";
-    String ARG_STATS_SAMPLING_PERCENT = "statisticssamplingpercent";
+
+
+    String ARG_STATS_ENABLED = "statisticsenabled";//true/false,是否打开统计功能
+    String ARG_STATS_OUTPUT = "statisticsoutput";//统计的输出目录
+    String ARG_STATS_SAMPLING_PERCENT = "statisticssamplingpercent";//统计抽样百分比
+
     String ARG_HTABLE_NAME = "htablename";
     String ARG_LEVEL = "level";//level级别,内容是整数数字
 

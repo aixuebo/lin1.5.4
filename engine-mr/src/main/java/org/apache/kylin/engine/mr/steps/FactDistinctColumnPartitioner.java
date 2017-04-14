@@ -24,6 +24,7 @@ import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.kylin.common.util.BytesUtil;
 
 /**
+ * key是每一个列的index和列的值
  */
 public class FactDistinctColumnPartitioner extends Partitioner<Text, Text> {
     private Configuration conf;
@@ -31,11 +32,11 @@ public class FactDistinctColumnPartitioner extends Partitioner<Text, Text> {
     @Override
     public int getPartition(Text key, Text value, int numReduceTasks) {
 
-        if (key.getBytes()[0] == FactDistinctHiveColumnsMapper.MARK_FOR_HLL) {
+        if (key.getBytes()[0] == FactDistinctHiveColumnsMapper.MARK_FOR_HLL) {//11111111表示一个字节的位
             // the last reducer is for merging hll
-            return numReduceTasks - 1;
+            return numReduceTasks - 1;//进入最后一个reduce
         } else {
-            int colIndex = BytesUtil.readUnsigned(key.getBytes(), 0, 1);
+            int colIndex = BytesUtil.readUnsigned(key.getBytes(), 0, 1);//获取第几index,即每一个列创建一个redece
             return colIndex;
         }
 

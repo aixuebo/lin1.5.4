@@ -47,6 +47,9 @@ public class CuboidScheduler {
         this.cache = new ConcurrentHashMap<Long, List<Long>>();
     }
 
+    /**
+     * 给定一个子节点,返回所对应的父节点
+     */
     public long getParent(long child) {
         List<Long> candidates = Lists.newArrayList();
         long baseCuboidID = Cuboid.getBaseCuboidId(cubeDesc);
@@ -116,6 +119,9 @@ public class CuboidScheduler {
         return Collections.min(candidates, Cuboid.cuboidSelectComparator);
     }
 
+    /**
+     * 给定一个父节点----得到潜在的子节点结婚
+     */
     public Set<Long> getPotentialChildren(long parent) {
 
         if (parent != Cuboid.getBaseCuboid(cubeDesc).getId() && !Cuboid.isValid(cubeDesc, parent)) {
@@ -123,25 +129,28 @@ public class CuboidScheduler {
         }
 
         HashSet<Long> set = Sets.newHashSet();
-        if (Long.bitCount(parent) == 1) {
+        if (Long.bitCount(parent) == 1) {//1个维度的时候已经不需要cubo了,因此是一个空的子集合
             //do not aggregate apex cuboid
             return set;
         }
 
-        if (parent == Cuboid.getBaseCuboidId(cubeDesc)) {
+        /**
+         * 添加每一个AggregationGroup的全量include字段集合
+         */
+        if (parent == Cuboid.getBaseCuboidId(cubeDesc)) {//父节点是baseCoboid
             //base cuboid is responsible for spawning each agg group's root
             for (AggregationGroup agg : cubeDesc.getAggregationGroups()) {
-                long partialCubeFullMask = agg.getPartialCubeFullMask();
+                long partialCubeFullMask = agg.getPartialCubeFullMask();//include字段集合
                 if (partialCubeFullMask != parent && Cuboid.isValid(agg, partialCubeFullMask)) {
                     set.add(partialCubeFullMask);
                 }
             }
         }
 
-        for (AggregationGroup agg : Cuboid.getValidAggGroupForCuboid(cubeDesc, parent)) {
+        for (AggregationGroup agg : Cuboid.getValidAggGroupForCuboid(cubeDesc, parent)) {//父是有效的
 
             //normal dim section
-            for (long normalDimMask : agg.getNormalDims()) {
+            for (long normalDimMask : agg.getNormalDims()) {//循环正常的字段
                 long common = parent & normalDimMask;
                 long temp = parent ^ normalDimMask;
                 if (common != 0 && Cuboid.isValid(agg, temp)) {
@@ -211,6 +220,7 @@ public class CuboidScheduler {
         return result;
     }
 
+    //查看该维度组合下有多少个维度被查
     public int getCardinality(long cuboid) {
         if (cuboid > max || cuboid < 0) {
             throw new IllegalArgumentException("Cubiod " + cuboid + " is out of scope 0-" + max);
@@ -220,7 +230,7 @@ public class CuboidScheduler {
     }
 
     public List<Long> getAllCuboidIds() {
-        final long baseCuboidId = Cuboid.getBaseCuboidId(cubeDesc);
+        final long baseCuboidId = Cuboid.getBaseCuboidId(cubeDesc);//base cuboid
         List<Long> result = Lists.newArrayList();
         getSubCuboidIds(baseCuboidId, result);
         return result;

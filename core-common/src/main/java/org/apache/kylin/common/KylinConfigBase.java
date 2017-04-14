@@ -455,7 +455,7 @@ abstract public class KylinConfigBase implements Serializable {
     }
 
     public boolean getCubeAggrGroupIsMandatoryOnlyValid() {
-        return Boolean.parseBoolean(getOptional("kylin.cube.aggrgroup.isMandatoryOnlyValid", "false"));
+        return Boolean.parseBoolean(getOptional("kylin.cube.aggrgroup.isMandatoryOnlyValid", "false"));//true表示都是必须相关的列也是允许的
     }
 
     public String[] getCubeDimensionCustomEncodingFactories() {

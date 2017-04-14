@@ -119,15 +119,16 @@ public class FactDistinctColumnsJob extends AbstractHadoopJob {
     }
 
     private void setupMapper(CubeSegment cubeSeg) throws IOException {
-        IMRTableInputFormat flatTableInputFormat = MRUtil.getBatchCubingInputSide(cubeSeg).getFlatTableInputFormat();
+        IMRTableInputFormat flatTableInputFormat = MRUtil.getBatchCubingInputSide(cubeSeg).getFlatTableInputFormat();//读取cube的hive临时表数据内容
         flatTableInputFormat.configureJob(job);
 
-        job.setMapperClass(FactDistinctHiveColumnsMapper.class);
-        job.setCombinerClass(FactDistinctColumnsCombiner.class);
+        job.setMapperClass(FactDistinctHiveColumnsMapper.class);//输出没i个列的index和对应的列值
+        job.setCombinerClass(FactDistinctColumnsCombiner.class);//每一个index列对应的列值保留一份
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(Text.class);
     }
 
+    //输出和reduce的数量作为参数
     private void setupReducer(Path output, int numberOfReducers) throws IOException {
         job.setReducerClass(FactDistinctColumnsReducer.class);
         job.setOutputFormatClass(SequenceFileOutputFormat.class);

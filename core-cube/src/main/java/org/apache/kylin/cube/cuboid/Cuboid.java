@@ -48,6 +48,7 @@ public class Cuboid implements Comparable<Cuboid> {
     private final static Map<String, Map<Long, Cuboid>> CUBOID_CACHE = new ConcurrentHashMap<String, Map<Long, Cuboid>>();
 
     //smaller is better
+    //先比较1的数量,即维度的数量,然后比较long的值
     public final static Comparator<Long> cuboidSelectComparator = new Comparator<Long>() {
         @Override
         public int compare(Long o1, Long o2) {
@@ -91,8 +92,9 @@ public class Cuboid implements Comparable<Cuboid> {
 
     }
 
+    //true表示有效---在任意一个AggregationGroup内有效,都是有效的
     public static boolean isValid(CubeDesc cube, long cuboidID) {
-        if (cuboidID == getBaseCuboidId(cube)) {
+        if (cuboidID == getBaseCuboidId(cube)) {//basecubo肯定有效
             return true;
         }
 
@@ -105,17 +107,30 @@ public class Cuboid implements Comparable<Cuboid> {
         return false;
     }
 
+    /**
+     * true表示有效,即该AggregationGroup可以包含cuboidID需要的字段集合
+     * 该cuboid在AggregationGroup组内是否有效
+     */
     static boolean isValid(AggregationGroup agg, long cuboidID) {
         if (cuboidID <= 0) {
             return false; //cuboid must be greater than 0
         }
-        if ((cuboidID & ~agg.getPartialCubeFullMask()) != 0) {
+
+        /**
+         * 1.agg.getPartialCubeFullMask()表示includes中字段
+         * 2.~agg.getPartialCubeFullMask() 取反,表示非includes中字段
+         * 3.cuboidID & 表示只要都是1的
+         */
+        if ((cuboidID & ~agg.getPartialCubeFullMask()) != 0) {//不等于0,说明AggregationGroup的includes中不能包含全部cuboidID需要的字段,比如cuboidID需要10个字段,但是其中2个字段不再AggregationGroup的includes中
             return false; //a cuboid's parent within agg is at most partialCubeFullMask
         }
 
         return checkMandatoryColumns(agg, cuboidID) && checkHierarchy(agg, cuboidID) && checkJoint(agg, cuboidID);
     }
 
+    /**
+     * 返回包含该cuboidID的字段的AggregationGroup集合
+     */
     public static List<AggregationGroup> getValidAggGroupForCuboid(CubeDesc cubeDesc, long cuboidID) {
         List<AggregationGroup> ret = Lists.newArrayList();
         for (AggregationGroup agg : cubeDesc.getAggregationGroups()) {
@@ -156,62 +171,75 @@ public class Cuboid implements Comparable<Cuboid> {
         return Collections.min(candidates, cuboidSelectComparator);
     }
 
+    /**
+     * 转换成有效的cuboidID,即追加必须的字段、继承字段、联合字段
+     */
     private static Long translateToValidCuboid(AggregationGroup agg, long cuboidID) {
         /**
          * 1.agg.getPartialCubeFullMask()表示该agg需要哪些字段
          * 2.~ 表示该agg不需要哪些字段
          * 3.与cuboidID进行&操作,找到哪些字段不需要
          */
-        if ((cuboidID & ~agg.getPartialCubeFullMask()) > 0) {
+        if ((cuboidID & ~agg.getPartialCubeFullMask()) > 0) {//true说明cuboidID包含的字段范围已经超过了AggregationGroup控制的字段范围了
             //the partial cube might not contain all required dims
             return null;
         }
 
         // add mandantory
-        cuboidID = cuboidID | agg.getMandatoryColumnMask();
+        cuboidID = cuboidID | agg.getMandatoryColumnMask();//其实没什么意义,不过表示的含义就是把必须的字段都追加上
 
-        // add hierarchy
-        for (HierarchyMask hierarchyMask : agg.getHierarchyMasks()) {
-            long fullMask = hierarchyMask.fullMask;
-            long intersect = cuboidID & fullMask;//交集
+        // add hierarchy  追加需要的继承字段
+        for (HierarchyMask hierarchyMask : agg.getHierarchyMasks()) {//循环每一个继承关系
+            long fullMask = hierarchyMask.fullMask;//继承关系涉及到的字段集合
+            long intersect = cuboidID & fullMask;//交集---即纯粹继承关系涉及到的字段集合
             if (intersect != 0 && intersect != fullMask) {//说明有交集,并且交集的内容是fullMask的子集
 
-                boolean startToFill = false;
-                for (int i = hierarchyMask.dims.length - 1; i >= 0; i--) {
+                boolean startToFill = false;//最开始是false
+                for (int i = hierarchyMask.dims.length - 1; i >= 0; i--) {//循环继承关系的每一个字段
                     if (startToFill) {
-                        cuboidID |= hierarchyMask.dims[i];
+                        cuboidID |= hierarchyMask.dims[i];//继续追加字段
                     } else {
-                        if ((cuboidID & hierarchyMask.dims[i]) != 0) {
+                        if ((cuboidID & hierarchyMask.dims[i]) != 0) {//说明存在该字段-----必须从后向前,即最后的都有了,说明前面的顺序一定都得有
                             startToFill = true;
-                            cuboidID |= hierarchyMask.dims[i];
+                            cuboidID |= hierarchyMask.dims[i];//追加该字段
                         }
                     }
                 }
             }
         }
 
-        // add joint dims
+        // add joint dims  追加联合字段
         for (Long joint : agg.getJoints()) {
+            /**
+             * 三种关系  全包含  部分包含 不包含,只能全包含、不包含返回true
+             * (cuboidID | joint) != cuboidID true 表示一定部分包含或者不包含
+             * (cuboidID & ~joint) != cuboidID 表示全包含和部分包含
+             * 因此两个&的结果表示是部分包含,既然是部分包含,则就要把其他元素也加入进来
+             * 这个可以使用集合的交集图在纸上画,反映关系
+             */
             if (((cuboidID | joint) != cuboidID) && ((cuboidID & ~joint) != cuboidID)) {
-                cuboidID = cuboidID | joint;
+                cuboidID = cuboidID | joint;//追加联合字段
             }
         }
 
-        if (isValid(agg, cuboidID)) {
+        if (isValid(agg, cuboidID)) {//说明有效
             return cuboidID;
         } else {
             // no column, add one column
+            //agg.getPartialCubeFullMask() ^ agg.getMandatoryColumnMask() 表示 一个0和一个1对应的结果才是1,即剩余非必须的列集合
+            //移除所有的join联合部分
             long nonJointDims = removeBits((agg.getPartialCubeFullMask() ^ agg.getMandatoryColumnMask()), agg.getJoints());
-            if (nonJointDims != 0) {
-                long nonJointNonHierarchy = removeBits(nonJointDims, Collections2.transform(agg.getHierarchyMasks(), new Function<HierarchyMask, Long>() {
+            if (nonJointDims != 0) {//说明还有内容
+                //继续移除继承的部分
+                long nonJointNonHierarchy = removeBits(nonJointDims, Collections2.transform(agg.getHierarchyMasks(), new Function<HierarchyMask, Long>() {//过滤每一个继承的全部列
                     @Override
                     public Long apply(HierarchyMask input) {
-                        return input.fullMask;
+                        return input.fullMask;//获取继承的全部列
                     }
                 }));
                 if (nonJointNonHierarchy != 0) {
                     //there exists dim that does not belong to any joint or any hierarchy, that's perfect
-                    return cuboidID | Long.lowestOneBit(nonJointNonHierarchy);
+                    return cuboidID | Long.lowestOneBit(nonJointNonHierarchy);//返回最低位置的1是哪个位置
                 } else {
                     //choose from a hierarchy that does not intersect with any joint dim, only check level 1 
                     long allJointDims = agg.getJointDimsMask();
@@ -228,6 +256,11 @@ public class Cuboid implements Comparable<Cuboid> {
         }
     }
 
+    /**
+     * 从original中将toRemove中是1的位置都转换成0
+     * @param original 原始二进制
+     * @param toRemove 要移除1的位置的元素
+     */
     private static long removeBits(long original, Collection<Long> toRemove) {
         long ret = original;
         for (Long joint : toRemove) {
@@ -236,19 +269,33 @@ public class Cuboid implements Comparable<Cuboid> {
         return ret;
     }
 
+    /**
+     * 对必须存在的列进行校验,
+     * true 表示cuboidID一定包含必须的列
+     */
     private static boolean checkMandatoryColumns(AggregationGroup agg, long cuboidID) {
-        long mandatoryColumnMask = agg.getMandatoryColumnMask();
-        if ((cuboidID & mandatoryColumnMask) != mandatoryColumnMask) {
+        long mandatoryColumnMask = agg.getMandatoryColumnMask();//必须存在的列
+        if ((cuboidID & mandatoryColumnMask) != mandatoryColumnMask) {//说明不相同,即不是必须存在的,则直接返回false
             return false;
         } else {
+            //下面说明要么上面的是相同的,那么是cuboidID的1比mandatoryColumnMask多,即比必须的列要多,只是必须的列是0,因此结果依然是0
             //cuboid with only mandatory columns maybe valid
+            //
+            /**
+             *(cuboidID & ~mandatoryColumnMask) != 0; true表示确实cuboidID的范围大于必须的列的范围
+             *(cuboidID & ~mandatoryColumnMask)=0,说明完全相同,这是可能会被返回false的
+             */
             return agg.isMandatoryOnlyValid() || (cuboidID & ~mandatoryColumnMask) != 0;
         }
     }
 
+    /**
+     * 校验联合属性集合
+     * true表示校验成功----即cuboidID不存在任意一个联合属性,或者cuboidID包含所有联合属性集合的列
+     */
     private static boolean checkJoint(AggregationGroup agg, long cuboidID) {
-        for (long joint : agg.getJoints()) {
-            long common = cuboidID & joint;
+        for (long joint : agg.getJoints()) {//循环所有的联合属性集合
+            long common = cuboidID & joint;//获取交集-----交集相同,说明cuboidID包含全部联合属性集合,交集=0,说明cuboidID与联合属性集合是没有交集的
             if (!(common == 0 || common == joint)) {
                 return false;
             }
@@ -256,22 +303,26 @@ public class Cuboid implements Comparable<Cuboid> {
         return true;
     }
 
+    /**
+     * 校验继承关系
+     * true表示校验成功
+     */
     private static boolean checkHierarchy(AggregationGroup agg, long cuboidID) {
         List<HierarchyMask> hierarchyMaskList = agg.getHierarchyMasks();
         // if no hierarchy defined in metadata
-        if (hierarchyMaskList == null || hierarchyMaskList.size() == 0) {
+        if (hierarchyMaskList == null || hierarchyMaskList.size() == 0) {//没有继承,则返回true
             return true;
         }
 
-        hier: for (HierarchyMask hierarchyMasks : hierarchyMaskList) {
+        hier: for (HierarchyMask hierarchyMasks : hierarchyMaskList) {//循环每一个继承关系
             long result = cuboidID & hierarchyMasks.fullMask;
-            if (result > 0) {
-                for (long mask : hierarchyMasks.allMasks) {
-                    if (result == mask) {
-                        continue hier;
+            if (result > 0) {//说明属性有交集
+                for (long mask : hierarchyMasks.allMasks) {//按照先后顺序一次循环
+                    if (result == mask) {//说明满足继承关系
+                        continue hier;//查看下一个继承关系
                     }
                 }
-                return false;
+                return false;//说明不满足继承关系
             }
         }
         return true;
@@ -280,15 +331,21 @@ public class Cuboid implements Comparable<Cuboid> {
     // ============================================================================
 
     private CubeDesc cubeDesc;
-    private final long inputID;
-    private final long id;
-    private final byte[] idBytes;
-    private final boolean requirePostAggregation;
+    private final long inputID;//原始的cuboid
+    private final long id;//将原始的cuboid转换成有效的cubeid
+    private final byte[] idBytes;//id对应的字节数组
     private List<TblColRef> dimensionColumns;//该cubeid对应的所有的列集合
+    private final boolean requirePostAggregation;
 
     private volatile CuboidToGridTableMapping cuboidToGridTableMapping = null;
 
     // will translate the cuboidID if it is not valid
+
+    /**
+     * @param cubeDesc 哪一个cube
+     * @param originalID 原始的cuboid
+     * @param validID 将原始的cuboid转换成有效的cubeid
+     */
     private Cuboid(CubeDesc cubeDesc, long originalID, long validID) {
         this.cubeDesc = cubeDesc;
         this.inputID = originalID;
@@ -301,11 +358,11 @@ public class Cuboid implements Comparable<Cuboid> {
     //找到所有的列集合
     private List<TblColRef> translateIdToColumns(long cuboidID) {
         List<TblColRef> dimesnions = new ArrayList<TblColRef>();
-        RowKeyColDesc[] allColumns = cubeDesc.getRowkey().getRowKeyColumns();
+        RowKeyColDesc[] allColumns = cubeDesc.getRowkey().getRowKeyColumns();//所有列
         for (int i = 0; i < allColumns.length; i++) {
             // NOTE: the order of column in list!!!
-            long bitmask = 1L << allColumns[i].getBitIndex();
-            if ((cuboidID & bitmask) != 0) {
+            long bitmask = 1L << allColumns[i].getBitIndex();//每一个列的二进制
+            if ((cuboidID & bitmask) != 0) {//说明有该列
                 TblColRef colRef = allColumns[i].getColRef();
                 dimesnions.add(colRef);
             }

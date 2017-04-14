@@ -47,16 +47,20 @@ public class FactDistinctColumnsMapperBase<KEYIN, VALUEIN> extends KylinMapper<K
     protected CubeInstance cube;
     protected CubeSegment cubeSeg;
     protected CubeDesc cubeDesc;
-    protected long baseCuboidId;
-    protected List<TblColRef> factDictCols;
-    protected IMRTableInputFormat flatTableInputFormat;
+    protected long baseCuboidId;//该cube的基础维度集合
 
-    protected Text outputKey = new Text();
-    protected Text outputValue = new Text();
-    protected int errorRecordCounter = 0;
+    protected List<TblColRef> factDictCols;//字典的列属于fact表中的集合
+    protected int[] dictionaryColumnIndex;//字典的列在table中的index
+
+    protected IMRTableInputFormat flatTableInputFormat;//如何读取hive的数据库表的内容
+
+    protected Text outputKey = new Text();//输出的key----字段的index以及对应的值内容
+    protected Text outputValue = new Text();//输出的vlaue
+
+    protected int errorRecordCounter = 0;//错误的记录条数
 
     protected CubeJoinedFlatTableEnrich intermediateTableDesc;
-    protected int[] dictionaryColumnIndex;
+
 
     @Override
     protected void setup(Context context) throws IOException {
@@ -69,6 +73,7 @@ public class FactDistinctColumnsMapperBase<KEYIN, VALUEIN> extends KylinMapper<K
         cubeSeg = cube.getSegmentById(conf.get(BatchConstants.CFG_CUBE_SEGMENT_ID));
         cubeDesc = cube.getDescriptor();
         baseCuboidId = Cuboid.getBaseCuboidId(cubeDesc);
+
         factDictCols = CubeManager.getInstance(config).getAllDictColumnsOnFact(cubeDesc);
 
         flatTableInputFormat = MRUtil.getBatchCubingInputSide(cubeSeg).getFlatTableInputFormat();

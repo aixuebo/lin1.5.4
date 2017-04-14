@@ -68,7 +68,7 @@ public class AggregationGroup {
     private List<Long> normalDims;//each long is a single dim  将每一个normal的字段的位置 转换成整数,即该集合内的元素,每一个元素都只有一个位置是1,所有的元素都表示为normal的字段
 
     private CubeDesc cubeDesc;//该聚合组所属的cube对象
-    private boolean isMandatoryOnlyValid;
+    private boolean isMandatoryOnlyValid;//false表示如果cuboid与mandatoryColumnMask相同,则校验不合格
 
     public void init(CubeDesc cubeDesc, RowKeyDesc rowKeyDesc) {
         this.cubeDesc = cubeDesc;

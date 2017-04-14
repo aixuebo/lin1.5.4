@@ -33,10 +33,11 @@ import org.apache.kylin.metadata.model.TblColRef;
  */
 public class CubeJoinedFlatTableEnrich implements IJoinedFlatTableDesc {
 
-    private CubeDesc cubeDesc;
-    private IJoinedFlatTableDesc flatDesc;
-    private int[] rowKeyColumnIndexes; // the column index on flat table
-    private int[][] measureColumnIndexes; // [i] is the i.th measure related column index on flat table
+    private CubeDesc cubeDesc;//cube对象
+    private IJoinedFlatTableDesc flatDesc;//该cube的一个宽表
+
+    private int[] rowKeyColumnIndexes; // the column index on flat table,rowkey中的列在table中index
+    private int[][] measureColumnIndexes; // [i] is the i.th measure related column index on flat table 每一个度量的列在table中的index
 
     public CubeJoinedFlatTableEnrich(IJoinedFlatTableDesc flatDesc, CubeDesc cubeDesc) {
         // != works due to object cache

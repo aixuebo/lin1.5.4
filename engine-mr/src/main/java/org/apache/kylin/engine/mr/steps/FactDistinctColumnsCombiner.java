@@ -25,6 +25,7 @@ import org.apache.kylin.engine.mr.KylinReducer;
 
 /**
  * @author yangli9
+ * 每一个index列对应的列值保留一份
  */
 public class FactDistinctColumnsCombiner extends KylinReducer<Text, Text, Text, Text> {
 
@@ -38,6 +39,8 @@ public class FactDistinctColumnsCombiner extends KylinReducer<Text, Text, Text, 
 
         // for hll, each key only has one output, no need to do local combine;
         // for normal col, values are empty text
+        //该类的目的是每一个key就保留一份在输出中,不需要本地进行真正意义的合并
+        //列是正常的每一个列的index和列的内容,value是空的Text
         context.write(key, values.iterator().next());
     }
 

@@ -69,7 +69,7 @@ public class JobBuilderSupport {
         result.setName(ExecutableConstants.STEP_NAME_FACT_DISTINCT_COLUMNS);//设置任务的名字
         result.setMapReduceJobClass(FactDistinctColumnsJob.class);//设置mr程序的入口
         StringBuilder cmd = new StringBuilder();
-        appendMapReduceParameters(cmd);
+        appendMapReduceParameters(cmd);//追加-conf path 命令
         appendExecCmdParameters(cmd, BatchConstants.ARG_CUBE_NAME, seg.getRealization().getName());//-cubename cubename
         appendExecCmdParameters(cmd, BatchConstants.ARG_OUTPUT, getFactDistinctColumnsPath(jobId));//-output
         appendExecCmdParameters(cmd, BatchConstants.ARG_SEGMENT_ID, seg.getUuid());//-segmentid segment的UUID
@@ -157,6 +157,7 @@ public class JobBuilderSupport {
         return getRealizationRootPath(jobId) + "/secondary_index/";
     }
 
+    //追加-conf path 命令
     public void appendMapReduceParameters(StringBuilder buf) {
         appendMapReduceParameters(buf, JobEngineConfig.DEFAUL_JOB_CONF_SUFFIX);
     }
@@ -173,10 +174,12 @@ public class JobBuilderSupport {
         }
     }
 
+    //输出目录
     public String getFactDistinctColumnsPath(String jobId) {
         return getRealizationRootPath(jobId) + "/fact_distinct_columns";
     }
 
+    //统计的输出目录
     public String getStatisticsPath(String jobId) {
         return getRealizationRootPath(jobId) + "/statistics";
     }
