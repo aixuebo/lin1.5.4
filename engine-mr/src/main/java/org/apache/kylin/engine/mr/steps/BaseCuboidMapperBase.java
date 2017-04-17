@@ -78,11 +78,16 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
     protected int counter;
     protected MeasureIngester<?>[] aggrIngesters;
     protected Map<TblColRef, Dictionary<String>> dictionaryMap;
-    protected Object[] measures;
+
+    protected Object[] measures;//每一个度量对应的值
     protected byte[][] keyBytesBuf;//存储key的每一个字段对应的字节数组内容
+
+    protected AbstractRowKeyEncoder rowKeyEncoder;//对rowkey数据进行编码
+    protected BufferedMeasureEncoder measureCodec;//对度量数据进行编码
+
     protected BytesSplitter bytesSplitter;//代表如何将一行数据拆分成多列
-    protected AbstractRowKeyEncoder rowKeyEncoder;
-    protected BufferedMeasureEncoder measureCodec;
+
+
     private int errorRecordCounter;//记录失败的行数
 
     //存储key和value的对象
@@ -120,7 +125,7 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
         measureCodec = new BufferedMeasureEncoder(cubeDesc.getMeasures());
         measures = new Object[cubeDesc.getMeasures().size()];
 
-        int colCount = cubeDesc.getRowkey().getRowKeyColumns().length;
+        int colCount = cubeDesc.getRowkey().getRowKeyColumns().length;//rowkey对应的列数
         keyBytesBuf = new byte[colCount][];
 
         aggrIngesters = MeasureIngester.create(cubeDesc.getMeasures());
@@ -151,8 +156,9 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
     }
 
     //对列的字节数组转换成key
+    //参数是一行数据对应的全部内容
     protected byte[] buildKey(SplittedBytes[] splitBuffers) {
-        int[] rowKeyColumnIndexes = intermediateTableDesc.getRowKeyColumnIndexes();
+        int[] rowKeyColumnIndexes = intermediateTableDesc.getRowKeyColumnIndexes();//rowkey中每一个列的序号
         for (int i = 0; i < baseCuboid.getColumns().size(); i++) {
             int index = rowKeyColumnIndexes[i];
             keyBytesBuf[i] = Arrays.copyOf(splitBuffers[index].value, splitBuffers[index].length);
@@ -164,6 +170,7 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
     }
 
     //对列的字节数组转换成value
+    //参数是一行数据对应的全部内容
     private ByteBuffer buildValue(SplittedBytes[] splitBuffers) {
 
         for (int i = 0; i < measures.length; i++) {
@@ -212,10 +219,10 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
     protected void outputKV(Context context) throws IOException, InterruptedException {
         intermediateTableDesc.sanityCheck(bytesSplitter);//判断hive的列是否与一行数据拆分后的列相同
 
-        byte[] rowKey = buildKey(bytesSplitter.getSplitBuffers());
+        byte[] rowKey = buildKey(bytesSplitter.getSplitBuffers());//构建key
         outputKey.set(rowKey, 0, rowKey.length);
 
-        ByteBuffer valueBuf = buildValue(bytesSplitter.getSplitBuffers());
+        ByteBuffer valueBuf = buildValue(bytesSplitter.getSplitBuffers());//构建value
         outputValue.set(valueBuf.array(), 0, valueBuf.position());
         context.write(outputKey, outputValue);
     }

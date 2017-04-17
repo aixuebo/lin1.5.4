@@ -27,6 +27,7 @@ import org.apache.kylin.source.ReadableTable;
  * For column on fact table, the fact table is too big to iterate. So the build
  * engine will first extract distinct values (by a MR job for example), and
  * implement this interface to provide the result to DictionaryManager.
+ * 如何读取一个字段对应的字段值
  */
 public interface DistinctColumnValuesProvider {
 

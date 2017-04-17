@@ -57,15 +57,15 @@ public class FactDistinctColumnsReducer extends KylinReducer<Text, Text, NullWri
 
     private List<TblColRef> columnList;
 
-    private boolean isStatistics = false;//是否统计
+    private boolean isStatistics = false;//是否统计------每一个列对应一个reduce,最后一个reduce是统计的值,因此一个reduce只有一种功能,因此才有了isStatistics字段,表示最后一个reduce
     private int samplingPercentage;//统计的抽样百分比
     private String statisticsOutput = null;//统计的输出
 
-    private List<Long> baseCuboidRowCountInMappers;
-    protected Map<Long, HyperLogLogPlusCounter> cuboidHLLMap = null;
+    private List<Long> baseCuboidRowCountInMappers;//统计每一个map中有多少个base这个cuboid的数据
+    protected Map<Long, HyperLogLogPlusCounter> cuboidHLLMap = null;//每一个cuboid对应的HyperLogLogPlusCounter 映射关系
     protected long baseCuboidId;
     protected CubeDesc cubeDesc;
-    private long totalRowsBeforeMerge = 0;
+    private long totalRowsBeforeMerge = 0;//不同的rowkey对应的总行数
 
     private TblColRef col = null;//该reduce对应的存储的列的数据
     private List<ByteArray> colValues;//该列产生的列值集合
@@ -108,7 +108,7 @@ public class FactDistinctColumnsReducer extends KylinReducer<Text, Text, NullWri
     @Override
     public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 
-        if (isStatistics == false) {//不统计
+        if (isStatistics == false) {//不统计,说明不是最后一个reduce,是正常的列所在的reduce
             colValues.add(new ByteArray(Bytes.copy(key.getBytes(), 1, key.getLength() - 1)));//获取列的内容
             if (colValues.size() == 1000000) { //spill every 1 million
                 logger.info("spill values to disk...");
@@ -117,7 +117,7 @@ public class FactDistinctColumnsReducer extends KylinReducer<Text, Text, NullWri
             }
         } else {//说明需要统计
             // for hll
-            long cuboidId = Bytes.toLong(key.getBytes(), 1, Bytes.SIZEOF_LONG);//获取一个long值
+            long cuboidId = Bytes.toLong(key.getBytes(), 1, Bytes.SIZEOF_LONG);//获取一个long值--因为位置从1开始的,因此是cuboid
             for (Text value : values) {//循环每一个统计的值
                 HyperLogLogPlusCounter hll = new HyperLogLogPlusCounter(cubeConfig.getCubeStatsHLLPrecision());
                 ByteBuffer bf = ByteBuffer.wrap(value.getBytes(), 0, value.getLength());
@@ -125,10 +125,12 @@ public class FactDistinctColumnsReducer extends KylinReducer<Text, Text, NullWri
 
                 totalRowsBeforeMerge += hll.getCountEstimate();
 
+                //因为不同的节点都会产生相同的cuboid,即key,因此对相同的key,统计每一个map中有多少个base这个cuboid的数据
                 if (cuboidId == baseCuboidId) {
                     baseCuboidRowCountInMappers.add(hll.getCountEstimate());
                 }
 
+                //因为不同的节点都会产生相同的cuboid,即key,因此对相同的key 是需要merge过程的
                 if (cuboidHLLMap.get(cuboidId) != null) {
                     cuboidHLLMap.get(cuboidId).merge(hll);
                 } else {
@@ -169,15 +171,15 @@ public class FactDistinctColumnsReducer extends KylinReducer<Text, Text, NullWri
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
 
-        if (isStatistics == false) {//不统计
+        if (isStatistics == false) {//不统计,说明不是最后一个reduce,是正常的列所在的reduce
             if (!outputTouched || colValues.size() > 0) {
                 outputDistinctValues(col, colValues, context);//输出内容到文件中
                 colValues.clear();
             }
         } else {//统计输出
             //output the hll info;
-            long grandTotal = 0;
-            for (HyperLogLogPlusCounter hll : cuboidHLLMap.values()) {
+            long grandTotal = 0;//总的不同的数据数量
+            for (HyperLogLogPlusCounter hll : cuboidHLLMap.values()) {//循环每一个cuboid
                 grandTotal += hll.getCountEstimate();
             }
             double mapperOverlapRatio = grandTotal == 0 ? 0 : (double) totalRowsBeforeMerge / grandTotal;
@@ -200,12 +202,13 @@ public class FactDistinctColumnsReducer extends KylinReducer<Text, Text, NullWri
             allCuboids.addAll(cuboidHLLMap.keySet());
             Collections.sort(allCuboids);
 
-            msg = "Total cuboid number: \t" + allCuboids.size();
+            msg = "Total cuboid number: \t" + allCuboids.size(); //打印一共多少个cuboid
             writeLine(out, msg);
-            msg = "Samping percentage: \t" + samplingPercentage;
+            msg = "Samping percentage: \t" + samplingPercentage; //打印抽样百分比
             writeLine(out, msg);
 
             writeLine(out, "The following statistics are collected based on sampling data.");
+            //统计每一个map中有多少个base这个cuboid的数据
             for (int i = 0; i < baseCuboidRowCountInMappers.size(); i++) {
                 if (baseCuboidRowCountInMappers.get(i) > 0) {
                     msg = "Base Cuboid in Mapper " + i + " row count: \t " + baseCuboidRowCountInMappers.get(i);
@@ -213,6 +216,7 @@ public class FactDistinctColumnsReducer extends KylinReducer<Text, Text, NullWri
                 }
             }
 
+            //打印每一个cuboid有多少个不同的元素
             long grantTotal = 0;
             for (long i : allCuboids) {
                 grantTotal += cuboidHLLMap.get(i).getCountEstimate();
@@ -220,12 +224,14 @@ public class FactDistinctColumnsReducer extends KylinReducer<Text, Text, NullWri
                 writeLine(out, msg);
             }
 
+            //打印合并前后总条数
             msg = "Sum of all the cube segments (before merge) is: \t " + totalRowsBeforeMerge;
             writeLine(out, msg);
 
             msg = "After merge, the cube has row count: \t " + grantTotal;
             writeLine(out, msg);
 
+            //打印合并百分比
             if (grantTotal > 0) {
                 msg = "The mapper overlap ratio is: \t" + totalRowsBeforeMerge / grantTotal;
                 writeLine(out, msg);

@@ -372,7 +372,8 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
     }
 
     // date range is used in place of source offsets when offsets are missing
-    //参数CubeSegment属于本类范围内,包含=关系
+    //参数CubeSegment属于本类范围内,包含关系
+    //比如原始是[1,200],但是seg为[150,180]
     public boolean sourceOffsetContains(CubeSegment seg) {
         if (isSourceOffsetsOn())
             return sourceOffsetStart <= seg.sourceOffsetStart && seg.sourceOffsetEnd <= sourceOffsetEnd;
@@ -382,7 +383,7 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
 
     public void validate() {
         if (cubeInstance.getDescriptor().getModel().getPartitionDesc().isPartitioned()) {//model是分区的
-            if (!isSourceOffsetsOn() && dateRangeStart >= dateRangeEnd)
+            if (!isSourceOffsetsOn() && dateRangeStart >= dateRangeEnd) //判断start > end 时候是非法的,则报错
                 throw new IllegalStateException("Invalid segment, dateRangeStart(" + dateRangeStart + ") must be smaller than dateRangeEnd(" + dateRangeEnd + ") in segment " + this);
             if (isSourceOffsetsOn() && sourceOffsetStart >= sourceOffsetEnd)
                 throw new IllegalStateException("Invalid segment, sourceOffsetStart(" + sourceOffsetStart + ") must be smaller than sourceOffsetEnd(" + sourceOffsetEnd + ") in segment " + this);

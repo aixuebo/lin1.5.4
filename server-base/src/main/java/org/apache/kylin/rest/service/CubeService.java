@@ -529,9 +529,11 @@ public class CubeService extends BasicService {
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN + " or hasPermission(#cube, 'ADMINISTRATION') or hasPermission(#cube, 'OPERATION')  or hasPermission(#cube, 'MANAGEMENT')")
     public CubeInstance deleteSegment(CubeInstance cube, String segmentName) throws IOException {
 
-        if (!segmentName.equals(cube.getSegments().get(0).getName()) && !segmentName.equals(cube.getSegments().get(cube.getSegments().size() - 1).getName())) {
+        if (!segmentName.equals(cube.getSegments().get(0).getName()) && !segmentName.equals(cube.getSegments().get(cube.getSegments().size() - 1).getName())) {//只能删除segment的第一个或者最后一个
             throw new IllegalArgumentException("Cannot delete segment '" + segmentName + "' as it is neither the first nor the last segment.");
         }
+
+        //找到要删除的segment对象
         CubeSegment toDelete = null;
         for (CubeSegment seg : cube.getSegments()) {
             if (seg.getName().equals(segmentName)) {

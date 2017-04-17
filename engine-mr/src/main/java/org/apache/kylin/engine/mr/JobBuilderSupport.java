@@ -63,6 +63,8 @@ public class JobBuilderSupport {
 
     /**
      * JOBid以及是否执行过程中需要统计
+     * 1.用于将rowkey中每一个字典列需要的字段值收集起来,一个reduce一个字段的不重复的字典值
+     * 2.统计rowkey的各种组合情况,即每一个cuboid有多少个不同的元素
      */
     private MapReduceExecutable createFactDistinctColumnsStep(String jobId, boolean withStats) {
         MapReduceExecutable result = new MapReduceExecutable();
@@ -82,6 +84,10 @@ public class JobBuilderSupport {
         return result;
     }
 
+    /**
+     * createFactDistinctColumnsStep 任务的输出目录做为输入目录,进行mr处理
+     * 主要处理字典信息
+     */
     public HadoopShellExecutable createBuildDictionaryStep(String jobId) {
         // base cuboid job
         HadoopShellExecutable buildDictionaryStep = new HadoopShellExecutable();

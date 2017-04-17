@@ -45,11 +45,11 @@ import org.apache.kylin.common.KylinConfig;
 abstract public class Dictionary<T> implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    // ID with all bit-1 (0xff e.g.) reserved for NULL value
-    public static final int[] NULL_ID = new int[] { 0, 0xff, 0xffff, 0xffffff, 0xffffffff };
+    // ID with all bit-1 (0xff e.g.) reserved for NULL value 表示字典中的null值
+    public static final int[] NULL_ID = new int[] { 0, 0xff, 0xffff, 0xffffff, 0xffffffff };//分别使用1个字节  2个字节 3个字节 4个字节表示null值
 
+    //每一个字典都有一个最小值和最大值
     abstract public int getMinId();//最小值
-
     abstract public int getMaxId();//最大值
 
     //能容纳多少值
@@ -59,7 +59,7 @@ abstract public class Dictionary<T> implements Serializable {
 
     /**
      * @return the size of an ID in bytes, determined by the cardinality of column
-     * 估算压缩后id占用多少字节
+     * 压缩后成一个id,则该id占用多少字节
      */
     abstract public int getSizeOfId();
 
@@ -71,6 +71,7 @@ abstract public class Dictionary<T> implements Serializable {
 
     /**
      * @return true if each entry of this dict is contained by the dict in param
+     * true表示本字典包含参数字典所有数据,该操作是很耗时的操作,需要循环每一个参数字典的数据,校验是否在本字典中存在
      */
     abstract public boolean contains(Dictionary<?> another);
 
@@ -103,12 +104,13 @@ abstract public class Dictionary<T> implements Serializable {
             return getIdFromValueImpl(value, roundingFlag);
     }
 
+    //字典中是否包含该值
     final public boolean containsValue(T value) throws IllegalArgumentException {
         if (isNullObjectForm(value)) {
             return true;
         } else {
             try {
-                //if no key found, it will throw exception
+                //if no key found, it will throw exception 如果没有该key,则会抛异常
                 getIdFromValueImpl(value, 0);
             } catch (IllegalArgumentException e) {
                 return false;
@@ -203,6 +205,9 @@ abstract public class Dictionary<T> implements Serializable {
      * @throws IllegalArgumentException
      *             if ID is not found in dictionary
      * 将id转换成原始内容对应的字节数组,并且转换后的内容追加到returnValue中,从returnValue的offset位置开始追加
+     * id表示读取第几个字典
+     * returnValue 表示将读取的内容存储到returnValue字节数组内
+     * offset 表示向returnValue插入数据的时候,从什么位置开始插入
      */
     final public int getValueBytesFromId(int id, byte[] returnValue, int offset) throws IllegalArgumentException {
         if (isNullId(id))
@@ -216,6 +221,7 @@ abstract public class Dictionary<T> implements Serializable {
 
     abstract public void dump(PrintStream out);
 
+    //获取null值
     public int nullId() {
         return NULL_ID[getSizeOfId()];
     }
@@ -242,7 +248,9 @@ abstract public class Dictionary<T> implements Serializable {
         }
     }
 
-    /** the reverse of dictIdToString(), returns integer ID */
+    /** the reverse of dictIdToString(), returns integer ID
+     * 字符串转换成int
+     **/
     public static int stringToDictId(String str) {
         try {
             byte[] bytes = str.getBytes("ISO-8859-1");
@@ -258,6 +266,7 @@ abstract public class Dictionary<T> implements Serializable {
      * 
      * @param out <code>DataOuput</code> to serialize this object into.
      * @throws IOException
+     * 字典对象的序列化---序列化字典的所有内容字节数组
      */
     public abstract void write(DataOutput out) throws IOException;
 
@@ -269,6 +278,7 @@ abstract public class Dictionary<T> implements Serializable {
      * 
      * @param in <code>DataInput</code> to deseriablize this object from.
      * @throws IOException
+     * 字段对象的反序列化
      */
     public abstract void readFields(DataInput in) throws IOException;
 

@@ -180,6 +180,11 @@ public class CubeManager implements IRealizationProvider {
 
     /**
      * 为某一个cube的CubeSegment的某一列构建字典
+     * @param cubeSeg 要处理的segment对象
+     * @param col 要处理的某一个字段
+     * @param factTableValueProvider 该字段的数据在哪个路径下存放
+     * @return
+     * @throws IOException
      */
     public DictionaryInfo buildDictionary(CubeSegment cubeSeg, TblColRef col, DistinctColumnValuesProvider factTableValueProvider) throws IOException {
         CubeDesc cubeDesc = cubeSeg.getCubeDesc();
@@ -313,6 +318,11 @@ public class CubeManager implements IRealizationProvider {
         return cube;
     }
 
+    /**
+     * 更新cube的数据
+     * @param update 更新cube的请求
+     * @param retry 尝试更新次数,每次增加1
+     */
     private CubeInstance updateCubeWithRetry(CubeUpdate update, int retry) throws IOException {
         if (update == null || update.getCubeInstance() == null)
             throw new IllegalStateException();
@@ -320,20 +330,20 @@ public class CubeManager implements IRealizationProvider {
         CubeInstance cube = update.getCubeInstance();
         logger.info("Updating cube instance '" + cube.getName() + "'");
 
-        List<CubeSegment> newSegs = Lists.newArrayList(cube.getSegments());
+        List<CubeSegment> newSegs = Lists.newArrayList(cube.getSegments());//所有的segment集合
 
         if (update.getToAddSegs() != null)
-            newSegs.addAll(Arrays.asList(update.getToAddSegs()));
+            newSegs.addAll(Arrays.asList(update.getToAddSegs()));//追加segment
 
-        List<String> toRemoveResources = Lists.newArrayList();
-        if (update.getToRemoveSegs() != null) {
-            Iterator<CubeSegment> iterator = newSegs.iterator();
+        List<String> toRemoveResources = Lists.newArrayList();//要删除的segment路径
+        if (update.getToRemoveSegs() != null) {//删除的segment
+            Iterator<CubeSegment> iterator = newSegs.iterator();//循环每一个segment
             while (iterator.hasNext()) {
                 CubeSegment currentSeg = iterator.next();
-                boolean found = false;
+                boolean found = false;//true表示发现了segment
                 for (CubeSegment toRemoveSeg : update.getToRemoveSegs()) {
                     if (currentSeg.getUuid().equals(toRemoveSeg.getUuid())) {
-                        iterator.remove();
+                        iterator.remove();//删除该segment
                         toRemoveResources.add(toRemoveSeg.getStatisticsResourcePath());
                         found = true;
                     }
@@ -342,15 +352,14 @@ public class CubeManager implements IRealizationProvider {
                     logger.error("Segment '" + currentSeg.getName() + "' doesn't exist for remove.");
                 }
             }
-
         }
 
         if (update.getToUpdateSegs() != null) {
             for (CubeSegment segment : update.getToUpdateSegs()) {
-                boolean found = false;
+                boolean found = false;//true表示发现了segment
                 for (int i = 0; i < newSegs.size(); i++) {
                     if (newSegs.get(i).getUuid().equals(segment.getUuid())) {
-                        newSegs.set(i, segment);
+                        newSegs.set(i, segment);//更新,即老的替换新的segment数据
                         found = true;
                         break;
                     }
@@ -361,9 +370,9 @@ public class CubeManager implements IRealizationProvider {
             }
         }
 
-        Collections.sort(newSegs);
+        Collections.sort(newSegs);//排序
         CubeValidator.validate(newSegs);
-        cube.setSegments(newSegs);
+        cube.setSegments(newSegs);//设置新的
 
         if (update.getStatus() != null) {
             cube.setStatus(update.getStatus());
@@ -378,7 +387,7 @@ public class CubeManager implements IRealizationProvider {
         }
 
         try {
-            getStore().putResource(cube.getResourcePath(), cube, CUBE_SERIALIZER);
+            getStore().putResource(cube.getResourcePath(), cube, CUBE_SERIALIZER);//保存数据
         } catch (IllegalStateException ise) {
             logger.warn("Write conflict to update cube " + cube.getName() + " at try " + retry + ", will retry...");
             if (retry >= 7) {
@@ -386,12 +395,13 @@ public class CubeManager implements IRealizationProvider {
                 throw ise;
             }
 
-            cube = reloadCubeLocal(cube.getName());
+            cube = reloadCubeLocal(cube.getName());//重新加载cube对象
             update.setCubeInstance(cube);
             retry++;
-            cube = updateCubeWithRetry(update, retry);
+            cube = updateCubeWithRetry(update, retry);//重新更新
         }
 
+        //删除hdfs数据
         if (toRemoveResources.size() > 0) {
             for (String resource : toRemoveResources) {
                 try {
@@ -617,7 +627,7 @@ public class CubeManager implements IRealizationProvider {
 
     /**
      * After cube update, reload cube related cache
-     *
+     * 重新加载cube对象
      * @param cubeName
      */
     public CubeInstance reloadCubeLocal(String cubeName) {

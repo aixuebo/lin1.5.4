@@ -25,5 +25,13 @@ import org.apache.kylin.common.util.Dictionary;
 
 public interface IDictionaryBuilder {
 
+    /**
+     * 针对一列数据进行字典构建
+     * @param dictInfo 字典的描述信息
+     * @param valueEnumerator 如何读取字典需要的字段值
+     * @param baseId 该字典的序号
+     * @param nSamples 抽样多少条数据
+     * @param returnSamples 存储抽样的数据
+     */
     Dictionary<String> build(DictionaryInfo dictInfo, IDictionaryValueEnumerator valueEnumerator, int baseId, int nSamples, ArrayList<String> returnSamples) throws IOException;
 }

@@ -40,7 +40,8 @@ public abstract class AbstractRowKeyEncoder {
     protected static final Logger logger = LoggerFactory.getLogger(AbstractRowKeyEncoder.class);
     public static final byte DEFAULT_BLANK_BYTE = DimensionEncoding.NULL;
 
-    protected byte blankByte = DEFAULT_BLANK_BYTE;
+    protected byte blankByte = DEFAULT_BLANK_BYTE;//null的字符
+
     protected final CubeSegment cubeSeg;
     protected Cuboid cuboid;
 

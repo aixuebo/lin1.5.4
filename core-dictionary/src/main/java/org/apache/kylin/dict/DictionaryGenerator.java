@@ -36,6 +36,7 @@ import com.google.common.base.Preconditions;
 
 /**
  * @author yangli9
+ * 字典的构造器,如何构建一个字典,根据字段的类型不同,构建不同的字典
  */
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class DictionaryGenerator {
@@ -44,7 +45,7 @@ public class DictionaryGenerator {
 
     private static final Logger logger = LoggerFactory.getLogger(DictionaryGenerator.class);
 
-    private static final String[] DATE_PATTERNS = new String[] { "yyyy-MM-dd", "yyyyMMdd" };
+    private static final String[] DATE_PATTERNS = new String[] { "yyyy-MM-dd", "yyyyMMdd" };//日期格式
 
     private static int getDictionaryMaxCardinality() {
         try {
@@ -54,25 +55,34 @@ public class DictionaryGenerator {
         }
     }
 
+    /**
+     * @param dataType 列的类型
+     * @param valueEnumerator 如何读取该列的数据
+     */
     public static Dictionary<String> buildDictionary(DataType dataType, IDictionaryValueEnumerator valueEnumerator) throws IOException {
         Preconditions.checkNotNull(dataType, "dataType cannot be null");
 
         // build dict, case by data type
         IDictionaryBuilder builder;
-        if (dataType.isDateTimeFamily()) {
+        if (dataType.isDateTimeFamily()) {//时间类型
             if (dataType.isDate())
                 builder = new DateDictBuilder();
             else
                 builder = new TimeDictBuilder();
-        } else if (dataType.isNumberFamily()) {
+        } else if (dataType.isNumberFamily()) {//数字类型
             builder = new NumberDictBuilder();
         } else {
-            builder = new StringDictBuilder();
+            builder = new StringDictBuilder();//字符串类型
         }
 
         return buildDictionary(builder, null, valueEnumerator);
     }
 
+    /**
+     * @param builder 字典类
+     * @param dictInfo 字典描述信息
+     * @param valueEnumerator 如何读取该字典的列的数据
+     */
     public static Dictionary<String> buildDictionary(IDictionaryBuilder builder, DictionaryInfo dictInfo, IDictionaryValueEnumerator valueEnumerator) throws IOException {
         int baseId = 0; // always 0 for now
         int nSamples = 5;
@@ -98,20 +108,22 @@ public class DictionaryGenerator {
         return dict;
     }
 
+    //读取多个字典文件
     public static Dictionary mergeDictionaries(DataType dataType, List<DictionaryInfo> sourceDicts) throws IOException {
         return buildDictionary(dataType, new MultipleDictionaryValueEnumerator(sourceDicts));
     }
 
+    //存储Date类型数据的字典
     private static class DateDictBuilder implements IDictionaryBuilder {
         @Override
         public Dictionary<String> build(DictionaryInfo dictInfo, IDictionaryValueEnumerator valueEnumerator, int baseId, int nSamples, ArrayList<String> returnSamples) throws IOException {
             final int BAD_THRESHOLD = 0;
-            String matchPattern = null;
+            String matchPattern = null;//日期格式
             byte[] value;
 
-            for (String ptn : DATE_PATTERNS) {
+            for (String ptn : DATE_PATTERNS) {//循环日期格式
                 matchPattern = ptn; // be optimistic
-                int badCount = 0;
+                int badCount = 0;//解析失败的次数
                 SimpleDateFormat sdf = new SimpleDateFormat(ptn);
                 while (valueEnumerator.moveNext()) {
                     value = valueEnumerator.current();
@@ -121,7 +133,7 @@ public class DictionaryGenerator {
                     String str = Bytes.toString(value);
                     try {
                         sdf.parse(str);
-                        if (returnSamples.size() < nSamples && returnSamples.contains(str) == false)
+                        if (returnSamples.size() < nSamples && returnSamples.contains(str) == false) //添加抽样数据
                             returnSamples.add(str);
                     } catch (ParseException e) {
                         logger.info("Unrecognized date value: " + str);
@@ -141,6 +153,7 @@ public class DictionaryGenerator {
         }
     }
 
+    //存储time类型的字典
     private static class TimeDictBuilder implements IDictionaryBuilder {
         @Override
         public Dictionary<String> build(DictionaryInfo dictInfo, IDictionaryValueEnumerator valueEnumerator, int baseId, int nSamples, ArrayList<String> returnSamples) throws IOException {
@@ -148,24 +161,26 @@ public class DictionaryGenerator {
         }
     }
 
+    //存储String类型的字典
     private static class StringDictBuilder implements IDictionaryBuilder {
         @Override
         public Dictionary<String> build(DictionaryInfo dictInfo, IDictionaryValueEnumerator valueEnumerator, int baseId, int nSamples, ArrayList<String> returnSamples) throws IOException {
             TrieDictionaryBuilder builder = new TrieDictionaryBuilder(new StringBytesConverter());
             byte[] value;
-            while (valueEnumerator.moveNext()) {
+            while (valueEnumerator.moveNext()) {//不断读取数据
                 value = valueEnumerator.current();
                 if (value == null)
                     continue;
                 String v = Bytes.toString(value);
-                builder.addValue(v);
-                if (returnSamples.size() < nSamples && returnSamples.contains(v) == false)
-                    returnSamples.add(v);
+                builder.addValue(v);//添加该值
+                if (returnSamples.size() < nSamples && !returnSamples.contains(v))//该值不再抽样集合内
+                    returnSamples.add(v);//添加抽样数据
             }
             return builder.build(baseId);
         }
     }
 
+    //存数数字类型的字典
     private static class NumberDictBuilder implements IDictionaryBuilder {
         @Override
         public Dictionary<String> build(DictionaryInfo dictInfo, IDictionaryValueEnumerator valueEnumerator, int baseId, int nSamples, ArrayList<String> returnSamples) throws IOException {

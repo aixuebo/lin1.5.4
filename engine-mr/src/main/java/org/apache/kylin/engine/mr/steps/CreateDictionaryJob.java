@@ -30,9 +30,8 @@ import org.apache.kylin.source.ReadableTable;
 
 /**
  * @author ysong1
- * 
+ * 主要处理字典信息
  */
-
 public class CreateDictionaryJob extends AbstractHadoopJob {
 
     private int returnCode = 0;
@@ -42,9 +41,9 @@ public class CreateDictionaryJob extends AbstractHadoopJob {
         Options options = new Options();
 
         try {
-            options.addOption(OPTION_CUBE_NAME);
-            options.addOption(OPTION_SEGMENT_ID);
-            options.addOption(OPTION_INPUT_PATH);
+            options.addOption(OPTION_CUBE_NAME);//要处理的cube
+            options.addOption(OPTION_SEGMENT_ID);//要处理的segment段
+            options.addOption(OPTION_INPUT_PATH);//输入路径
             parseOptions(options, args);
 
             final String cubeName = getOptionValue(OPTION_CUBE_NAME);
@@ -56,7 +55,7 @@ public class CreateDictionaryJob extends AbstractHadoopJob {
             DictionaryGeneratorCLI.processSegment(config, cubeName, segmentID, new DistinctColumnValuesProvider() {
                 @Override
                 public ReadableTable getDistinctValuesFor(TblColRef col) {
-                    return new DFSFileTable(factColumnsInputPath + "/" + col.getName(), -1);
+                    return new DFSFileTable(factColumnsInputPath + "/" + col.getName(), -1);//如何读取某一个列中的数据内容,该内容存储在输出的目录中,存储的内容是该字段所有不重复的数据内容集合
                 }
             });
         } catch (Exception e) {

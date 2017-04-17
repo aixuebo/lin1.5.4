@@ -25,9 +25,9 @@ import org.apache.kylin.metadata.realization.RealizationStatusEnum;
  */
 public class CubeUpdate {
     private CubeInstance cubeInstance;
-    private CubeSegment[] toAddSegs = null;
-    private CubeSegment[] toRemoveSegs = null;
-    private CubeSegment[] toUpdateSegs = null;
+    private CubeSegment[] toAddSegs = null;//增加的segment
+    private CubeSegment[] toRemoveSegs = null;//要删除的segment集合
+    private CubeSegment[] toUpdateSegs = null;//更新的segment
     private RealizationStatusEnum status;
     private String owner;
     private int cost = -1;

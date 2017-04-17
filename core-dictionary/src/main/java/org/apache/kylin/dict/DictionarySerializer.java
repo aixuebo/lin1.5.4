@@ -31,16 +31,18 @@ import org.apache.kylin.common.util.ClassUtil;
 import org.apache.kylin.common.util.Dictionary;
 
 /**
+ * 如何将字典对象序列化和反序列化
  */
 public final class DictionarySerializer {
 
     private DictionarySerializer() {
     }
 
+    //反序列化成Dictionary对象----参见序列化方法
     public static Dictionary<?> deserialize(InputStream inputStream) {
         try {
             final DataInputStream dataInputStream = new DataInputStream(inputStream);
-            final String type = dataInputStream.readUTF();
+            final String type = dataInputStream.readUTF();//字典的class全路径
             final Dictionary<?> dictionary = ClassUtil.forName(type, Dictionary.class).newInstance();
             dictionary.readFields(dataInputStream);
             return dictionary;
@@ -49,14 +51,16 @@ public final class DictionarySerializer {
         }
     }
 
+    //反序列化成Dictionary对象
     public static Dictionary<?> deserialize(ByteArray dictBytes) {
         return deserialize(new ByteArrayInputStream(dictBytes.array(), dictBytes.offset(), dictBytes.length()));
     }
 
+    //序列化
     public static void serialize(Dictionary<?> dict, OutputStream outputStream) {
         try {
             DataOutputStream out = new DataOutputStream(outputStream);
-            out.writeUTF(dict.getClass().getName());
+            out.writeUTF(dict.getClass().getName());//字典的class全路径
             dict.write(out);
             out.flush();
         } catch (IOException e) {
@@ -64,6 +68,7 @@ public final class DictionarySerializer {
         }
     }
 
+    //序列化成字节数组
     public static ByteArray serialize(Dictionary<?> dict) {
         try {
             final ByteArrayOutputStream baos = new ByteArrayOutputStream();

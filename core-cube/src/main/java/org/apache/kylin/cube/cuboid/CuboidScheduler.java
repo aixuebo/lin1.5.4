@@ -37,8 +37,8 @@ import com.google.common.collect.Sets;
 public class CuboidScheduler {
 
     private final CubeDesc cubeDesc;
-    private final long max;
-    private final Map<Long, List<Long>> cache;
+    private final long max;//最多多少个cuboid节点
+    private final Map<Long, List<Long>> cache;//记录每一个cuboid下有哪些子节点集合的映射
 
     public CuboidScheduler(CubeDesc cubeDesc) {
         this.cubeDesc = cubeDesc;
@@ -120,7 +120,7 @@ public class CuboidScheduler {
     }
 
     /**
-     * 给定一个父节点----得到潜在的子节点结婚
+     * 给定一个父节点----得到潜在的子节点集合
      */
     public Set<Long> getPotentialChildren(long parent) {
 
@@ -147,24 +147,26 @@ public class CuboidScheduler {
             }
         }
 
-        for (AggregationGroup agg : Cuboid.getValidAggGroupForCuboid(cubeDesc, parent)) {//父是有效的
+        for (AggregationGroup agg : Cuboid.getValidAggGroupForCuboid(cubeDesc, parent)) {//父是有效的------返回包含该cuboidID的字段的AggregationGroup集合
 
             //normal dim section
             for (long normalDimMask : agg.getNormalDims()) {//循环正常的字段
-                long common = parent & normalDimMask;
-                long temp = parent ^ normalDimMask;
+                long common = parent & normalDimMask;//此时只有一个1
+                long temp = parent ^ normalDimMask;//因为normalDimMask就一个位置是1,剩下的都是0 ,因此是1的依然是1,是0的依然是0,不会变化,仅仅normalDimMask位置会变化如果是1则是0,如果是0,则是1-----即只是将该正常字段位置变化一下,其余不变
+                //common != 0 说明存在该字段,因此校验如果该位置为0的时候,是否合法,合法就加入到集合中
                 if (common != 0 && Cuboid.isValid(agg, temp)) {
                     set.add(temp);
                 }
             }
 
+            //处理继承关系
             for (AggregationGroup.HierarchyMask hierarchyMask : agg.getHierarchyMasks()) {
-                for (int i = hierarchyMask.allMasks.length - 1; i >= 0; i--) {
-                    if ((parent & hierarchyMask.allMasks[i]) == hierarchyMask.allMasks[i]) {
-                        if ((agg.getJointDimsMask() & hierarchyMask.dims[i]) == 0) {
-                            if (Cuboid.isValid(agg, parent ^ hierarchyMask.dims[i])) {
+                for (int i = hierarchyMask.allMasks.length - 1; i >= 0; i--) {//循环表示继承关系中的顺序,是先谁后谁
+                    if ((parent & hierarchyMask.allMasks[i]) == hierarchyMask.allMasks[i]) {//说明交集后依然是本身,即存在该继承关系
+                        if ((agg.getJointDimsMask() & hierarchyMask.dims[i]) == 0) {//说明该字段不再joint中存在
+                            if (Cuboid.isValid(agg, parent ^ hierarchyMask.dims[i])) {//校验反转该位置1变成0是否有效
                                 //only when the hierarchy dim is not among joints
-                                set.add(parent ^ hierarchyMask.dims[i]);
+                                set.add(parent ^ hierarchyMask.dims[i]);//将该位置设置成0,将其加入到集合中
                             }
                         }
                         break;//if hierarchyMask 111 is matched, won't check 110 or 100
@@ -174,22 +176,24 @@ public class CuboidScheduler {
 
             //joint dim section
             for (long joint : agg.getJoints()) {
-                if ((parent & joint) == joint) {
-                    if (Cuboid.isValid(agg, parent ^ joint)) {
+                if ((parent & joint) == joint) {//说明包含该joint集合所需要的字段
+                    if (Cuboid.isValid(agg, parent ^ joint)) {//将这部分字段都去反,校验有效性
                         set.add(parent ^ joint);
                     }
                 }
             }
-
         }
 
         return set;
     }
 
+
+    //递归计算cuboidId节点下子子孙孙有多少个子节点
     public int getCuboidCount() {
         return getCuboidCount(Cuboid.getBaseCuboidId(cubeDesc));
     }
 
+    //递归计算cuboidId节点下子子孙孙有多少个子节点
     private int getCuboidCount(long cuboidId) {
         int r = 1;
         for (Long child : getSpanningCuboid(cuboidId)) {
@@ -198,6 +202,7 @@ public class CuboidScheduler {
         return r;
     }
 
+    //计算cuboidId节点下有多少个子节点
     public List<Long> getSpanningCuboid(long cuboid) {
         if (cuboid > max || cuboid < 0) {
             throw new IllegalArgumentException("Cuboid " + cuboid + " is out of scope 0-" + max);
@@ -229,13 +234,15 @@ public class CuboidScheduler {
         return Long.bitCount(cuboid);
     }
 
+    //计算一共有多少个子节点,返回子节点集合
     public List<Long> getAllCuboidIds() {
         final long baseCuboidId = Cuboid.getBaseCuboidId(cubeDesc);//base cuboid
-        List<Long> result = Lists.newArrayList();
+        List<Long> result = Lists.newArrayList();//返回子节点集合
         getSubCuboidIds(baseCuboidId, result);
         return result;
     }
 
+    //计算parentCuboidId下面一共有多少个子节点,子节点集合存储在参数result中
     private void getSubCuboidIds(long parentCuboidId, List<Long> result) {
         result.add(parentCuboidId);
         for (Long cuboidId : getSpanningCuboid(parentCuboidId)) {

@@ -23,9 +23,10 @@ import java.util.Iterator;
 
 /**
  * Created by dongli on 10/28/15.
+ * 字典的内容是一个List集合迭代器
  */
 public class IterableDictionaryValueEnumerator implements IDictionaryValueEnumerator {
-    Iterator<byte[]> iterator;
+    Iterator<byte[]> iterator;//字典的内容是一个List集合迭代器
 
     public IterableDictionaryValueEnumerator(Iterable<byte[]> list) {
         iterator = list.iterator();

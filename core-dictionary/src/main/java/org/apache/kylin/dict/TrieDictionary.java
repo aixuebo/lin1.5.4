@@ -524,7 +524,7 @@ public class TrieDictionary<T> extends Dictionary<T> {
             return false;
         }
 
-        for (int i = other.getMinId(); i <= other.getMaxId(); ++i) {//从最小值到最大值循环
+        for (int i = other.getMinId(); i <= other.getMaxId(); ++i) {//从最小值到最大值循环参数提供的字典
             T v = (T) other.getValueFromId(i);//获取该值
             if (!this.containsValue(v)) {//参数字典的每一个值都要在本字典中存在
                 return false;

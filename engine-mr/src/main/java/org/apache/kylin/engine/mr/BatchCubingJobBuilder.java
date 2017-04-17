@@ -59,8 +59,13 @@ public class BatchCubingJobBuilder extends JobBuilderSupport {
         inputSide.addStepPhase1_CreateFlatTable(result);
 
         // Phase 2: Build Dictionary
+        /**
+         * JOBid以及是否执行过程中需要统计
+         * 1.用于将rowkey中每一个字典列需要的字段值收集起来,一个reduce一个字段的不重复的字典值
+         * 2.统计rowkey的各种组合情况,即每一个cuboid有多少个不同的元素
+         */
         result.addTask(createFactDistinctColumnsStep(jobId));
-        result.addTask(createBuildDictionaryStep(jobId));
+        result.addTask(createBuildDictionaryStep(jobId));//主要处理字典信息
 
         // Phase 3: Build Cube
         RowKeyDesc rowKeyDesc = ((CubeSegment) seg).getCubeDesc().getRowkey();

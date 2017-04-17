@@ -42,6 +42,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 1.用于将rowkey中每一个字典列需要的字段值收集起来,一个reduce一个字段的不重复的字典值
+ * 2.统计rowkey的各种组合情况,即每一个cuboid有多少个不同的元素
  */
 public class FactDistinctColumnsJob extends AbstractHadoopJob {
     protected static final Logger logger = LoggerFactory.getLogger(FactDistinctColumnsJob.class);

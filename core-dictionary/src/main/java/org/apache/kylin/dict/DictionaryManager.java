@@ -84,6 +84,7 @@ public class DictionaryManager {
     // ============================================================================
 
     private KylinConfig config;
+    //key是path
     private LoadingCache<String, DictionaryInfo> dictCache; // resource
 
     // path ==>
@@ -131,6 +132,7 @@ public class DictionaryManager {
     /**
      * Save the dictionary as it is.
      * More often you should consider using its alternative trySaveNewDict to save dict space
+     * 为一个字典描述对象插入新的字典对象
      */
     public DictionaryInfo forceSave(Dictionary<?> newDict, DictionaryInfo newDictInfo) throws IOException {
         initDictInfo(newDict, newDictInfo);
@@ -141,31 +143,32 @@ public class DictionaryManager {
     /**
      * @return may return another dict that is a super set of the input
      * @throws IOException
+     * 为一个字典描述对象插入新的字典对象
      */
     public DictionaryInfo trySaveNewDict(Dictionary<?> newDict, DictionaryInfo newDictInfo) throws IOException {
 
         initDictInfo(newDict, newDictInfo);
 
-        if (config.isGrowingDictEnabled()) {
-            DictionaryInfo largestDictInfo = findLargestDictInfo(newDictInfo);
+        if (config.isGrowingDictEnabled()) {//true表示字典会自动合并成一个大字典
+            DictionaryInfo largestDictInfo = findLargestDictInfo(newDictInfo);//找到磁盘上存储字典内容最多的字典对象
             if (largestDictInfo != null) {
-                largestDictInfo = getDictionaryInfo(largestDictInfo.getResourcePath());
-                Dictionary<?> largestDictObject = largestDictInfo.getDictionaryObject();
-                if (largestDictObject.contains(newDict)) {
+                largestDictInfo = getDictionaryInfo(largestDictInfo.getResourcePath());//字典对应的内存对象
+                Dictionary<?> largestDictObject = largestDictInfo.getDictionaryObject();//对应的字典对象
+                if (largestDictObject.contains(newDict)) {//包含这些字典了,直接返回即可
                     logger.info("dictionary content " + newDict + ", is contained by  dictionary at " + largestDictInfo.getResourcePath());
                     return largestDictInfo;
-                } else if (newDict.contains(largestDictObject)) {
+                } else if (newDict.contains(largestDictObject)) {//或者新的字典更大,则保存新的字典
                     logger.info("dictionary content " + newDict + " is by far the largest, save it");
                     return saveNewDict(newDictInfo);
-                } else {
+                } else {//否则进行合并字典
                     logger.info("merge dict and save...");
                     return mergeDictionary(Lists.newArrayList(newDictInfo, largestDictInfo));
                 }
             } else {
                 logger.info("first dict of this column, save it directly");
-                return saveNewDict(newDictInfo);
+                return saveNewDict(newDictInfo);//第一次保存该tabke 该列的数据,因此直接保存即可
             }
-        } else {
+        } else {//说明字典不需要合并成大字典
             logger.info("Growing dict is not enabled");
             String dupDict = checkDupByContent(newDictInfo, newDict);
             if (dupDict != null) {
@@ -184,13 +187,13 @@ public class DictionaryManager {
             return null;
 
         logger.info("{} existing dictionaries of the same column", existings.size());
-        if (existings.size() > 100) {
+        if (existings.size() > 100) {//说明该table 该列对应的字典文件太多了
             logger.warn("Too many dictionaries under {}, dict count: {}", dictInfo.getResourceDir(), existings.size());
         }
 
         for (String existing : existings) {
             DictionaryInfo existingInfo = getDictionaryInfo(existing);
-            if (existingInfo != null && dict.equals(existingInfo.getDictionaryObject())) {
+            if (existingInfo != null && dict.equals(existingInfo.getDictionaryObject())) {//字典的内容都相同,说明已经存在了,不需要保存新的,因此直接返回内存中存在的即可
                 return existing;
             }
         }
@@ -198,20 +201,23 @@ public class DictionaryManager {
         return null;
     }
 
+    //向描述信息对象中插入字典相关的信息
     private void initDictInfo(Dictionary<?> newDict, DictionaryInfo newDictInfo) {
-        newDictInfo.setCardinality(newDict.getSize());
-        newDictInfo.setDictionaryObject(newDict);
+        newDictInfo.setCardinality(newDict.getSize());//该字典容纳了多少条数据
+        newDictInfo.setDictionaryObject(newDict);//设置新的字典对象  对应的字典对象---包含了字典的实现class,以及字典存储的全部内容
         newDictInfo.setDictionaryClass(newDict.getClass().getName());
     }
 
+    //将字典内容保存到磁盘上
     private DictionaryInfo saveNewDict(DictionaryInfo newDictInfo) throws IOException {
 
         save(newDictInfo);
-        dictCache.put(newDictInfo.getResourcePath(), newDictInfo);
+        dictCache.put(newDictInfo.getResourcePath(), newDictInfo);//添加缓存
 
         return newDictInfo;
     }
 
+    //对多个字典进行合并
     public DictionaryInfo mergeDictionary(List<DictionaryInfo> dicts) throws IOException {
 
         if (dicts.size() == 0)
@@ -278,10 +284,8 @@ public class DictionaryManager {
      * 为该模型的某一列构建字典
      * @param model 模型
      * @param col 模型的某一个列
-     * @param factTableValueProvider
+     * @param factTableValueProvider 如何读取该字段对应的字段值
      * @param builderClass 构建字典的class类
-     * @return
-     * @throws IOException
      */
     public DictionaryInfo buildDictionary(DataModelDesc model, TblColRef col, DistinctColumnValuesProvider factTableValueProvider, String builderClass) throws IOException {
 
@@ -290,12 +294,12 @@ public class DictionaryManager {
         TblColRef srcCol = decideSourceData(model, col);//如果col是fact表中字段,要转换成lookup表中字段
         String srcTable = srcCol.getTable();//列对应表
         String srcColName = srcCol.getName();//列名
-        int srcColIdx = srcCol.getColumnDesc().getZeroBasedIndex();
+        int srcColIdx = srcCol.getColumnDesc().getZeroBasedIndex();//该列的下标
 
         ReadableTable inpTable;
         if (model.isFactTable(srcTable)) {//是否是事实表
-            inpTable = factTableValueProvider.getDistinctValuesFor(srcCol);
-        } else {
+            inpTable = factTableValueProvider.getDistinctValuesFor(srcCol);//去读取该列对应的内容
+        } else {//不是事实表
             MetadataManager metadataManager = MetadataManager.getInstance(config);
             TableDesc tableDesc = new TableDesc(metadataManager.getTableDesc(srcTable));
             if (TableDesc.TABLE_TYPE_VIRTUAL_VIEW.equalsIgnoreCase(tableDesc.getTableType())) {
@@ -314,8 +318,8 @@ public class DictionaryManager {
 
         DictionaryInfo dictInfo = new DictionaryInfo(srcTable, srcColName, srcColIdx, col.getDatatype(), inputSig);
 
-        String dupDict = checkDupByInfo(dictInfo);
-        if (dupDict != null) {
+        String dupDict = checkDupByInfo(dictInfo);//校验字典是否重复了,返回路径
+        if (dupDict != null) {//说明已经存在
             logger.info("Identical dictionary input " + dictInfo.getInput() + ", reuse existing dictionary at " + dupDict);
             return getDictionaryInfo(dupDict);
         }
@@ -355,6 +359,7 @@ public class DictionaryManager {
         return col;
     }
 
+    //校验字典是否重复了,返回路径
     private String checkDupByInfo(DictionaryInfo dictInfo) throws IOException {
         final ResourceStore store = MetadataManager.getInstance(config).getStore();
         final List<DictionaryInfo> allResources = store.getAllResources(dictInfo.getResourceDir(), DictionaryInfo.class, DictionaryInfoSerializer.INFO_SERIALIZER);
@@ -369,12 +374,13 @@ public class DictionaryManager {
         return null;
     }
 
+    //获取字典内词汇量最多的字典对象
     private DictionaryInfo findLargestDictInfo(DictionaryInfo dictInfo) throws IOException {
         final ResourceStore store = MetadataManager.getInstance(config).getStore();
-        final List<DictionaryInfo> allResources = store.getAllResources(dictInfo.getResourceDir(), DictionaryInfo.class, DictionaryInfoSerializer.INFO_SERIALIZER);
+        final List<DictionaryInfo> allResources = store.getAllResources(dictInfo.getResourceDir(), DictionaryInfo.class, DictionaryInfoSerializer.INFO_SERIALIZER);//仅仅加载该table和该列的字典描述信息
 
         DictionaryInfo largestDict = null;
-        for (DictionaryInfo dictionaryInfo : allResources) {
+        for (DictionaryInfo dictionaryInfo : allResources) {//循环所有的内容
             if (largestDict == null) {
                 largestDict = dictionaryInfo;
                 continue;
@@ -387,6 +393,7 @@ public class DictionaryManager {
         return largestDict;
     }
 
+    //删除某一个字典文件
     public void removeDictionary(String resourcePath) throws IOException {
         logger.info("Remvoing dict: " + resourcePath);
         ResourceStore store = MetadataManager.getInstance(config).getStore();
@@ -394,20 +401,23 @@ public class DictionaryManager {
         dictCache.invalidate(resourcePath);
     }
 
+    //删除该table对应的字段列对应的所有字典信息
     public void removeDictionaries(String srcTable, String srcCol) throws IOException {
         DictionaryInfo info = new DictionaryInfo();
         info.setSourceTable(srcTable);
         info.setSourceColumn(srcCol);
 
         ResourceStore store = MetadataManager.getInstance(config).getStore();
-        NavigableSet<String> existings = store.listResources(info.getResourceDir());
+        NavigableSet<String> existings = store.listResources(info.getResourceDir());//获取全部字典信息存储的path
         if (existings == null)
             return;
 
+        //以此删除该字典内容
         for (String existing : existings)
             removeDictionary(existing);
     }
 
+    //保存一个字典对象---即保存到磁盘上
     void save(DictionaryInfo dict) throws IOException {
         ResourceStore store = MetadataManager.getInstance(config).getStore();
         String path = dict.getResourcePath();
@@ -415,7 +425,7 @@ public class DictionaryManager {
 
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
         DataOutputStream dout = new DataOutputStream(buf);
-        DictionaryInfoSerializer.FULL_SERIALIZER.serialize(dict, dout);
+        DictionaryInfoSerializer.FULL_SERIALIZER.serialize(dict, dout);//全部序列化字典的描述信息对象
         dout.close();
         buf.close();
 
@@ -424,6 +434,8 @@ public class DictionaryManager {
         inputStream.close();
     }
 
+    //加载磁盘上的一个字典对象
+    //参数loadDictObj表示是否加载字典对象,因为字典内容比较多,加载会很慢
     DictionaryInfo load(String resourcePath, boolean loadDictObj) throws IOException {
         ResourceStore store = MetadataManager.getInstance(config).getStore();
 

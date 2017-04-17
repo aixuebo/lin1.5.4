@@ -42,6 +42,9 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Lists;
 
+/**
+ * 代表一个cuboid,不优化的话,应该有2^n次方该对象,n表示rowkey中列的数量
+ */
 public class Cuboid implements Comparable<Cuboid> {
 
     //key是cubeName,value是该cube对应的每一种Cuboid
@@ -89,7 +92,6 @@ public class Cuboid implements Comparable<Cuboid> {
             cubeCache.put(cuboidID, cuboid);
         }
         return cuboid;
-
     }
 
     //true表示有效---在任意一个AggregationGroup内有效,都是有效的

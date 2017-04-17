@@ -29,6 +29,9 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 
+/**
+ * 校验cube的有效性
+ */
 public class CubeValidator {
     private static final Logger logger = LoggerFactory.getLogger(CubeValidator.class);
 
@@ -39,6 +42,7 @@ public class CubeValidator {
      * - for all new segments, sourceOffset MUST have no overlaps, MUST contain a ready segment if overlaps with it
      * - for all new segments, sourceOffset SHOULD fit/connect another segments
      * - dateRange does not matter any more
+     * 校验segment集合
      */
     public static void validate(Collection<CubeSegment> segments) {
         if (segments == null || segments.isEmpty())
@@ -49,10 +53,10 @@ public class CubeValidator {
         Collections.sort(all);
 
         // check consistent isOffsetsOn()
-        boolean isOffsetsOn = all.get(0).isSourceOffsetsOn();
+        boolean isOffsetsOn = all.get(0).isSourceOffsetsOn();//true表示如果使用的是offset
         for (CubeSegment seg : all) {
             seg.validate();
-            if (seg.isSourceOffsetsOn() != isOffsetsOn)
+            if (seg.isSourceOffsetsOn() != isOffsetsOn)//说明比较的混用了offset和date,因此是有问题的
                 throw new IllegalStateException("Inconsistent isOffsetsOn for segment " + seg);
         }
 
@@ -109,13 +113,17 @@ public class CubeValidator {
         if (segments == null || segments.isEmpty())
             return null;
 
+        //第一个和最后一个CubeSegment
         CubeSegment first = segments.get(0);
         CubeSegment last = segments.get(segments.size() - 1);
+
+        //新的segment
         long start = newOne.getSourceOffsetStart();
         long end = newOne.getSourceOffsetEnd();
+
         boolean startFit = false;
         boolean endFit = false;
-        for (CubeSegment sss : segments) {
+        for (CubeSegment sss : segments) {//循环每一个segment
             if (sss == newOne)
                 continue;
             startFit = startFit || (start == sss.getSourceOffsetStart() || start == sss.getSourceOffsetEnd());

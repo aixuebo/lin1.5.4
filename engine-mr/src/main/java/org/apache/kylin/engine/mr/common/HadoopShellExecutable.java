@@ -38,8 +38,8 @@ import com.google.common.base.Preconditions;
 public class HadoopShellExecutable extends AbstractExecutable {
     private static final Logger logger = LoggerFactory.getLogger(HadoopShellExecutable.class);
 
-    private static final String KEY_MR_JOB = "HADOOP_SHELL_JOB_CLASS";
-    private static final String KEY_PARAMS = "HADOOP_SHELL_JOB_PARAMS";
+    private static final String KEY_MR_JOB = "HADOOP_SHELL_JOB_CLASS";//执行job的class主类
+    private static final String KEY_PARAMS = "HADOOP_SHELL_JOB_PARAMS";//运行命令的参数集合 --key value形式
 
     public HadoopShellExecutable() {
         super();

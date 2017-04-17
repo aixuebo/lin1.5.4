@@ -29,14 +29,14 @@ import org.apache.kylin.common.util.JsonUtil;
 
 /**
  * @author yangli9
- * 
+ * 如何对DictionaryInfo进行序列化和反序列化
  */
 public class DictionaryInfoSerializer implements Serializer<DictionaryInfo> {
 
-    public static final DictionaryInfoSerializer FULL_SERIALIZER = new DictionaryInfoSerializer(false);
-    public static final DictionaryInfoSerializer INFO_SERIALIZER = new DictionaryInfoSerializer(true);
+    public static final DictionaryInfoSerializer FULL_SERIALIZER = new DictionaryInfoSerializer(false);//加载字典的描述信息和字典的内容,因此会比较慢
+    public static final DictionaryInfoSerializer INFO_SERIALIZER = new DictionaryInfoSerializer(true);//仅仅加载字典描述信息
 
-    private boolean infoOnly;
+    private boolean infoOnly;//true 表示仅仅序列化DictionaryInfo对象,不会深度序列化DictionaryInfo中的Dictionary对象
 
     public DictionaryInfoSerializer() {
         this(false);
@@ -46,9 +46,10 @@ public class DictionaryInfoSerializer implements Serializer<DictionaryInfo> {
         this.infoOnly = infoOnly;
     }
 
+    //序列化
     @Override
     public void serialize(DictionaryInfo obj, DataOutputStream out) throws IOException {
-        String json = JsonUtil.writeValueAsIndentString(obj);
+        String json = JsonUtil.writeValueAsIndentString(obj);//序列化成json
         out.writeUTF(json);
 
         if (infoOnly == false)

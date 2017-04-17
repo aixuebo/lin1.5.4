@@ -42,8 +42,8 @@ import com.google.common.hash.Hashing;
 public class HyperLogLogPlusCounter implements Serializable, Comparable<HyperLogLogPlusCounter> {
 
     private final int p;
-    private final int m;
-    private final HashFunction hashFunc;
+    private final int m;//2^p次方 表示有多少个桶
+    private final HashFunction hashFunc;//hash函数
     byte[] registers;
     int singleBucket;
 
@@ -63,7 +63,7 @@ public class HyperLogLogPlusCounter implements Serializable, Comparable<HyperLog
     /** The larger p is, the more storage (2^p bytes), the better accuracy */
     private HyperLogLogPlusCounter(int p, HashFunction hashFunc) {
         this.p = p;
-        this.m = 1 << p;//(int) Math.pow(2, p);
+        this.m = 1 << p;//(int) Math.pow(2, p); 结果是2^p次方
         this.hashFunc = hashFunc;
         this.registers = new byte[m];
         this.singleBucket = -1;
@@ -99,7 +99,7 @@ public class HyperLogLogPlusCounter implements Serializable, Comparable<HyperLog
 
     protected void add(long hash) {
         int bucketMask = m - 1;
-        int bucket = (int) (hash & bucketMask);
+        int bucket = (int) (hash & bucketMask);//查看该hash应该在哪个桶内
         int firstOnePos = Long.numberOfLeadingZeros(hash | bucketMask) + 1;
 
         if (firstOnePos > registers[bucket])
@@ -207,6 +207,7 @@ public class HyperLogLogPlusCounter implements Serializable, Comparable<HyperLog
 
     // ============================================================================
 
+    //将内容序列化到参数对应的字节数组中
     public void writeRegisters(final ByteBuffer out) throws IOException {
 
         final int indexLen = getRegisterIndexSize();

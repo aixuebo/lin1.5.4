@@ -22,11 +22,15 @@ import java.io.IOException;
 
 /**
  * Created by dongli on 10/28/15.
+ * 读取table的某一个列
+ * 实现类是org.apache.kylin.dict.TableColumnValueEnumerator 读取一个文件
+ * 实现类是org.apache.kylin.dict.MultipleDictionaryValueEnumerator 读取多个文件
+ * 实现类是org.apache.kylin.dict.IterableDictionaryValueEnumerator 从一个list的迭代器中读取字典的内容
  */
 public interface IDictionaryValueEnumerator {
-    byte[] current() throws IOException;
+    byte[] current() throws IOException;//当前行数据内容
 
-    boolean moveNext() throws IOException;
+    boolean moveNext() throws IOException;//获取下一行该列的数据
 
     void close() throws IOException;
 }

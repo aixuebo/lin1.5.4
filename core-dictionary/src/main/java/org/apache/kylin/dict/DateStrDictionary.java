@@ -57,6 +57,10 @@ public class DateStrDictionary extends Dictionary<String> {
         init(DEFAULT_DATE_PATTERN, 0);
     }
 
+    /**
+     * @param datePattern 字典中字典的值是日期,该字段表示日期的格式
+     * @param baseId
+     */
     public DateStrDictionary(String datePattern, int baseId) {
         init(datePattern, baseId);
     }

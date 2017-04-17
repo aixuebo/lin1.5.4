@@ -600,6 +600,7 @@ abstract public class KylinConfigBase implements Serializable {
         return Integer.parseInt(this.getOptional("kylin.hbase.scan.cache_rows", "1024"));
     }
 
+    //true表示字典会自动合并成一个大字典
     public boolean isGrowingDictEnabled() {
         return Boolean.parseBoolean(this.getOptional("kylin.dict.growing.enabled", "false"));
     }

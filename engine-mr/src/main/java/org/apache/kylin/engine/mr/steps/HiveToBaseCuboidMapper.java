@@ -30,7 +30,7 @@ import org.apache.kylin.engine.mr.common.BatchConstants;
  */
 public class HiveToBaseCuboidMapper<KEYIN> extends BaseCuboidMapperBase<KEYIN, Object> {
 
-    private IMRTableInputFormat flatTableInputFormat;
+    private IMRTableInputFormat flatTableInputFormat;//如何读取数据源数据
 
     @Override
     protected void setup(Context context) throws IOException {

@@ -27,26 +27,31 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * 字典的描述对象
+ * 一个表的一个字段的值
+ * 注意:一个表一个字典可能包含多个DictionaryInfo对象,因为不同segment可能就包含一个该字典DictionaryInfo对象了
+ */
 @SuppressWarnings("serial")
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
 public class DictionaryInfo extends RootPersistentEntity {
 
     @JsonProperty("source_table")
-    private String sourceTable;
+    private String sourceTable;//表名
     @JsonProperty("source_column")
-    private String sourceColumn;
+    private String sourceColumn;//字段名
     @JsonProperty("source_column_index")
-    private int sourceColumnIndex; // 0 based
+    private int sourceColumnIndex; // 0 based  该字段的索引,从0开始计数
     @JsonProperty("data_type")
-    private String dataType;
+    private String dataType;//该字段的类型
     @JsonProperty("input")
-    private TableSignature input;
+    private TableSignature input;//该字段的签名,比如最后修改时间等
     @JsonProperty("dictionary_class")
-    private String dictionaryClass;
+    private String dictionaryClass;//该字典使用什么类去存储
     @JsonProperty("cardinality")
-    private int cardinality;
+    private int cardinality;//该字典容纳了多少条数据
 
-    transient Dictionary<?> dictionaryObject;
+    transient Dictionary<?> dictionaryObject; //对应的字典对象,即dictionaryClass的实现类---包含了字典的实现class,以及字典存储的全部内容
 
     public DictionaryInfo() {
     }
@@ -87,8 +92,10 @@ public class DictionaryInfo extends RootPersistentEntity {
 
     // to decide if two dictionaries are built on the same table/column,
     // regardless of their signature
+    //true表示两个字典对应的是相同的
     public boolean isDictOnSameColumn(DictionaryInfo other) {
-        return this.sourceTable.equalsIgnoreCase(other.sourceTable) && this.sourceColumn.equalsIgnoreCase(other.sourceColumn) && this.sourceColumnIndex == other.sourceColumnIndex && this.dataType.equalsIgnoreCase(other.dataType) && this.dictionaryClass.equalsIgnoreCase(other.dictionaryClass);
+        return this.sourceTable.equalsIgnoreCase(other.sourceTable) && this.sourceColumn.equalsIgnoreCase(other.sourceColumn) && this.sourceColumnIndex == other.sourceColumnIndex
+                && this.dataType.equalsIgnoreCase(other.dataType) && this.dictionaryClass.equalsIgnoreCase(other.dictionaryClass);
     }
 
     public String getSourceTable() {

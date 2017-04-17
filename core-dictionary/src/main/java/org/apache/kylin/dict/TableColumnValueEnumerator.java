@@ -26,12 +26,13 @@ import org.apache.kylin.source.ReadableTable;
 
 /**
  * Created by dongli on 10/29/15.
+ * 读取table的某一个列
  */
 public class TableColumnValueEnumerator implements IDictionaryValueEnumerator {
 
-    private ReadableTable.TableReader reader;
-    private int colIndex;
-    private byte[] colValue;
+    private ReadableTable.TableReader reader;//如何读取table
+    private int colIndex;//要读取那一列
+    private byte[] colValue;//当前列对应的字节数组
 
     public TableColumnValueEnumerator(ReadableTable.TableReader reader, int colIndex) {
         this.reader = reader;
@@ -39,7 +40,7 @@ public class TableColumnValueEnumerator implements IDictionaryValueEnumerator {
     }
 
     @Override
-    public boolean moveNext() throws IOException {
+    public boolean moveNext() throws IOException {//获取下一行的对应的列的值
         if (reader.next()) {
             String colStrValue;
             String[] split = reader.getRow();
