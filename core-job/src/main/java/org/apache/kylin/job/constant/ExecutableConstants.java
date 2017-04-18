@@ -43,8 +43,8 @@ public final class ExecutableConstants {
     public static final String STEP_NAME_MATERIALIZE_HIVE_VIEW_IN_LOOKUP = "Materialize Hive View in Lookup Tables";//针对lookup表是视图表的时候进行操作的job
     public static final String STEP_NAME_COUNT_HIVE_TABLE = "Count Source Table";//表的记录条数
     public static final String STEP_NAME_FACT_DISTINCT_COLUMNS = "Extract Fact Table Distinct Columns";//1.用于将rowkey中每一个字典列需要的字段值收集起来,一个reduce一个字段的不重复的字典值  2.统计rowkey的各种组合情况,即每一个cuboid有多少个不同的元素
-    public static final String STEP_NAME_BUILD_DICTIONARY = "Build Dimension Dictionary";//STEP_NAME_FACT_DISTINCT_COLUMNS任务的输出目录作为输入目录,主要处理字典信息
-    public static final String STEP_NAME_BUILD_BASE_CUBOID = "Build Base Cuboid Data";
+    public static final String STEP_NAME_BUILD_DICTIONARY = "Build Dimension Dictionary";//STEP_NAME_FACT_DISTINCT_COLUMNS任务的输出目录作为输入目录,主要处理字典信息以及对lookup表设置快照
+    public static final String STEP_NAME_BUILD_BASE_CUBOID = "Build Base Cuboid Data";//对baseCuboid进行mr处理
     public static final String STEP_NAME_BUILD_IN_MEM_CUBE = "Build Cube";
     public static final String STEP_NAME_BUILD_N_D_CUBOID = "Build N-Dimension Cuboid Data";
     public static final String STEP_NAME_GET_CUBOID_KEY_DISTRIBUTION = "Calculate HTable Region Splits";

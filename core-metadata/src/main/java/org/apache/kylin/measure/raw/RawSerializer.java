@@ -27,6 +27,9 @@ import org.apache.kylin.common.util.BytesUtil;
 import org.apache.kylin.metadata.datatype.DataType;
 import org.apache.kylin.metadata.datatype.DataTypeSerializer;
 
+/**
+ * 对原始的字节数组集合进行序列化
+ */
 @SuppressWarnings("unused")
 public class RawSerializer extends DataTypeSerializer<List<ByteArray>> {
 
@@ -34,6 +37,7 @@ public class RawSerializer extends DataTypeSerializer<List<ByteArray>> {
     //FIXME to config this and RowConstants.ROWVALUE_BUFFER_SIZE in properties file
     public static final int RAW_BUFFER_SIZE = 1024 * 1024;//1M
 
+    //线程持有的字节数组集合
     private ThreadLocal<List<ByteArray>> current = new ThreadLocal<>();
 
     public RawSerializer(DataType dataType) {
@@ -48,20 +52,21 @@ public class RawSerializer extends DataTypeSerializer<List<ByteArray>> {
         return l;
     }
 
+    //返回总的字节数
     @Override
     public int peekLength(ByteBuffer in) {
-        int mark = in.position();
-        int len = 0;
+        int mark = in.position();//开始位置
+        int len = 0;//总的占用字节数
         if (in.hasRemaining()) {
-            int size = BytesUtil.readVInt(in);
-            len = in.position() - mark;
+            int size = BytesUtil.readVInt(in);//获取多少个数组
+            len = in.position() - mark;//size占用字节数
             for (int i = 0; i < size; i++) {
-                int length = BytesUtil.peekByteArrayLength(in);
-                in.position(in.position() + length);
-                len += length;
+                int length = BytesUtil.peekByteArrayLength(in);//集合的元素是一个字节数组对象,该字节数组占用多少字节
+                in.position(in.position() + length);//读取若干个字节
+                len += length;//累加所有的字节长度集合
             }
         }
-        in.position(mark);
+        in.position(mark);//恢复原始位置
         return len;
     }
 
@@ -75,17 +80,20 @@ public class RawSerializer extends DataTypeSerializer<List<ByteArray>> {
         return 8;
     }
 
+    /**
+     * 将List<ByteArray> values追加到out中
+     */
     @Override
     public void serialize(List<ByteArray> values, ByteBuffer out) {
         if (values == null) {
             BytesUtil.writeVInt(0, out);
         } else {
-            BytesUtil.writeVInt(values.size(), out);
+            BytesUtil.writeVInt(values.size(), out);//写入size
             for (ByteArray array : values) {
-                if (!out.hasRemaining() || out.remaining() < array.length()) {
+                if (!out.hasRemaining() || out.remaining() < array.length()) {//必须空间能容纳该array
                     throw new RuntimeException("BufferOverflow! Please use one higher cardinality column for dimension column when build RAW cube!");
                 }
-                BytesUtil.writeByteArray(BytesUtil.subarray(array.array(), array.offset(), array.offset() + array.length()), out);
+                BytesUtil.writeByteArray(BytesUtil.subarray(array.array(), array.offset(), array.offset() + array.length()), out);//截取一段字节数组,从开始位置,到结束位置,将其写入到out中
             }
         }
     }

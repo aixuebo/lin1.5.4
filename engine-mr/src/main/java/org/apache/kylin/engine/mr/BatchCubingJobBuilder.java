@@ -65,17 +65,17 @@ public class BatchCubingJobBuilder extends JobBuilderSupport {
          * 2.统计rowkey的各种组合情况,即每一个cuboid有多少个不同的元素
          */
         result.addTask(createFactDistinctColumnsStep(jobId));
-        result.addTask(createBuildDictionaryStep(jobId));//主要处理字典信息
+        result.addTask(createBuildDictionaryStep(jobId));//主要处理字典信息以及对lookup表设置快照
 
         // Phase 3: Build Cube
         RowKeyDesc rowKeyDesc = ((CubeSegment) seg).getCubeDesc().getRowkey();
-        final int groupRowkeyColumnsCount = ((CubeSegment) seg).getCubeDesc().getBuildLevel();
+        final int groupRowkeyColumnsCount = ((CubeSegment) seg).getCubeDesc().getBuildLevel();//所有的级别的cuboid
         final int totalRowkeyColumnsCount = rowKeyDesc.getRowKeyColumns().length;
         final String[] cuboidOutputTempPath = getCuboidOutputPaths(cuboidRootPath, totalRowkeyColumnsCount, groupRowkeyColumnsCount);
         // base cuboid step
-        result.addTask(createBaseCuboidStep(cuboidOutputTempPath, jobId));
+        result.addTask(createBaseCuboidStep(cuboidOutputTempPath, jobId));//对baseCuboid进行mr处理
         // n dim cuboid steps
-        for (int i = 1; i <= groupRowkeyColumnsCount; i++) {
+        for (int i = 1; i <= groupRowkeyColumnsCount; i++) {//对每一个cuboid进行mr处理
             int dimNum = totalRowkeyColumnsCount - i;
             result.addTask(createNDimensionCuboidStep(cuboidOutputTempPath, dimNum, totalRowkeyColumnsCount));
         }
@@ -89,6 +89,7 @@ public class BatchCubingJobBuilder extends JobBuilderSupport {
         return result;
     }
 
+    //对baseCuboid进行mr处理
     private MapReduceExecutable createBaseCuboidStep(String[] cuboidOutputTempPath, String jobId) {
         // base cuboid job
         MapReduceExecutable baseCuboidStep = new MapReduceExecutable();

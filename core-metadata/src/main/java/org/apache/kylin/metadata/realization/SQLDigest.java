@@ -30,6 +30,7 @@ import org.apache.kylin.metadata.model.TblColRef;
  */
 public class SQLDigest {
 
+    //排序方式
     public enum OrderEnum {
         ASCENDING, DESCENDING
     }

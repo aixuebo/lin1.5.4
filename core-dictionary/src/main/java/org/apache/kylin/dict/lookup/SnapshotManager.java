@@ -108,6 +108,7 @@ public class SnapshotManager {
         }
     }
 
+    //删除一个快照资源
     public void removeSnapshot(String resourcePath) throws IOException {
         ResourceStore store = MetadataManager.getInstance(this.config).getStore();
         store.deleteResource(resourcePath);
@@ -119,17 +120,18 @@ public class SnapshotManager {
         snapshot.updateRandomUuid();
 
         String dup = checkDupByInfo(snapshot);
-        if (dup != null) {
+        if (dup != null) {//快照已经存在了,则返回存在的快照即可
             logger.info("Identical input " + table.getSignature() + ", reuse existing snapshot at " + dup);
             return getSnapshotTable(dup);
         }
 
+        //单位M,快照的hive表对应的文件不应该超过这个大小
         if (snapshot.getSignature().getSize() / 1024 / 1024 > config.getTableSnapshotMaxMB()) {
             throw new IllegalStateException("Table snapshot should be no greater than " + config.getTableSnapshotMaxMB() //
                     + " MB, but " + tableDesc + " size is " + snapshot.getSignature().getSize());
         }
 
-        snapshot.takeSnapshot(table, tableDesc);
+        snapshot.takeSnapshot(table, tableDesc);//加载快照表的数据
 
         return trySaveNewSnapshot(snapshot);
     }
@@ -138,7 +140,7 @@ public class SnapshotManager {
         SnapshotTable snapshot = new SnapshotTable(table, tableDesc.getIdentity());
         snapshot.setUuid(overwriteUUID);
 
-        snapshot.takeSnapshot(table, tableDesc);
+        snapshot.takeSnapshot(table, tableDesc);//加载快照表的数据
 
         SnapshotTable existing = getSnapshotTable(snapshot.getResourcePath());
         snapshot.setLastModified(existing.getLastModified());
@@ -149,24 +151,26 @@ public class SnapshotManager {
         return snapshot;
     }
 
+    //保存快照
     public SnapshotTable trySaveNewSnapshot(SnapshotTable snapshotTable) throws IOException {
 
-        String dupTable = checkDupByContent(snapshotTable);
+        String dupTable = checkDupByContent(snapshotTable);//校验快照
         if (dupTable != null) {
             logger.info("Identical snapshot content " + snapshotTable + ", reuse existing snapshot at " + dupTable);
             return getSnapshotTable(dupTable);
         }
 
-        save(snapshotTable);
+        save(snapshotTable);//保存快照
         snapshotCache.put(snapshotTable.getResourcePath(), snapshotTable);
 
         return snapshotTable;
     }
 
+    //true表示已经存在了该快照版本了
     private String checkDupByInfo(SnapshotTable snapshot) throws IOException {
         ResourceStore store = MetadataManager.getInstance(this.config).getStore();
         String resourceDir = snapshot.getResourceDir();
-        NavigableSet<String> existings = store.listResources(resourceDir);
+        NavigableSet<String> existings = store.listResources(resourceDir);//加载多个快照   一个table的快照可能有多个版本,因此是对应多个快照文件的
         if (existings == null)
             return null;
 
@@ -174,13 +178,14 @@ public class SnapshotManager {
         for (String existing : existings) {
             SnapshotTable existingTable = load(existing, false); // skip cache,
             // direct load from store
-            if (existingTable != null && sig.equals(existingTable.getSignature()))
+            if (existingTable != null && sig.equals(existingTable.getSignature())) //查看是否已经有要保存的快照版本了
                 return existing;
         }
 
         return null;
     }
 
+    //对比快照是否存在,指代的是内容是否存在
     private String checkDupByContent(SnapshotTable snapshot) throws IOException {
         ResourceStore store = MetadataManager.getInstance(this.config).getStore();
         String resourceDir = snapshot.getResourceDir();
@@ -197,12 +202,14 @@ public class SnapshotManager {
         return null;
     }
 
+    //存储快照信息到磁盘上
     private void save(SnapshotTable snapshot) throws IOException {
         ResourceStore store = MetadataManager.getInstance(this.config).getStore();
         String path = snapshot.getResourcePath();
         store.putResource(path, snapshot, SnapshotTableSerializer.FULL_SERIALIZER);
     }
 
+    //加载快照信息
     private SnapshotTable load(String resourcePath, boolean loadData) throws IOException {
         logger.info("Loading snapshotTable from " + resourcePath + ", with loadData: " + loadData);
         ResourceStore store = MetadataManager.getInstance(this.config).getStore();

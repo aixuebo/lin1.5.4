@@ -86,7 +86,7 @@ public class JobBuilderSupport {
 
     /**
      * createFactDistinctColumnsStep 任务的输出目录做为输入目录,进行mr处理
-     * 主要处理字典信息
+     * 主要处理字典信息以及对lookup表设置快照
      */
     public HadoopShellExecutable createBuildDictionaryStep(String jobId) {
         // base cuboid job

@@ -183,8 +183,6 @@ public class CubeManager implements IRealizationProvider {
      * @param cubeSeg 要处理的segment对象
      * @param col 要处理的某一个字段
      * @param factTableValueProvider 该字段的数据在哪个路径下存放
-     * @return
-     * @throws IOException
      */
     public DictionaryInfo buildDictionary(CubeSegment cubeSeg, TblColRef col, DistinctColumnValuesProvider factTableValueProvider) throws IOException {
         CubeDesc cubeDesc = cubeSeg.getCubeDesc();
@@ -194,29 +192,30 @@ public class CubeManager implements IRealizationProvider {
 
         DictionaryManager dictMgr = getDictionaryManager();
         String builderClass = cubeDesc.getDictionaryBuilderClass(col);//返回构建字典的class对象
-        DictionaryInfo dictInfo = dictMgr.buildDictionary(cubeDesc.getModel(), col, factTableValueProvider, builderClass);
+        DictionaryInfo dictInfo = dictMgr.buildDictionary(cubeDesc.getModel(), col, factTableValueProvider, builderClass);//构建一个字典表对象
 
         if (dictInfo != null) {
-            Dictionary<?> dict = dictInfo.getDictionaryObject();
-            cubeSeg.putDictResPath(col, dictInfo.getResourcePath());
+            Dictionary<?> dict = dictInfo.getDictionaryObject();//具体的字典对象
+            cubeSeg.putDictResPath(col, dictInfo.getResourcePath());//存放该列和字典存放路径的映射
             cubeSeg.getRowkeyStats().add(new Object[] { col.getName(), dict.getSize(), dict.getSizeOfId() });
 
             CubeUpdate cubeBuilder = new CubeUpdate(cubeSeg.getCubeInstance());
             cubeBuilder.setToUpdateSegs(cubeSeg);
-            updateCube(cubeBuilder);
+            updateCube(cubeBuilder);//更新新的ccube内容
         }
         return dictInfo;
     }
 
     /**
      * return null if no dictionary for given column
+     * 返回该列对应的字典对象
      */
     @SuppressWarnings("unchecked")
     public Dictionary<String> getDictionary(CubeSegment cubeSeg, TblColRef col) {
         DictionaryInfo info = null;
         try {
             DictionaryManager dictMgr = getDictionaryManager();
-            String dictResPath = cubeSeg.getDictResPath(col);
+            String dictResPath = cubeSeg.getDictResPath(col);//获取该列对应的字典存放路径
             if (dictResPath == null)
                 return null;
 
@@ -230,24 +229,26 @@ public class CubeManager implements IRealizationProvider {
         return (Dictionary<String>) info.getDictionaryObject();
     }
 
+    //为lookupTable表做快照
     public SnapshotTable buildSnapshotTable(CubeSegment cubeSeg, String lookupTable) throws IOException {
         MetadataManager metaMgr = getMetadataManager();
         SnapshotManager snapshotMgr = getSnapshotManager();
 
         TableDesc tableDesc = new TableDesc(metaMgr.getTableDesc(lookupTable));
-        if (TableDesc.TABLE_TYPE_VIRTUAL_VIEW.equalsIgnoreCase(tableDesc.getTableType())) {
+        if (TableDesc.TABLE_TYPE_VIRTUAL_VIEW.equalsIgnoreCase(tableDesc.getTableType())) {//说明该表是视图
             String tableName = tableDesc.getMaterializedName();
             tableDesc.setDatabase(config.getHiveDatabaseForIntermediateTable());
             tableDesc.setName(tableName);
         }
 
+        //读取hive的表数据内容
         ReadableTable hiveTable = SourceFactory.createReadableTable(tableDesc);
-        SnapshotTable snapshot = snapshotMgr.buildSnapshot(hiveTable, tableDesc);
+        SnapshotTable snapshot = snapshotMgr.buildSnapshot(hiveTable, tableDesc);//为该hive表构建快照
 
         cubeSeg.putSnapshotResPath(lookupTable, snapshot.getResourcePath());
         CubeUpdate cubeBuilder = new CubeUpdate(cubeSeg.getCubeInstance());
         cubeBuilder.setToUpdateSegs(cubeSeg);
-        updateCube(cubeBuilder);
+        updateCube(cubeBuilder);//更新cube
 
         return snapshot;
     }
@@ -642,14 +643,14 @@ public class CubeManager implements IRealizationProvider {
     public LookupStringTable getLookupTable(CubeSegment cubeSegment, DimensionDesc dim) {
 
         String tableName = dim.getTable();
-        String[] pkCols = dim.getJoin().getPrimaryKey();
-        String snapshotResPath = cubeSegment.getSnapshotResPath(tableName);
+        String[] pkCols = dim.getJoin().getPrimaryKey();//lookup表主键
+        String snapshotResPath = cubeSegment.getSnapshotResPath(tableName);//快照路径
         if (snapshotResPath == null)
             throw new IllegalStateException("No snaphot for table '" + tableName + "' found on cube segment" + cubeSegment.getCubeInstance().getName() + "/" + cubeSegment);
 
         try {
-            SnapshotTable snapshot = getSnapshotManager().getSnapshotTable(snapshotResPath);
-            TableDesc tableDesc = getMetadataManager().getTableDesc(tableName);
+            SnapshotTable snapshot = getSnapshotManager().getSnapshotTable(snapshotResPath);//返回快照对象
+            TableDesc tableDesc = getMetadataManager().getTableDesc(tableName);//返回对应的表对象
             return new LookupStringTable(tableDesc, pkCols, snapshot);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to load lookup table " + tableName + " from snapshot " + snapshotResPath, e);

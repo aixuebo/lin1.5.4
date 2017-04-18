@@ -26,10 +26,11 @@ import org.apache.kylin.measure.MeasureAggregator;
 
 /**
  * RAW data Aggregator
+ * 对原始的List<ByteArray>进行聚合
  */
 public class RawAggregator extends MeasureAggregator<List<ByteArray>> {
 
-    List<ByteArray> list = null;
+    List<ByteArray> list = null;//调用list的addAll方法就可以完成聚合
 
     @Override
     public void reset() {

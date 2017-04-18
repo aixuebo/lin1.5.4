@@ -97,6 +97,9 @@ public class BytesUtil {
         return integer;
     }
 
+    /**
+     * 将num的前size个字节写入到bytes字节数组内
+     */
     public static void writeLong(long num, byte[] bytes, int offset, int size) {
         for (int i = offset + size - 1; i >= offset; i--) {
             bytes[i] = (byte) num;
@@ -150,6 +153,7 @@ public class BytesUtil {
         return i1 - i2;
     }
 
+    //截取一段字节数组
     public static byte[] subarray(byte[] bytes, int start, int end) {
         byte[] r = new byte[end - start];
         System.arraycopy(bytes, start, r, 0, r.length);

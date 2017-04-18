@@ -22,6 +22,7 @@ import org.apache.kylin.measure.MeasureAggregator;
 import org.apache.kylin.metadata.datatype.DoubleMutable;
 
 /**
+ * double的sum算法
  */
 @SuppressWarnings("serial")
 public class DoubleSumAggregator extends MeasureAggregator<DoubleMutable> {

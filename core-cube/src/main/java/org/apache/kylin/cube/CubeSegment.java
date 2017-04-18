@@ -99,8 +99,11 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
     @JsonProperty("binary_signature")
     private String binarySignature; // a hash of cube schema and dictionary ID, used for sanity check
 
+    //key是字段table/colume,value是该列对应的字典存放路径
     @JsonProperty("dictionaries")
     private ConcurrentHashMap<String, String> dictionaries; // table/column ==> dictionary resource path 存储cube的字典
+
+    //key是lookup表的table名字,value是该表对应的快照的路径
     @JsonProperty("snapshots")
     private ConcurrentHashMap<String, String> snapshots; // table name ==> snapshot resource path 存储cube的快照
 
@@ -297,6 +300,7 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
         return getDictionaries().get(dictKey(col));
     }
 
+    //设置某一个列对应的字典存放路径
     public void putDictResPath(TblColRef col, String dictResPath) {
         getDictionaries().put(dictKey(col), dictResPath);
     }

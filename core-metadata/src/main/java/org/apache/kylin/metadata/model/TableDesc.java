@@ -222,6 +222,7 @@ public class TableDesc extends RootPersistentEntity implements ISourceAware {
 
     }
 
+    //如果table是视图表的时候,这个方法返回的是该视图表对应的具体真实的表
     public String getMaterializedName() {
         return materializedTableNamePrefix + database.getName() + "_" + name;
     }

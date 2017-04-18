@@ -75,19 +75,27 @@ abstract public class MeasureTypeFactory<T> {
      */
     abstract public MeasureType<T> createMeasureType(String funcName, DataType dataType);
 
-    /** Return the aggregation function this factory supports, like "COUNT_DISTINCT" */
+    /** Return the aggregation function this factory supports, like "COUNT_DISTINCT"
+     * 名字必须是大写的字母
+     * 表示聚合函数的名字,比如SUM
+     **/
     abstract public String getAggrFunctionName();
 
-    /** Return the aggregation data type name this factory supports, like "hllc" */
+    /** Return the aggregation data type name this factory supports, like "hllc"
+     * 函数的返回类型,必须小写字母表示
+     **/
     abstract public String getAggrDataTypeName();
 
-    /** Return the Serializer for aggregation data object. Note a Serializer implementation must be thread-safe! */
+    /** Return the Serializer for aggregation data object. Note a Serializer implementation must be thread-safe!
+     * getAggrDataTypeName类型的反序列化对象
+     **/
     abstract public Class<? extends DataTypeSerializer<T>> getAggrDataTypeSerializer();
 
     // ============================================================================
 
+    //key是函数名称getAggrFunctionName,比如SUM,VALUE是HLLCMeasureType.Factory()方式
     private static Map<String, List<MeasureTypeFactory<?>>> factories = Maps.newHashMap();
-    private static List<MeasureTypeFactory<?>> defaultFactory = Lists.newArrayListWithCapacity(2);
+    private static List<MeasureTypeFactory<?>> defaultFactory = Lists.newArrayListWithCapacity(2);//默认的基本工厂
 
     static {
         init();
@@ -110,6 +118,7 @@ abstract public class MeasureTypeFactory<T> {
         logger.info("Checking custom measure types from kylin config");
 
         try {
+            //自定义的度量类型的class全路径集合
             for (String customFactory : KylinConfig.getInstanceFromEnv().getCubeCustomMeasureTypes().values()) {
                 try {
                     logger.info("Checking custom measure types from kylin config: " + customFactory);
@@ -125,7 +134,7 @@ abstract public class MeasureTypeFactory<T> {
         // register factories & data type serializers
         for (MeasureTypeFactory<?> factory : factoryInsts) {
             String funcName = factory.getAggrFunctionName();
-            if (funcName.equals(funcName.toUpperCase()) == false)
+            if (funcName.equals(funcName.toUpperCase()) == false) //名字必须是大写的字母
                 throw new IllegalArgumentException("Aggregation function name '" + funcName + "' must be in upper case");
             String dataTypeName = factory.getAggrDataTypeName();
             if (dataTypeName.equals(dataTypeName.toLowerCase()) == false)
@@ -134,7 +143,8 @@ abstract public class MeasureTypeFactory<T> {
 
             logger.info("registering " + dataTypeName);
             DataType.register(dataTypeName);
-            DataTypeSerializer.register(dataTypeName, serializer);
+            DataTypeSerializer.register(dataTypeName, serializer);//注册数据类型和数据类型对应的序列化类
+
             List<MeasureTypeFactory<?>> list = factories.get(funcName);
             if (list == null)
                 factories.put(funcName, list = Lists.newArrayListWithCapacity(2));
@@ -144,6 +154,7 @@ abstract public class MeasureTypeFactory<T> {
         defaultFactory.add(new BasicMeasureType.Factory());
     }
 
+    //通过函数名字和函数的返回值,可以确定唯一的MeasureType对象
     public static MeasureType<?> create(String funcName, String dataType) {
         return create(funcName, DataType.getType(dataType));
     }
@@ -157,6 +168,7 @@ abstract public class MeasureTypeFactory<T> {
         throw new UnsupportedOperationException("No measure type found.");
     }
 
+    //通过函数名字和函数的返回值,可以确定唯一的MeasureType对象
     public static MeasureType<?> create(String funcName, DataType dataType) {
         funcName = funcName.toUpperCase();
 

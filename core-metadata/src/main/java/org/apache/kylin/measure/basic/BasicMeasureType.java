@@ -66,15 +66,15 @@ public class BasicMeasureType extends MeasureType {
         DataType rtype = dataType;
 
         if (funcName.equals(FunctionDesc.FUNC_SUM)) {
-            if (rtype.isNumberFamily() == false) {
+            if (rtype.isNumberFamily() == false) {//返回值必须是数字
                 throw new IllegalArgumentException("Return type for function " + funcName + " must be one of " + DataType.NUMBER_FAMILY);
             }
         } else if (funcName.equals(FunctionDesc.FUNC_COUNT)) {
-            if (rtype.isIntegerFamily() == false) {
+            if (rtype.isIntegerFamily() == false) {//返回值必须是整数
                 throw new IllegalArgumentException("Return type for function " + funcName + " must be one of " + DataType.INTEGER_FAMILY);
             }
         } else if (funcName.equals(FunctionDesc.FUNC_MAX) || funcName.equals(FunctionDesc.FUNC_MIN)) {
-            if (rtype.isNumberFamily() == false) {
+            if (rtype.isNumberFamily() == false) {//返回值必须是数字
                 throw new IllegalArgumentException("Return type for function " + funcName + " must be one of " + DataType.NUMBER_FAMILY);
             }
         } else {

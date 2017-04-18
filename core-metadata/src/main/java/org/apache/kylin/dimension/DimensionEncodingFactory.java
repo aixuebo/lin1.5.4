@@ -34,6 +34,7 @@ public abstract class DimensionEncodingFactory {
 
     private static final Logger logger = LoggerFactory.getLogger(DimensionEncodingFactory.class);
 
+    //key是编码的name  value是编码对象
     private static Map<String, DimensionEncodingFactory> factoryMap;
 
     /** Create a DimensionEncoding instance, with inputs corresponding to RowKeyColDesc.encodingName and RowKeyColDesc.encodingArgs. */
@@ -50,16 +51,18 @@ public abstract class DimensionEncodingFactory {
         return factory.createDimensionEncoding(encodingName, args);
     }
 
+    //所有有效的编码name集合
     public static Set<String> getValidEncodings() {
         if (factoryMap == null)
-            initFactoryMap();
+            initFactoryMap(); //初始化已知的编码集合
 
         TreeSet<String> result = Sets.newTreeSet();
         result.addAll(factoryMap.keySet());
-        result.add(DictionaryDimEnc.ENCODING_NAME);
+        result.add(DictionaryDimEnc.ENCODING_NAME);//添加默认的实现name
         return result;
     }
 
+    //该编码名字是否有效
     public static boolean isVaildEncoding(String encodingName) {
         if (factoryMap == null)
             initFactoryMap();
@@ -68,6 +71,7 @@ public abstract class DimensionEncodingFactory {
         return DictionaryDimEnc.ENCODING_NAME.equals(encodingName) || factoryMap.containsKey(encodingName);
     }
 
+    //初始化已知的编码集合
     private synchronized static void initFactoryMap() {
         if (factoryMap == null) {
             Map<String, DimensionEncodingFactory> map = Maps.newConcurrentMap();
@@ -81,6 +85,7 @@ public abstract class DimensionEncodingFactory {
             map.put(TimeDimEnc.ENCODING_NAME, new TimeDimEnc.Factory());
 
             // custom encodings
+            //加载自定义的编码类
             String[] clsNames = KylinConfig.getInstanceFromEnv().getCubeDimensionCustomEncodingFactories();
             for (String clsName : clsNames) {
                 try {
@@ -95,9 +100,13 @@ public abstract class DimensionEncodingFactory {
         }
     }
 
-    /** Return the supported encoding name, corresponds to RowKeyColDesc.encodingName */
+    /** Return the supported encoding name, corresponds to RowKeyColDesc.encodingName
+     * 编码的名字
+     **/
     abstract public String getSupportedEncodingName();
 
-    /** Create a DimensionEncoding instance, with inputs corresponding to RowKeyColDesc.encodingName and RowKeyColDesc.encodingArgs */
+    /** Create a DimensionEncoding instance, with inputs corresponding to RowKeyColDesc.encodingName and RowKeyColDesc.encodingArgs
+     * 通过一个编码的名字 以及参数 创建一个createDimensionEncoding对象
+     **/
     abstract public DimensionEncoding createDimensionEncoding(String encodingName, String[] args);
 }

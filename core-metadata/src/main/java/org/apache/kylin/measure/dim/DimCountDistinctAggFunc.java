@@ -26,6 +26,9 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
 
+/**
+ * 通过set进行元素的distinctCount操作
+ */
 public class DimCountDistinctAggFunc {
     private static final Logger logger = LoggerFactory.getLogger(DimCountDistinctAggFunc.class);
 
@@ -33,12 +36,14 @@ public class DimCountDistinctAggFunc {
         return null;
     }
 
+    //初始化 并且插入一个元素
     public static DimDistinctCounter initAdd(Object v) {
         DimDistinctCounter counter = new DimDistinctCounter();
         counter.add(v);
         return counter;
     }
 
+    //向一个队列中添加一个元素
     public static DimDistinctCounter add(DimDistinctCounter counter, Object v) {
         if (counter == null) {
             counter = new DimDistinctCounter();
@@ -47,6 +52,7 @@ public class DimCountDistinctAggFunc {
         return counter;
     }
 
+    //合并数据
     public static DimDistinctCounter merge(DimDistinctCounter counter0, DimDistinctCounter counter1) {
         counter0.addAll(counter1);
         return counter0;
@@ -57,8 +63,8 @@ public class DimCountDistinctAggFunc {
     }
 
     public static class DimDistinctCounter {
-        private final Set container;
-        private final int MAX_LENGTH;
+        private final Set container;//元素内容集合
+        private final int MAX_LENGTH;//存储元素的数量上限
 
         public DimDistinctCounter() {
             container = Sets.newHashSet();
@@ -66,19 +72,20 @@ public class DimCountDistinctAggFunc {
         }
 
         public void add(Object v) {
-            if (container.size() >= MAX_LENGTH) {
+            if (container.size() >= MAX_LENGTH) {//说明元素数量超出伐值了
                 throw new RuntimeException("Cardinality of dimension exceeds the threshold: " + MAX_LENGTH);
             }
             container.add(v);
         }
 
         public void addAll(DimDistinctCounter counter) {
-            if (container.size() + counter.container.size() >= MAX_LENGTH) {
+            if (container.size() + counter.container.size() >= MAX_LENGTH) {//说明元素数量超出伐值了
                 throw new RuntimeException("Cardinality of dimension exceeds the threshold: " + MAX_LENGTH);
             }
             container.addAll(counter.container);
         }
 
+        //真实存储的数据数量
         public long result() {
             return container.size();
         }

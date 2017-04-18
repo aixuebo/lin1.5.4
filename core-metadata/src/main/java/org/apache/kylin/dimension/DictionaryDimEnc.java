@@ -30,6 +30,9 @@ import org.apache.kylin.metadata.datatype.DataTypeSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 存储的是字典表映射的ID
+ */
 public class DictionaryDimEnc extends DimensionEncoding {
     private static final long serialVersionUID = 1L;
 
@@ -40,8 +43,8 @@ public class DictionaryDimEnc extends DimensionEncoding {
     // ============================================================================
 
     // could use a lazy loading trick here, to prevent loading all dictionaries of a segment at once
-    private final Dictionary<String> dict;
-    private final int fixedLen;
+    private final Dictionary<String> dict;//使用一个字典
+    private final int fixedLen;//压缩后成一个id,则该id占用多少字节
 
     // used in encode(), when a value does not exist in dictionary
     private final int roundingFlag;
@@ -53,7 +56,7 @@ public class DictionaryDimEnc extends DimensionEncoding {
 
     public DictionaryDimEnc(Dictionary<String> dict, int roundingFlag, byte defaultByte) {
         this.dict = dict;
-        this.fixedLen = dict.getSizeOfId();
+        this.fixedLen = dict.getSizeOfId();//压缩后成一个id,则该id占用多少字节
         this.roundingFlag = roundingFlag;
         this.defaultByte = defaultByte;
     }

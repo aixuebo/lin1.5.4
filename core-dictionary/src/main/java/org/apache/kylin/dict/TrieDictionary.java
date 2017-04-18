@@ -200,9 +200,9 @@ public class TrieDictionary<T> extends Dictionary<T> {
      * @param inpEnd
      *            -- end of input
      * @param roundingFlag
-     *            -- =0: return -1 if not found
-     *            -- <0: return closest smaller if not found, return -1
-     *            -- >0: return closest bigger if not found, return nValues
+     *            -- =0: return -1 if not found 如果没有找到的话,返回-1
+     *            -- <0: return closest smaller if not found, return -1   如果没有找到的话,返回比ID小的最接近的
+     *            -- >0: return closest bigger if not found, return nValues 如果没有找到的话,返回比ID大的最接近的
      */
     private int lookupSeqNoFromValue(int n, byte[] inp, int o, int inpEnd, int roundingFlag) {
         if (o == inpEnd) // special 'empty' value

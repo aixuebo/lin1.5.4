@@ -32,15 +32,15 @@ import org.apache.kylin.metadata.model.MeasureDesc;
 @SuppressWarnings({ "rawtypes" })
 public class MeasureDecoder {
 
-    int nMeasures;
-    DataTypeSerializer[] serializers;
+    int nMeasures;//有多少个调度
+    DataTypeSerializer[] serializers;//每一个调度的返回值类型如何序列化和反序列化
 
     public MeasureDecoder(Collection<MeasureDesc> measureDescs) {
         this((MeasureDesc[]) measureDescs.toArray(new MeasureDesc[measureDescs.size()]));
     }
 
     public MeasureDecoder(MeasureDesc... measureDescs) {
-        String[] dataTypes = new String[measureDescs.length];
+        String[] dataTypes = new String[measureDescs.length];//每一个调度的返回类型
         for (int i = 0; i < dataTypes.length; i++) {
             dataTypes[i] = measureDescs[i].getFunction().getReturnType();
         }
@@ -58,20 +58,22 @@ public class MeasureDecoder {
     private void init(String[] dataTypes) {
         DataType[] typeInstances = new DataType[dataTypes.length];
         for (int i = 0; i < dataTypes.length; i++) {
-            typeInstances[i] = DataType.getType(dataTypes[i]);
+            typeInstances[i] = DataType.getType(dataTypes[i]);//每一个调度的返回类型
         }
         init(typeInstances);
     }
 
+    //参数是调度集合的返回类型
     private void init(DataType[] dataTypes) {
         nMeasures = dataTypes.length;
         serializers = new DataTypeSerializer[nMeasures];
 
         for (int i = 0; i < nMeasures; i++) {
-            serializers[i] = DataTypeSerializer.create(dataTypes[i]);
+            serializers[i] = DataTypeSerializer.create(dataTypes[i]);//创建类型的序列化对象
         }
     }
 
+    //获取一个调度的序列化对象
     public DataTypeSerializer getSerializer(int idx) {
         return serializers[idx];
     }
@@ -87,6 +89,7 @@ public class MeasureDecoder {
         return length;
     }
 
+    //反序列化成对象集合
     public void decode(ByteBuffer buf, Object[] result) {
         assert result.length == nMeasures;
         for (int i = 0; i < nMeasures; i++) {

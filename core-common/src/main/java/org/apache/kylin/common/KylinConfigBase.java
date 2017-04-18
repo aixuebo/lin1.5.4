@@ -458,10 +458,12 @@ abstract public class KylinConfigBase implements Serializable {
         return Boolean.parseBoolean(getOptional("kylin.cube.aggrgroup.isMandatoryOnlyValid", "false"));//true表示都是必须相关的列也是允许的
     }
 
+    //自定义编码集合,存储class的全路径集合
     public String[] getCubeDimensionCustomEncodingFactories() {
         return getOptionalStringArray("kylin.cube.dimension.customEncodingFactories", new String[0]);
     }
 
+    //自定义的度量类型的class全路径集合
     public Map<String, String> getCubeCustomMeasureTypes() {
         return getPropertiesByPrefix("kylin.cube.measure.customMeasureType.");
     }
@@ -470,6 +472,7 @@ abstract public class KylinConfigBase implements Serializable {
         return Integer.parseInt(getOptional("kylin.dictionary.max.cardinality", "30000000"));
     }
 
+    //单位M,快照的hive表对应的文件不应该超过这个大小
     public int getTableSnapshotMaxMB() {
         return Integer.parseInt(getOptional("kylin.table.snapshot.max_mb", "300"));
     }

@@ -26,7 +26,9 @@ import org.apache.kylin.metadata.datatype.DataTypeSerializer;
 /**
  * Dimension encoding maps a dimension (String) to bytes of fixed length.
  * 
- * It is similar to Dictionary in 1) the bytes is fixed length; 2) bi-way mapping;
+ * It is similar to Dictionary in
+ * 1) the bytes is fixed length;字节长度固定
+ * 2) bi-way mapping;
  * 3) the mapping preserves order, but is also different to Dictionary as the target 
  * bytes can be very long while dictionary ID is 4 bytes at most. This means it is 
  * hard to enumerate all values of a encoding, thus TupleFilterDictionaryTranslater 
@@ -35,7 +37,7 @@ import org.apache.kylin.metadata.datatype.DataTypeSerializer;
 public abstract class DimensionEncoding implements Externalizable {
     private static final long serialVersionUID = 1L;
 
-    // it's convention that all 0xff means NULL
+    // it's convention that all 0xff means NULL 一个字节表示null
     public static final byte NULL = (byte) 0xff;//10进制 255
 
     //索要查找的字节中有不是null的就是非空,即false
@@ -64,16 +66,24 @@ public abstract class DimensionEncoding implements Externalizable {
         return new Object[] { encodingName, encodingArgs };
     }
 
-    /** return the fixed length of encoded bytes */
+    /** return the fixed length of encoded bytes
+     * 返回编码的固定长度
+     **/
     abstract public int getLengthOfEncoding();
 
-    /** encode given value (a string in byte form) to bytes, note the NULL convention */
+    /** encode given value (a string in byte form) to bytes, note the NULL convention
+     * 对value进行编码到output中
+     **/
     abstract public void encode(byte[] value, int valueLen, byte[] output, int outputOffset);
 
-    /** decode given bytes to value string, note the NULL convention */
+    /** decode given bytes to value string, note the NULL convention
+     * 对字节数组进行解码成字符串
+     **/
     abstract public String decode(byte[] bytes, int offset, int len);
 
-    /** return a DataTypeSerializer that does the same encoding/decoding on ByteBuffer */
+    /** return a DataTypeSerializer that does the same encoding/decoding on ByteBuffer
+     * 如何序列化和反序列化
+     **/
     abstract public DataTypeSerializer<Object> asDataTypeSerializer();
 
 }

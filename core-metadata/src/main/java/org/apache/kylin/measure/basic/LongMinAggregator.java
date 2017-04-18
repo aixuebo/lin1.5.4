@@ -22,6 +22,7 @@ import org.apache.kylin.measure.MeasureAggregator;
 import org.apache.kylin.metadata.datatype.LongMutable;
 
 /**
+ * min算法
  */
 @SuppressWarnings("serial")
 public class LongMinAggregator extends MeasureAggregator<LongMutable> {

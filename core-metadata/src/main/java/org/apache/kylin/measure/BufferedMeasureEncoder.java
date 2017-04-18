@@ -38,7 +38,7 @@ public class BufferedMeasureEncoder {
     final private MeasureDecoder codec;
 
     private ByteBuffer buf;
-    final private int[] measureSizes;
+    final private int[] measureSizes;//序列化该度量的字节大小
 
     public BufferedMeasureEncoder(Collection<MeasureDesc> measureDescs) {
         this.codec = new MeasureDecoder(measureDescs);
@@ -75,10 +75,12 @@ public class BufferedMeasureEncoder {
         buf = ByteBuffer.allocate(size);
     }
 
+    //解码
     public void decode(ByteBuffer buf, Object[] result) {
         codec.decode(buf, result);
     }
 
+    //编码
     public ByteBuffer encode(Object[] values) {
         if (buf == null) {
             setBufferSize(DEFAULT_BUFFER_SIZE);
@@ -90,17 +92,17 @@ public class BufferedMeasureEncoder {
             try {
                 buf.clear();
                 for (int i = 0, pos = 0; i < codec.nMeasures; i++) {
-                    codec.serializers[i].serialize(values[i], buf);
-                    measureSizes[i] = buf.position() - pos;
+                    codec.serializers[i].serialize(values[i], buf);//序列化到buf中
+                    measureSizes[i] = buf.position() - pos;//序列化该度量的字节大小
                     pos = buf.position();
                 }
                 return buf;
 
             } catch (BufferOverflowException boe) {
-                if (buf.capacity() >= MAX_BUFFER_SIZE)
+                if (buf.capacity() >= MAX_BUFFER_SIZE) //扩容到极限了,抛异常
                     throw boe;
 
-                setBufferSize(buf.capacity() * 2);
+                setBufferSize(buf.capacity() * 2);//扩容
             }
         }
     }

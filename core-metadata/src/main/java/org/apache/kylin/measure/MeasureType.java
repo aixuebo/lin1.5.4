@@ -44,7 +44,9 @@ abstract public class MeasureType<T> {
      * Define
      * ---------------------------------------------------------------------------- */
 
-    /** Validates a user defined FunctionDesc has expected parameter etc. Throw IllegalArgumentException if anything wrong. */
+    /** Validates a user defined FunctionDesc has expected parameter etc. Throw IllegalArgumentException if anything wrong.
+     * 校验一个函数是否合法
+     **/
     public void validate(FunctionDesc functionDesc) throws IllegalArgumentException {
         return;
     }
@@ -69,10 +71,14 @@ abstract public class MeasureType<T> {
      * Build
      * ---------------------------------------------------------------------------- */
 
-    /** Return a MeasureIngester which knows how to init aggregation object from raw records. */
+    /** Return a MeasureIngester which knows how to init aggregation object from raw records.
+     * 如何初始化该字段的数据
+     **/
     abstract public MeasureIngester<T> newIngester();
 
-    /** Return a MeasureAggregator which does aggregation. */
+    /** Return a MeasureAggregator which does aggregation.
+     * 如何聚合该字段数据
+     **/
     abstract public MeasureAggregator<T> newAggregator();
 
     /** Some special measures need dictionary to encode column values for optimal storage. TopN is an example.
@@ -118,7 +124,9 @@ abstract public class MeasureType<T> {
         return true;
     }
 
-    /** Returns a Calcite aggregation function implementation class */
+    /** Returns a Calcite aggregation function implementation class
+     * 返回一个聚合函数对应的class
+     **/
     abstract public Class<?> getRewriteCalciteAggrFunctionClass();
 
     /* ============================================================================

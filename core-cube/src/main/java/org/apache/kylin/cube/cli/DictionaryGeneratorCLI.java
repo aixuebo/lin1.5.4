@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * 处理cube的一个segment中不重复的字段对应的值
- * 主要处理字典信息
+ * 主要处理字典信息以及对lookup表设置快照
  */
 public class DictionaryGeneratorCLI {
 
@@ -71,7 +71,7 @@ public class DictionaryGeneratorCLI {
             if (dim.getTable() != null && !dim.getTable().equalsIgnoreCase(cubeSeg.getCubeDesc().getFactTable())) {//不是fact表即可
                 // CubeSegment seg = cube.getTheOnlySegment();
                 logger.info("Building snapshot of " + dim.getTable());
-                cubeMgr.buildSnapshotTable(cubeSeg, dim.getTable());
+                cubeMgr.buildSnapshotTable(cubeSeg, dim.getTable());//保存lookup表的快照
                 logger.info("Checking snapshot of " + dim.getTable());
                 cubeMgr.getLookupTable(cubeSeg, dim); // load the table for sanity check
             }

@@ -156,8 +156,8 @@ abstract public class Dictionary<T> implements Serializable {
      * A lower level API, return ID integer from raw value bytes. In case of not found 
      * <p>
      * - if roundingFlag=0, throw IllegalArgumentException; <br>
-     * - if roundingFlag<0, the closest smaller ID integer if exist; <br>
-     * - if roundingFlag>0, the closest bigger ID integer if exist. <br>
+     * - if roundingFlag<0, the closest smaller ID integer if exist; <br> 如果没有找到的话,返回比ID小的最接近的
+     * - if roundingFlag>0, the closest bigger ID integer if exist. <br> 如果没有找到的话,返回比ID大的最接近的
      * <p>
      * Bypassing the cache layer, this could be significantly slower than getIdFromValue(T value).
      * 

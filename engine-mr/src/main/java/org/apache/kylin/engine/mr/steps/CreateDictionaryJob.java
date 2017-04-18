@@ -30,7 +30,7 @@ import org.apache.kylin.source.ReadableTable;
 
 /**
  * @author ysong1
- * 主要处理字典信息
+ * 主要处理字典信息以及对lookup表设置快照
  */
 public class CreateDictionaryJob extends AbstractHadoopJob {
 

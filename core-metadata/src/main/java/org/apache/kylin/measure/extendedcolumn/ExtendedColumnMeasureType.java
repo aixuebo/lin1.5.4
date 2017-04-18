@@ -52,7 +52,7 @@ public class ExtendedColumnMeasureType extends MeasureType<ByteArray> {
     private static final Logger logger = LoggerFactory.getLogger(ExtendedColumnMeasureType.class);
 
     public static final String FUNC_RAW = "EXTENDED_COLUMN";//扩展属性,用于根据id查询name的时候使用,此时不需要使用两个属性,因为id和name是一对一的关系
-    public static final String DATATYPE_RAW = "extendedcolumn";
+    public static final String DATATYPE_RAW = "extendedcolumn";//返回类型
     private final DataType dataType;
 
     public static class Factory extends MeasureTypeFactory<ByteArray> {

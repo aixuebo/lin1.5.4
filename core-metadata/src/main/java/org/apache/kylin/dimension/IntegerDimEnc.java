@@ -88,16 +88,17 @@ public class IntegerDimEnc extends DimensionEncoding {
     @Override
     public void encode(byte[] value, int valueLen, byte[] output, int outputOffset) {
         if (value == null) {
-            Arrays.fill(output, outputOffset, outputOffset + fixedLen, NULL);
+            Arrays.fill(output, outputOffset, outputOffset + fixedLen, NULL);//设置固定字节的null
             return;
         }
 
-        encode(Bytes.toString(value, 0, valueLen), output, outputOffset);
+        encode(Bytes.toString(value, 0, valueLen), output, outputOffset);//将字节数组转换成字符串,然后在输出
     }
 
+    //将字符串进行输出
     void encode(String valueStr, byte[] output, int outputOffset) {
         if (valueStr == null) {
-            Arrays.fill(output, outputOffset, outputOffset + fixedLen, NULL);
+            Arrays.fill(output, outputOffset, outputOffset + fixedLen, NULL);//设置固定字节的null
             return;
         }
 

@@ -22,6 +22,7 @@ import org.apache.kylin.measure.MeasureAggregator;
 import org.apache.kylin.metadata.datatype.LongMutable;
 
 /**
+ * max算法
  */
 @SuppressWarnings("serial")
 public class LongMaxAggregator extends MeasureAggregator<LongMutable> {

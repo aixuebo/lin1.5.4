@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * not being used yet, prepared for future
+ * 尚未被使用,准备未来使用
  */
 public class OneMoreByteVLongDimEnc extends DimensionEncoding {
     private static final long serialVersionUID = 1L;

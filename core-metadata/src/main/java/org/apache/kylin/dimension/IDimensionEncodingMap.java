@@ -24,7 +24,9 @@ import org.apache.kylin.metadata.model.TblColRef;
 /**
  * Dimension encoding maps a dimension (String) to bytes of fixed length.
  * 
- * It is similar to Dictionary in 1) the bytes is fixed length; 2) bi-way mapping;
+ * It is similar to Dictionary in
+ * 1) the bytes is fixed length;
+ * 2) bi-way mapping;
  * 3) the mapping preserves order, but is also different to Dictionary as the target 
  * bytes can be very long while dictionary ID is 4 bytes at most. This means it is 
  * hard to enumerate all values of a encoding, thus TupleFilterDictionaryTranslater 
@@ -32,10 +34,14 @@ import org.apache.kylin.metadata.model.TblColRef;
  */
 public interface IDimensionEncodingMap {
 
-    /** Get dimension encoding of a column */
+    /** Get dimension encoding of a column
+     * 获取该列对应的编码方式
+     **/
     DimensionEncoding get(TblColRef col);
 
-    /** Get dictionary of a column if its encoding is dictionary based */
+    /** Get dictionary of a column if its encoding is dictionary based
+     * 获取该列对应的字典
+     **/
     Dictionary<String> getDictionary(TblColRef col);
 
 }

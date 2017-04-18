@@ -30,6 +30,9 @@ import org.apache.kylin.common.util.BytesUtil;
 import org.apache.kylin.common.util.DateFormat;
 import org.apache.kylin.metadata.datatype.DataTypeSerializer;
 
+/**
+ * 对时间或者日期如何编码
+ */
 public class AbstractDateDimEnc extends DimensionEncoding {
     private static final long serialVersionUID = 1L;
 
@@ -41,7 +44,7 @@ public class AbstractDateDimEnc extends DimensionEncoding {
 
     // ============================================================================
     private int fixedLen;
-    private IMillisCodec codec;
+    private IMillisCodec codec;//对时间戳如何编码
 
     protected AbstractDateDimEnc(int fixedLen, IMillisCodec codec) {
         this.fixedLen = fixedLen;
@@ -53,32 +56,35 @@ public class AbstractDateDimEnc extends DimensionEncoding {
         return fixedLen;
     }
 
+    //编码
     @Override
     public void encode(byte[] value, int valueLen, byte[] output, int outputOffset) {
         if (value == null) {
-            Arrays.fill(output, outputOffset, outputOffset + fixedLen, NULL);
+            Arrays.fill(output, outputOffset, outputOffset + fixedLen, NULL);//输出固定长度的null字节
             return;
         }
 
         try {
-            String str = new String(value, 0, valueLen, "ISO-8859-1");
+            String str = new String(value, 0, valueLen, "ISO-8859-1");//将字节数组转换成字符串
             encode(str, output, outputOffset);
         } catch (UnsupportedEncodingException e) {
             // never happen
         }
     }
 
+    //编码---参数字符串是时间或者日期的字符串形式
     void encode(String value, byte[] output, int outputOffset) {
         if (value == null) {
-            Arrays.fill(output, outputOffset, outputOffset + fixedLen, NULL);
+            Arrays.fill(output, outputOffset, outputOffset + fixedLen, NULL);//输出固定长度的null字节
             return;
         }
 
-        long millis = DateFormat.stringToMillis(value);
+        long millis = DateFormat.stringToMillis(value);//将时间或者日期字符串转换成时间戳
         long code = codec.millisToCode(millis);
         BytesUtil.writeLong(code, output, outputOffset, fixedLen);
     }
 
+    //解码成时间或者日期字符串
     @Override
     public String decode(byte[] bytes, int offset, int len) {
         if (isNull(bytes, offset, len)) {

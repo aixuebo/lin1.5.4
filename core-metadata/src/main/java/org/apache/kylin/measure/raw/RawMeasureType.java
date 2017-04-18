@@ -49,8 +49,8 @@ public class RawMeasureType extends MeasureType<List<ByteArray>> {
 
     private static final Logger logger = LoggerFactory.getLogger(RawMeasureType.class);
 
-    public static final String FUNC_RAW = "RAW";
-    public static final String DATATYPE_RAW = "raw";
+    public static final String FUNC_RAW = "RAW";//函数
+    public static final String DATATYPE_RAW = "raw";//返回类型
 
     public static class Factory extends MeasureTypeFactory<List<ByteArray>> {
 

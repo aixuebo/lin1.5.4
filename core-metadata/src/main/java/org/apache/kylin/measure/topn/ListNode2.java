@@ -20,7 +20,7 @@ package org.apache.kylin.measure.topn;
 
 /**
  * Modified from ListNode2.java in https://github.com/addthis/stream-lib
- *  
+ *  双向链表对象
  * @param <T>
  */
 public class ListNode2<T> {

@@ -43,14 +43,14 @@ import org.apache.kylin.common.util.JsonUtil;
 
 /**
  * @author yangli9
- * 
+ * 对快照的表的内容以及表的元数据进行序列化和反序列化
  */
 public class SnapshotTableSerializer implements Serializer<SnapshotTable> {
 
     public static final SnapshotTableSerializer FULL_SERIALIZER = new SnapshotTableSerializer(false);
     public static final SnapshotTableSerializer INFO_SERIALIZER = new SnapshotTableSerializer(true);
 
-    private boolean infoOnly;
+    private boolean infoOnly;//true表示不序列化字典内容,因为字典内容比较耗时
 
     SnapshotTableSerializer(boolean infoOnly) {
         this.infoOnly = infoOnly;

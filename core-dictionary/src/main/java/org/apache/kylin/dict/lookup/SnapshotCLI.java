@@ -25,6 +25,7 @@ import org.apache.kylin.metadata.MetadataManager;
 import org.apache.kylin.metadata.model.TableDesc;
 import org.apache.kylin.source.SourceFactory;
 
+//对一个表进行快照处理
 public class SnapshotCLI {
 
     public static void main(String[] args) throws IOException {

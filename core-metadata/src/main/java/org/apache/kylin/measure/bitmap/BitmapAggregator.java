@@ -22,6 +22,7 @@ import org.apache.kylin.measure.MeasureAggregator;
 
 /**
  * Created by sunyerui on 15/12/2.
+ * 对BitmapCounter对象进行聚合
  */
 public class BitmapAggregator extends MeasureAggregator<BitmapCounter> {
 

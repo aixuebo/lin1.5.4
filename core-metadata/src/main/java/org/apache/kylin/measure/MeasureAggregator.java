@@ -23,6 +23,7 @@ import java.io.Serializable;
 import org.apache.kylin.metadata.datatype.DataType;
 
 /**
+ * 如何对度量的值进行集合
  */
 @SuppressWarnings("serial")
 abstract public class MeasureAggregator<V> implements Serializable {
@@ -67,10 +68,13 @@ abstract public class MeasureAggregator<V> implements Serializable {
     public void setDependentAggregator(MeasureAggregator agg) {
     }
 
+    //重置度量的值为初始化值
     abstract public void reset();
 
+    //添加一个值到度量中进行聚合
     abstract public void aggregate(V value);
 
+    //返回最终的度量结果
     abstract public V getState();
 
     // get an estimate of memory consumption UPPER BOUND

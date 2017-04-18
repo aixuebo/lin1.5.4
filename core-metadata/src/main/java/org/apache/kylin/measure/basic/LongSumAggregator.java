@@ -22,6 +22,7 @@ import org.apache.kylin.measure.MeasureAggregator;
 import org.apache.kylin.metadata.datatype.LongMutable;
 
 /**
+ * sum聚合
  */
 @SuppressWarnings("serial")
 public class LongSumAggregator extends MeasureAggregator<LongMutable> {

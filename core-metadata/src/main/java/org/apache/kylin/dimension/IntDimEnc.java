@@ -33,13 +33,14 @@ import org.slf4j.LoggerFactory;
 /**
  * deprecated use IntegerDimEnc instead
  * @deprecated
+ * 整数编码
  */
 public class IntDimEnc extends DimensionEncoding {
     private static final long serialVersionUID = 1L;
 
     private static Logger logger = LoggerFactory.getLogger(IntDimEnc.class);
 
-    private static final long[] CAP = { 0, 0xffL, 0xffffL, 0xffffffL, 0xffffffffL, 0xffffffffffL, 0xffffffffffffL, 0xffffffffffffffL, Long.MAX_VALUE };
+    private static final long[] CAP = { 0, 0xffL, 0xffffL, 0xffffffL, 0xffffffffL, 0xffffffffffL, 0xffffffffffffL, 0xffffffffffffffL, Long.MAX_VALUE };//每一个字节位置的最大长度.比如固定长度是3,则不允许超过第3个位置对应的整数
 
     public static final String ENCODING_NAME = "int";
 
@@ -57,7 +58,7 @@ public class IntDimEnc extends DimensionEncoding {
 
     // ============================================================================
 
-    private int fixedLen;
+    private int fixedLen;//固定长度
 
     transient private int avoidVerbose = 0;
 
@@ -77,32 +78,35 @@ public class IntDimEnc extends DimensionEncoding {
         return fixedLen;
     }
 
+    //对value字节数组进行编码,输出到output中,value的有效字节长度是valueLen
     @Override
     public void encode(byte[] value, int valueLen, byte[] output, int outputOffset) {
         if (value == null) {
-            Arrays.fill(output, outputOffset, outputOffset + fixedLen, NULL);
+            Arrays.fill(output, outputOffset, outputOffset + fixedLen, NULL);//写入固定长度的null字节数组
             return;
         }
 
-        encode(Bytes.toString(value, 0, valueLen), output, outputOffset);
+        encode(Bytes.toString(value, 0, valueLen), output, outputOffset);//将value转化成字符串,然后输出
     }
 
+    //将字符串进行输出
     void encode(String valueStr, byte[] output, int outputOffset) {
         if (valueStr == null) {
-            Arrays.fill(output, outputOffset, outputOffset + fixedLen, NULL);
+            Arrays.fill(output, outputOffset, outputOffset + fixedLen, NULL);//写入固定长度的null字节数组
             return;
         }
 
-        long integer = Long.parseLong(valueStr);
+        long integer = Long.parseLong(valueStr);//最多允许long类型
         if (integer > CAP[fixedLen]) {
-            if (avoidVerbose++ % 10000 == 0) {
+            if (avoidVerbose++ % 10000 == 0) {//超出范围
                 logger.warn("Expect at most " + fixedLen + " bytes, but got " + valueStr + ", will truncate, hit times:" + avoidVerbose);
             }
         }
 
-        BytesUtil.writeLong(integer, output, outputOffset, fixedLen);
+        BytesUtil.writeLong(integer, output, outputOffset, fixedLen);//写入固定长度字节到输出中
     }
 
+    //解码
     @Override
     public String decode(byte[] bytes, int offset, int len) {
         if (isNull(bytes, offset, len)) {

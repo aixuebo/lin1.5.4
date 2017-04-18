@@ -227,13 +227,13 @@ public class DictionaryManager {
             return dicts.get(0);
 
         DictionaryInfo firstDictInfo = null;
-        int totalSize = 0;
-        for (DictionaryInfo info : dicts) {
+        int totalSize = 0;//总字典大小
+        for (DictionaryInfo info : dicts) {//循环每一个字典对象
             // check
             if (firstDictInfo == null) {
                 firstDictInfo = info;
             } else {
-                if (!firstDictInfo.isDictOnSameColumn(info)) {
+                if (!firstDictInfo.isDictOnSameColumn(info)) {//说明字典不相同,按道理应该是非法的,因此警告
                     // don't throw exception, just output warning as legacy cube segment may build dict on PK
                     logger.warn("Merging dictionaries are not structurally equal : " + firstDictInfo.getResourcePath() + " and " + info.getResourcePath());
                 }
@@ -259,7 +259,7 @@ public class DictionaryManager {
         //        }
 
         //check for cases where merging dicts are actually same
-        boolean identicalSourceDicts = true;
+        boolean identicalSourceDicts = true;;//true表示字典的内容都相同,因此不需要合并
         for (int i = 1; i < dicts.size(); ++i) {
             if (!dicts.get(0).getDictionaryObject().equals(dicts.get(i).getDictionaryObject())) {
                 identicalSourceDicts = false;
@@ -267,11 +267,11 @@ public class DictionaryManager {
             }
         }
 
-        if (identicalSourceDicts) {
+        if (identicalSourceDicts) {//不需要合并
             logger.info("Use one of the merging dictionaries directly");
             return dicts.get(0);
         } else {
-            Dictionary<?> newDict = DictionaryGenerator.mergeDictionaries(DataType.getType(newDictInfo.getDataType()), dicts);
+            Dictionary<?> newDict = DictionaryGenerator.mergeDictionaries(DataType.getType(newDictInfo.getDataType()), dicts);//合并
             return trySaveNewDict(newDict, newDictInfo);
         }
     }
