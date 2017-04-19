@@ -66,6 +66,7 @@ import com.google.common.collect.Maps;
 /**
  * This should be in cube module. It's here in engine-mr because currently stats
  * are saved as sequence files thus a hadoop dependency.
+ * 这个是一个MR任务,因为当前任务的状态被保存在hadoop依赖的sequence文件中了
  */
 public class CubeStatsReader {
 
@@ -76,26 +77,30 @@ public class CubeStatsReader {
     final double mapperOverlapRatioOfFirstBuild; // only makes sense for the first build, is meaningless after merge
     final Map<Long, HyperLogLogPlusCounter> cuboidRowEstimatesHLL;
 
+    //一个segment一个统计文件
     public CubeStatsReader(CubeSegment cubeSegment, KylinConfig kylinConfig) throws IOException {
         ResourceStore store = ResourceStore.getStore(kylinConfig);
-        String statsKey = cubeSegment.getStatisticsResourcePath();
-        File tmpSeqFile = writeTmpSeqFile(store.getResource(statsKey).inputStream);
+        String statsKey = cubeSegment.getStatisticsResourcePath();//统计文件存储位置
+        File tmpSeqFile = writeTmpSeqFile(store.getResource(statsKey).inputStream);//将文件写入到本地文件系统中
         Reader reader = null;
 
         try {
             Configuration hadoopConf = HadoopUtil.getCurrentConfiguration();
 
+            //读取下载的本地文件
             Path path = new Path(HadoopUtil.fixWindowsPath("file://" + tmpSeqFile.getAbsolutePath()));
             Option seqInput = SequenceFile.Reader.file(path);
             reader = new SequenceFile.Reader(hadoopConf, seqInput);
 
-            int percentage = 100;
-            double mapperOverlapRatio = 0;
+            int percentage = 100;//抽样的百分比
+            double mapperOverlapRatio = 0;//map的重复率
+            //每一个cuboid对应一个对象
             Map<Long, HyperLogLogPlusCounter> counterMap = Maps.newHashMap();
 
+            //获取key和value的class类
             LongWritable key = (LongWritable) ReflectionUtils.newInstance(reader.getKeyClass(), hadoopConf);
             BytesWritable value = (BytesWritable) ReflectionUtils.newInstance(reader.getValueClass(), hadoopConf);
-            while (reader.next(key, value)) {
+            while (reader.next(key, value)) {//不断的读取文件的数据
                 if (key.get() == 0L) {
                     percentage = Bytes.toInt(value.getBytes());
                 } else if (key.get() == -1) {
@@ -104,7 +109,7 @@ public class CubeStatsReader {
                     HyperLogLogPlusCounter hll = new HyperLogLogPlusCounter(kylinConfig.getCubeStatsHLLPrecision());
                     ByteArray byteArray = new ByteArray(value.getBytes());
                     hll.readRegisters(byteArray.asBuffer());
-                    counterMap.put(key.get(), hll);
+                    counterMap.put(key.get(), hll);//key就是cuboid
                 }
             }
 
@@ -119,6 +124,7 @@ public class CubeStatsReader {
         }
     }
 
+    //将文件写入到本地文件系统中
     private File writeTmpSeqFile(InputStream inputStream) throws IOException {
         File tempFile = File.createTempFile("kylin_stats_tmp", ".seq");
         FileOutputStream out = null;
@@ -132,11 +138,13 @@ public class CubeStatsReader {
         return tempFile;
     }
 
+    //返回每一个cuboid 有多少个不同的数据值
     public Map<Long, Long> getCuboidRowEstimatesHLL() {
         return getCuboidRowCountMapFromSampling(cuboidRowEstimatesHLL, samplingPercentage);
     }
 
     // return map of Cuboid ID => MB
+    //计算每一个cuboid占用多少字节,单位是M
     public Map<Long, Double> getCuboidSizeMap() {
         return getCuboidSizeMapFromRowCount(seg, getCuboidRowEstimatesHLL());
     }
@@ -145,6 +153,7 @@ public class CubeStatsReader {
         return mapperOverlapRatioOfFirstBuild;
     }
 
+    //返回每一个cuboid 有多少个不同的数据值
     public static Map<Long, Long> getCuboidRowCountMapFromSampling(Map<Long, HyperLogLogPlusCounter> hllcMap, int samplingPercentage) {
         Map<Long, Long> cuboidRowCountMap = Maps.newHashMap();
         for (Map.Entry<Long, HyperLogLogPlusCounter> entry : hllcMap.entrySet()) {
@@ -155,9 +164,13 @@ public class CubeStatsReader {
         return cuboidRowCountMap;
     }
 
+    /**
+     * @param cubeSegment
+     * @param rowCountMap 返回每一个cuboid 有多少个不同的数据值
+     */
     public static Map<Long, Double> getCuboidSizeMapFromRowCount(CubeSegment cubeSegment, Map<Long, Long> rowCountMap) {
         final CubeDesc cubeDesc = cubeSegment.getCubeDesc();
-        final List<Integer> rowkeyColumnSize = Lists.newArrayList();
+        final List<Integer> rowkeyColumnSize = Lists.newArrayList();//每一个列对应的固定字节大小
         final long baseCuboidId = Cuboid.getBaseCuboidId(cubeDesc);
         final Cuboid baseCuboid = Cuboid.findById(cubeDesc, baseCuboidId);
         final List<TblColRef> columnList = baseCuboid.getColumns();
@@ -168,7 +181,7 @@ public class CubeStatsReader {
         }
 
         Map<Long, Double> sizeMap = Maps.newHashMap();
-        for (Map.Entry<Long, Long> entry : rowCountMap.entrySet()) {
+        for (Map.Entry<Long, Long> entry : rowCountMap.entrySet()) {//计算多少个不同元素占用字节
             sizeMap.put(entry.getKey(), estimateCuboidStorageSize(cubeSegment, entry.getKey(), entry.getValue(), baseCuboidId, rowkeyColumnSize));
         }
         return sizeMap;
@@ -178,6 +191,7 @@ public class CubeStatsReader {
      * Estimate the cuboid's size
      *
      * @return the cuboid size in M bytes
+     * 计算多少个不同元素占用字节  单位是M
      */
     private static double estimateCuboidStorageSize(CubeSegment cubeSegment, long cuboidId, long rowCount, long baseCuboidId, List<Integer> rowKeyColumnLength) {
 

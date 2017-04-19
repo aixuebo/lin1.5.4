@@ -76,8 +76,8 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
     protected byte byteRowDelimiter;
 
     protected int counter;
-    protected MeasureIngester<?>[] aggrIngesters;
-    protected Map<TblColRef, Dictionary<String>> dictionaryMap;
+    protected MeasureIngester<?>[] aggrIngesters;//聚合函数集合
+    protected Map<TblColRef, Dictionary<String>> dictionaryMap;//每一个字段对应的字典映射
 
     protected Object[] measures;//每一个度量对应的值
     protected byte[][] keyBytesBuf;//存储key的每一个字段对应的字节数组内容
@@ -166,7 +166,7 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
                 keyBytesBuf[i] = null;
             }
         }
-        return rowKeyEncoder.encode(keyBytesBuf);
+        return rowKeyEncoder.encode(keyBytesBuf);//对key的值进行编码
     }
 
     //对列的字节数组转换成value
@@ -177,17 +177,23 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
             measures[i] = buildValueOf(i, splitBuffers);
         }
 
-        return measureCodec.encode(measures);
+        return measureCodec.encode(measures);//对度量的值进行编码
     }
 
+    /**
+     * 返回该度量在这行记录中的具体的值
+     * @param idxOfMeasure 第几个度量
+     * @param splitBuffers 每一列属性的值集合
+     */
     private Object buildValueOf(int idxOfMeasure, SplittedBytes[] splitBuffers) {
         MeasureDesc measure = cubeDesc.getMeasures().get(idxOfMeasure);//获取第index个度量对象
         FunctionDesc function = measure.getFunction();
-        int[] colIdxOnFlatTable = intermediateTableDesc.getMeasureColumnIndexes()[idxOfMeasure];
+        int[] colIdxOnFlatTable = intermediateTableDesc.getMeasureColumnIndexes()[idxOfMeasure];//每一个度量的列在table中的index
 
-        int paramCount = function.getParameterCount();
-        String[] inputToMeasure = new String[paramCount];
+        int paramCount = function.getParameterCount();//多少个度量参数
+        String[] inputToMeasure = new String[paramCount];//每一个参数对应的值
 
+        //初始化每一个度量参数的值
         // pick up parameter values
         ParameterDesc param = function.getParameter();
         int colParamIdx = 0; // index among parameters of column type
@@ -195,9 +201,10 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
             String value;
             if (function.isCount()) {
                 value = "1";
-            } else if (param.isColumnType()) {
-                value = getCell(colIdxOnFlatTable[colParamIdx++], splitBuffers);
-            } else {
+            } else if (param.isColumnType()) {//说明依赖的是属性对应的值,而不是固定值
+                //colIdxOnFlatTable[index]表示获取第几个参数在table表中是第几个列
+                value = getCell(colIdxOnFlatTable[colParamIdx++], splitBuffers);//获取具体的值
+            } else {//说明是固定值
                 value = param.getValue();
             }
             inputToMeasure[i] = value;
@@ -207,7 +214,7 @@ public class BaseCuboidMapperBase<KEYIN, VALUEIN> extends KylinMapper<KEYIN, VAL
     }
 
     //将一列的数据转换成字符串
-    //i表示第几列,splitBuffers表示每一列的集合
+    //i表示在table中第几列,splitBuffers表示每一列的集合
     private String getCell(int i, SplittedBytes[] splitBuffers) {
         byte[] bytes = Arrays.copyOf(splitBuffers[i].value, splitBuffers[i].length);//获取第i列对应的字节数组
         if (isNull(bytes))

@@ -102,14 +102,16 @@ public class JobBuilderSupport {
         return buildDictionaryStep;
     }
 
+    //更新cube的元数据以及segment的元数据信息
     public UpdateCubeInfoAfterBuildStep createUpdateCubeInfoAfterBuildStep(String jobId) {
         final UpdateCubeInfoAfterBuildStep result = new UpdateCubeInfoAfterBuildStep();
         result.setName(ExecutableConstants.STEP_NAME_UPDATE_CUBE_INFO);
 
+        //设置任务需要的参数
         CubingExecutableUtil.setCubeName(seg.getRealization().getName(), result.getParams());
         CubingExecutableUtil.setSegmentId(seg.getUuid(), result.getParams());
         CubingExecutableUtil.setCubingJobId(jobId, result.getParams());
-        CubingExecutableUtil.setIndexPath(this.getSecondaryIndexPath(jobId), result.getParams());
+        CubingExecutableUtil.setIndexPath(this.getSecondaryIndexPath(jobId), result.getParams());//设置二级索引目录
 
         return result;
     }

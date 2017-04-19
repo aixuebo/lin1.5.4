@@ -51,13 +51,18 @@ public class CubeHTableUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(CubeHTableUtil.class);
 
+    /**
+     * 为segment创建hbase的表,
+     * @param splitKeys 表示resgion分区
+     */
     public static void createHTable(CubeSegment cubeSegment, byte[][] splitKeys) throws IOException {
         String tableName = cubeSegment.getStorageLocationIdentifier();
         CubeInstance cubeInstance = cubeSegment.getCubeInstance();
         CubeDesc cubeDesc = cubeInstance.getDescriptor();
         KylinConfig kylinConfig = cubeDesc.getConfig();
 
-        HTableDescriptor tableDesc = new HTableDescriptor(TableName.valueOf(cubeSegment.getStorageLocationIdentifier()));
+        HTableDescriptor tableDesc = new HTableDescriptor(TableName.valueOf(cubeSegment.getStorageLocationIdentifier()));//创建hbase表
+        //设置hbase表的元数据
         tableDesc.setValue(HTableDescriptor.SPLIT_POLICY, DisabledRegionSplitPolicy.class.getName());
         tableDesc.setValue(IRealizationConstants.HTableTag, kylinConfig.getMetadataUrlPrefix());
         tableDesc.setValue(IRealizationConstants.HTableCreationTime, String.valueOf(System.currentTimeMillis()));
@@ -86,7 +91,7 @@ public class CubeHTableUtil {
                 tableDesc.addCoprocessor("org.apache.hadoop.hbase.security.access.SecureBulkLoadEndpoint");
             }
 
-            for (HBaseColumnFamilyDesc cfDesc : cubeDesc.getHbaseMapping().getColumnFamily()) {
+            for (HBaseColumnFamilyDesc cfDesc : cubeDesc.getHbaseMapping().getColumnFamily()) {//创建列族
                 HColumnDescriptor cf = createColumnFamily(kylinConfig, cfDesc.getName(), cfDesc.isMemoryHungry());
                 tableDesc.addFamily(cf);
             }
@@ -108,6 +113,7 @@ public class CubeHTableUtil {
 
     }
 
+    //删除一个数据库表
     public static void deleteHTable(TableName tableName) throws IOException {
         Configuration conf = HBaseConnection.getCurrentHBaseConfiguration();
         HBaseAdmin admin = new HBaseAdmin(conf);
@@ -150,6 +156,12 @@ public class CubeHTableUtil {
         }
     }
 
+    /**
+     * 创建一个hbase的列族
+     * @param kylinConfig
+     * @param cfName 列族名字
+     * @param isMemoryHungry true表示消耗内存
+     */
     public static HColumnDescriptor createColumnFamily(KylinConfig kylinConfig, String cfName, boolean isMemoryHungry) {
         HColumnDescriptor cf = new HColumnDescriptor(cfName);
         cf.setMaxVersions(1);

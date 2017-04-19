@@ -54,11 +54,13 @@ public class SaveStatisticsStep extends AbstractExecutable {
 
     @Override
     protected ExecuteResult doWork(ExecutableContext context) throws ExecuteException {
+        //获取一个segment
         CubeSegment newSegment = CubingExecutableUtil.findSegment(context, CubingExecutableUtil.getCubeName(this.getParams()), CubingExecutableUtil.getSegmentId(this.getParams()));
         KylinConfig kylinConf = newSegment.getConfig();
 
         ResourceStore rs = ResourceStore.getStore(kylinConf);
         try {
+            //获取统计文件的路径
             Path statisticsFilePath = new Path(CubingExecutableUtil.getStatisticsPath(this.getParams()), BatchConstants.CFG_STATISTICS_CUBOID_ESTIMATION_FILENAME);
             FileSystem fs = FileSystem.get(HadoopUtil.getCurrentConfiguration());
             if (!fs.exists(statisticsFilePath))
@@ -68,7 +70,7 @@ public class SaveStatisticsStep extends AbstractExecutable {
             try {
                 // put the statistics to metadata store
                 String statisticsFileName = newSegment.getStatisticsResourcePath();
-                rs.putResource(statisticsFileName, is, System.currentTimeMillis());
+                rs.putResource(statisticsFileName, is, System.currentTimeMillis());//将统计结果存储到statisticsFileName路径下
             } finally {
                 IOUtils.closeStream(is);
                 fs.delete(statisticsFilePath, true);
@@ -83,31 +85,32 @@ public class SaveStatisticsStep extends AbstractExecutable {
         }
     }
 
+    //根据对cube的统计结果,决定使用什么算法处理cube的build
     private void decideCubingAlgorithm(CubeSegment seg, KylinConfig kylinConf) throws IOException {
-        String algPref = kylinConf.getCubeAlgorithm();
+        String algPref = kylinConf.getCubeAlgorithm();//获取配置的算法
         AlgorithmEnum alg;
         if (AlgorithmEnum.INMEM.name().equalsIgnoreCase(algPref)) {
             alg = AlgorithmEnum.INMEM;
         } else if (AlgorithmEnum.LAYER.name().equalsIgnoreCase(algPref)) {
             alg = AlgorithmEnum.LAYER;
-        } else {
-            int memoryHungryMeasures = 0;
-            for (MeasureDesc measure : seg.getCubeDesc().getMeasures()) {
-                if (measure.getFunction().getMeasureType().isMemoryHungry()) {
+        } else {//说明是auto自动识别算法
+            int memoryHungryMeasures = 0;//内存饥饿的次数
+            for (MeasureDesc measure : seg.getCubeDesc().getMeasures()) {//循环每一个度量
+                if (measure.getFunction().getMeasureType().isMemoryHungry()) {//true表示该度量很耗费内存操作
                     logger.info("This cube has memory-hungry measure " + measure.getFunction().getExpression());
                     memoryHungryMeasures++;
                 }
             }
 
-            if (memoryHungryMeasures > 0) {
+            if (memoryHungryMeasures > 0) {//说明有耗费内存的度量
                 alg = AlgorithmEnum.LAYER;
-            } else if ("random".equalsIgnoreCase(algPref)) { // for testing
+            } else if ("random".equalsIgnoreCase(algPref)) { // for testing 随机算法是用于测试
                 alg = new Random().nextBoolean() ? AlgorithmEnum.INMEM : AlgorithmEnum.LAYER;
             } else { // the default
-                double threshold = kylinConf.getCubeAlgorithmAutoThreshold();
-                double mapperOverlapRatio = new CubeStatsReader(seg, kylinConf).getMapperOverlapRatioOfFirstBuild();
+                double threshold = kylinConf.getCubeAlgorithmAutoThreshold();//自动算法的伐值
+                double mapperOverlapRatio = new CubeStatsReader(seg, kylinConf).getMapperOverlapRatioOfFirstBuild();//重叠比例
                 logger.info("mapperOverlapRatio for " + seg + " is " + mapperOverlapRatio + " and threshold is " + threshold);
-                alg = mapperOverlapRatio < threshold ? AlgorithmEnum.INMEM : AlgorithmEnum.LAYER;
+                alg = mapperOverlapRatio < threshold ? AlgorithmEnum.INMEM : AlgorithmEnum.LAYER;//小于伐值则使用内存,否则使用LAYER
             }
 
         }

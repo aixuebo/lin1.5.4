@@ -52,14 +52,19 @@ public class DoggedCubeBuilder extends AbstractInMemCubeBuilder {
 
     private static Logger logger = LoggerFactory.getLogger(DoggedCubeBuilder.class);
 
-    private int splitRowThreshold = Integer.MAX_VALUE;
-    private int unitRows = 1000;
+    private int splitRowThreshold = Integer.MAX_VALUE;//一个数据块存放的数据条数的上限伐值
+    private int unitRows = 1000;//每次读取行数
 
+    /**
+     * @param cubeDesc cube对象
+     * @param flatDesc cube要处理的宽表
+     * @param dictionaryMap cube需要的字典对象映射
+     */
     public DoggedCubeBuilder(CubeDesc cubeDesc, IJoinedFlatTableDesc flatDesc, Map<TblColRef, Dictionary<String>> dictionaryMap) {
         super(cubeDesc, flatDesc, dictionaryMap);
 
         // check memory more often if a single row is big
-        if (cubeDesc.hasMemoryHungryMeasures())
+        if (cubeDesc.hasMemoryHungryMeasures()) //true表示cube有耗费内存的度量
             unitRows /= 10;
     }
 
@@ -79,7 +84,7 @@ public class DoggedCubeBuilder extends AbstractInMemCubeBuilder {
         }
 
         public void build(BlockingQueue<List<String>> input, ICuboidWriter output) throws IOException {
-            final List<SplitThread> splits = new ArrayList<SplitThread>();
+            final List<SplitThread> splits = new ArrayList<SplitThread>();//已经拆分出来的数据块集合
             final Merger merger = new Merger();
 
             long start = System.currentTimeMillis();
@@ -91,21 +96,21 @@ public class DoggedCubeBuilder extends AbstractInMemCubeBuilder {
 
                 while (!eof) {
 
-                    if (last != null && shouldCutSplit(splits)) {
+                    if (last != null && shouldCutSplit(splits)) {//true说明应该拆分数据块了
                         cutSplit(last);
                         last = null;
                     }
 
                     checkException(splits);
 
-                    if (last == null) {
+                    if (last == null) {//创建新的数据块
                         last = new SplitThread();
                         splits.add(last);
-                        last.start();
+                        last.start();//开启该线程任务
                         logger.info("Split #" + splits.size() + " kickoff");
                     }
 
-                    eof = feedSomeInput(input, last, unitRows);
+                    eof = feedSomeInput(input, last, unitRows);//false说明成功读取了数据
                 }
 
                 for (SplitThread split : splits) {
@@ -147,6 +152,7 @@ public class DoggedCubeBuilder extends AbstractInMemCubeBuilder {
             }
         }
 
+        //终止线程
         private void ensureExit(List<SplitThread> splits) throws IOException {
             try {
                 for (int i = 0; i < splits.size(); i++) {
@@ -199,18 +205,23 @@ public class DoggedCubeBuilder extends AbstractInMemCubeBuilder {
             }
         }
 
+        //不断的从队列中读取一行数据,使用split对象处理该行数据
+        //n表示每次读取行数
+        //返回值 true表示 处理数据时候有异常,或者读取到的一行数据是null
         private boolean feedSomeInput(BlockingQueue<List<String>> input, SplitThread split, int n) {
             try {
                 int i = 0;
                 while (i < n) {
-                    List<String> record = input.take();
+                    List<String> record = input.take();//获取一行数据
                     i++;
 
-                    while (split.inputQueue.offer(record, 1, TimeUnit.SECONDS) == false) {
-                        if (split.exception != null)
+                    while (split.inputQueue.offer(record, 1, TimeUnit.SECONDS) == false) {//false说明队列已经满了
+                        if (split.exception != null) //有异常则返回true
                             return true; // got some error
                     }
-                    split.inputRowCount++;
+
+                    //到这里说明已经添加成功
+                    split.inputRowCount++;//处理一行数据
 
                     if (record == null || record.isEmpty()) {
                         return true;
@@ -223,6 +234,7 @@ public class DoggedCubeBuilder extends AbstractInMemCubeBuilder {
             }
         }
 
+        //结束该线程任务
         private void cutSplit(SplitThread last) {
             try {
                 // signal the end of input
@@ -241,19 +253,20 @@ public class DoggedCubeBuilder extends AbstractInMemCubeBuilder {
             }
         }
 
+        //true表示需要切一个新的块
         private boolean shouldCutSplit(List<SplitThread> splits) {
-            int systemAvailMB = MemoryBudgetController.getSystemAvailMB();
+            int systemAvailMB = MemoryBudgetController.getSystemAvailMB();//系统可用内存--单位是M
             int nSplit = splits.size();
-            long splitRowCount = nSplit == 0 ? 0 : splits.get(nSplit - 1).inputRowCount;
+            long splitRowCount = nSplit == 0 ? 0 : splits.get(nSplit - 1).inputRowCount;//获取最后一个数据块的记录数
 
             logger.info(splitRowCount + " records went into split #" + nSplit + "; " + systemAvailMB + " MB left, " + reserveMemoryMB + " MB threshold");
 
-            if (splitRowCount >= splitRowThreshold) {
+            if (splitRowCount >= splitRowThreshold) {//超出伐值了
                 logger.info("Split cut due to hitting splitRowThreshold " + splitRowThreshold);
                 return true;
             }
 
-            if (systemAvailMB <= reserveMemoryMB * 1.5) {
+            if (systemAvailMB <= reserveMemoryMB * 1.5) {//保留内存的1.5倍  已经比系统剩余内存大了,因此已经没内存了,要重新切一个块
                 logger.info("Split cut due to hitting memory threshold, system avail " + systemAvailMB + " MB <= reserve " + reserveMemoryMB + "*1.5 MB");
                 return true;
             }
@@ -262,13 +275,14 @@ public class DoggedCubeBuilder extends AbstractInMemCubeBuilder {
         }
     }
 
+    //表示一个数据块的拆分
     private class SplitThread extends Thread {
-        final BlockingQueue<List<String>> inputQueue = new ArrayBlockingQueue<List<String>>(16);
+        final BlockingQueue<List<String>> inputQueue = new ArrayBlockingQueue<List<String>>(16);//内部处理一行数据的队列
         final InMemCubeBuilder builder;
 
         ConcurrentNavigableMap<Long, CuboidResult> buildResult;
-        long inputRowCount = 0;
-        RuntimeException exception;
+        long inputRowCount = 0;//该数据块已经处理的记录数
+        RuntimeException exception;//添加处理数据时候的异常
 
         public SplitThread() {
             this.builder = new InMemCubeBuilder(cubeDesc, flatDesc, dictionaryMap);

@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author George Song (ysong1)
- * 
+ * 每一次的输入都是上一次cuboid的输出----切上一次的维度肯定比这一次的维度高
  */
 public class NDCuboidMapper extends KylinMapper<Text, Text, Text, Text> {
 
@@ -56,11 +56,12 @@ public class NDCuboidMapper extends KylinMapper<Text, Text, Text, Text> {
     private CubeDesc cubeDesc;
     private CuboidScheduler cuboidScheduler;
 
-    private int handleCounter;
-    private int skipCounter;
+    private int handleCounter;//一个处理了多少条数据
+    private int skipCounter;//没有子cuboid,因此跳过的记录数
 
     private byte[] newKeyBodyBuf = new byte[RowConstants.ROWKEY_BUFFER_SIZE];
     private ByteArray newKeyBuf = ByteArray.allocate(RowConstants.ROWKEY_BUFFER_SIZE);
+
     private RowKeySplitter rowKeySplitter;
     private RowKeyEncoderProvider rowKeyEncoderProvider;
 
@@ -84,49 +85,53 @@ public class NDCuboidMapper extends KylinMapper<Text, Text, Text, Text> {
         rowKeyEncoderProvider = new RowKeyEncoderProvider(cubeSegment);
     }
 
+    /**
+     * @param parentCuboid 父cuboid
+     * @param childCuboid 子cuboid
+     * @param splitBuffers 数据内容
+     */
     private int buildKey(Cuboid parentCuboid, Cuboid childCuboid, SplittedBytes[] splitBuffers) {
         RowKeyEncoder rowkeyEncoder = rowKeyEncoderProvider.getRowkeyEncoder(childCuboid);
 
-        int offset = 0;
+        int offset = 0;//在newKeyBodyBuf中添加到哪个位置了
 
         // rowkey columns
-        long mask = Long.highestOneBit(parentCuboid.getId());
+        long mask = Long.highestOneBit(parentCuboid.getId());//父Cuboid的最高位
         long parentCuboidId = parentCuboid.getId();
         long childCuboidId = childCuboid.getId();
-        long parentCuboidIdActualLength = Long.SIZE - Long.numberOfLeadingZeros(parentCuboid.getId());
+
+        long parentCuboidIdActualLength = Long.SIZE - Long.numberOfLeadingZeros(parentCuboid.getId());// 表示Long.SIZE - 前面有多少个0被省略了,即有多少个位置可以去循环
         int index = rowKeySplitter.getBodySplitOffset(); // skip shard and cuboidId
-        for (int i = 0; i < parentCuboidIdActualLength; i++) {
-            if ((mask & parentCuboidId) > 0) {// if the this bit position equals
-                                                  // 1
-                if ((mask & childCuboidId) > 0) {// if the child cuboid has this
-                                                     // column
-                    System.arraycopy(splitBuffers[index].value, 0, newKeyBodyBuf, offset, splitBuffers[index].length);
-                    offset += splitBuffers[index].length;
+        for (int i = 0; i < parentCuboidIdActualLength; i++) {//循环每一个位置
+            if ((mask & parentCuboidId) > 0) {// if the this bit position equals 1 ,说明父节点是有该列的位置的
+                if ((mask & childCuboidId) > 0) {// if the child cuboid has this column,说明子节点是有该列的位置的
+                    System.arraycopy(splitBuffers[index].value, 0, newKeyBodyBuf, offset, splitBuffers[index].length);//将value值写入到newKeyBodyBuf字节数组中
+                    offset += splitBuffers[index].length;//追加字段值的长度
                 }
                 index++;
             }
-            mask = mask >> 1;
+            mask = mask >> 1;//依次切换一个位置
         }
 
-        int fullKeySize = rowkeyEncoder.getBytesLength();
-        while (newKeyBuf.array().length < fullKeySize) {
+        int fullKeySize = rowkeyEncoder.getBytesLength();//字节长度
+        while (newKeyBuf.array().length < fullKeySize) {//扩容
             newKeyBuf.set(new byte[newKeyBuf.length() * 2]);
         }
         newKeyBuf.set(0, fullKeySize);
 
-        rowkeyEncoder.encode(new ByteArray(newKeyBodyBuf, 0, offset), newKeyBuf);
+        rowkeyEncoder.encode(new ByteArray(newKeyBodyBuf, 0, offset), newKeyBuf);//将编码到newKeyBuf中
 
         return fullKeySize;
     }
 
     @Override
     public void map(Text key, Text value, Context context) throws IOException, InterruptedException {
-        long cuboidId = rowKeySplitter.split(key.getBytes());
-        Cuboid parentCuboid = Cuboid.findById(cubeDesc, cuboidId);
+        long cuboidId = rowKeySplitter.split(key.getBytes());//读取上一次的rowkey结果,拆分出cuboid
+        Cuboid parentCuboid = Cuboid.findById(cubeDesc, cuboidId);//找到父对象
 
-        Collection<Long> myChildren = cuboidScheduler.getSpanningCuboid(cuboidId);
+        Collection<Long> myChildren = cuboidScheduler.getSpanningCuboid(cuboidId);//获取父对象下面所有的子节点
 
-        // if still empty or null
+        // if still empty or null  没有子节点,因此跳过该记录
         if (myChildren == null || myChildren.size() == 0) {
             context.getCounter(BatchConstants.MAPREDUCE_COUNTER_GROUP_NAME, "Skipped records").increment(1L);
             skipCounter++;
@@ -136,7 +141,7 @@ public class NDCuboidMapper extends KylinMapper<Text, Text, Text, Text> {
             return;
         }
 
-        context.getCounter(BatchConstants.MAPREDUCE_COUNTER_GROUP_NAME, "Processed records").increment(1L);
+        context.getCounter(BatchConstants.MAPREDUCE_COUNTER_GROUP_NAME, "Processed records").increment(1L);//处理多少条数据,即有子节点的数据
 
         handleCounter++;
         if (handleCounter % BatchConstants.NORMAL_RECORD_LOG_THRESHOLD == 0) {
@@ -144,10 +149,10 @@ public class NDCuboidMapper extends KylinMapper<Text, Text, Text, Text> {
         }
 
         for (Long child : myChildren) {
-            Cuboid childCuboid = Cuboid.findById(cubeDesc, child);
+            Cuboid childCuboid = Cuboid.findById(cubeDesc, child);//找到子节点cuboid
             int fullKeySize = buildKey(parentCuboid, childCuboid, rowKeySplitter.getSplitBuffers());
             outputKey.set(newKeyBuf.array(), 0, fullKeySize);
-            context.write(outputKey, value);
+            context.write(outputKey, value);//value不变化,因为度量肯定是不需要变化的,度量就是累加
         }
 
     }

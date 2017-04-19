@@ -76,7 +76,7 @@ public class ParameterDesc {
         this.nextParameter = nextParameter;
     }
 
-    //true说明该参数是属性,而不是固定值
+    //true说明该参数是属性,而不是固定值----即返回属性的具体值
     public boolean isColumnType() {
         return FunctionDesc.PARAMETER_TYPE_COLUMN.equals(type);
     }

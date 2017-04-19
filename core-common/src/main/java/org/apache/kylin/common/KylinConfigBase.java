@@ -436,10 +436,12 @@ abstract public class KylinConfigBase implements Serializable {
         return Double.parseDouble(getOptional("kylin.job.cuboid.size.memhungry.ratio", "0.05"));
     }
 
+    //默认算法
     public String getCubeAlgorithm() {
         return getOptional("kylin.cube.algorithm", "auto");
     }
 
+    //自动算法的伐值--参考getCubeAlgorithm方法
     public double getCubeAlgorithmAutoThreshold() {
         return Double.parseDouble(getOptional("kylin.cube.algorithm.auto.threshold", "8"));
     }
@@ -744,6 +746,9 @@ abstract public class KylinConfigBase implements Serializable {
         return r;
     }
 
+    /**
+     * 输出存储引擎
+     */
     public Map<Integer, String> getStorageEngines() {
         Map<Integer, String> r = convertKeyToInteger(getPropertiesByPrefix("kylin.storage.engine."));
         // ref constants in IStorageAware

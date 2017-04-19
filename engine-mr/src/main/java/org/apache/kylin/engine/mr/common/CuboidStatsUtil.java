@@ -35,6 +35,9 @@ import org.apache.kylin.common.util.Bytes;
 import org.apache.kylin.measure.BufferedMeasureEncoder;
 import org.apache.kylin.measure.hllc.HyperLogLogPlusCounter;
 
+/**
+ * 输出cuboid的统计信息
+ */
 public class CuboidStatsUtil {
 
     public static void writeCuboidStatistics(Configuration conf, Path outputPath, //
@@ -42,26 +45,34 @@ public class CuboidStatsUtil {
         writeCuboidStatistics(conf, outputPath, cuboidHLLMap, samplingPercentage, 0);
     }
 
+    /**
+     *
+     * @param conf
+     * @param outputPath 统计输出的目录
+     * @param cuboidHLLMap 每一个cubodi对应的HyperLogLogPlusCounter对象
+     * @param samplingPercentage 抽样的百分比---即每隔多少个元素则抽样一个数据
+     * @param mapperOverlapRatio 重叠比例
+     */
     public static void writeCuboidStatistics(Configuration conf, Path outputPath, //
             Map<Long, HyperLogLogPlusCounter> cuboidHLLMap, int samplingPercentage, double mapperOverlapRatio) throws IOException {
-        Path seqFilePath = new Path(outputPath, BatchConstants.CFG_STATISTICS_CUBOID_ESTIMATION_FILENAME);
+        Path seqFilePath = new Path(outputPath, BatchConstants.CFG_STATISTICS_CUBOID_ESTIMATION_FILENAME);//创建序列化文件
 
         List<Long> allCuboids = new ArrayList<Long>();
-        allCuboids.addAll(cuboidHLLMap.keySet());
+        allCuboids.addAll(cuboidHLLMap.keySet());//所有cuboid集合
         Collections.sort(allCuboids);
 
-        ByteBuffer valueBuf = ByteBuffer.allocate(BufferedMeasureEncoder.DEFAULT_BUFFER_SIZE);
+        ByteBuffer valueBuf = ByteBuffer.allocate(BufferedMeasureEncoder.DEFAULT_BUFFER_SIZE);//创建缓冲区
         SequenceFile.Writer writer = SequenceFile.createWriter(conf, SequenceFile.Writer.file(seqFilePath), SequenceFile.Writer.keyClass(LongWritable.class), SequenceFile.Writer.valueClass(BytesWritable.class));
         try {
             // mapper overlap ratio at key -1
-            writer.append(new LongWritable(-1), new BytesWritable(Bytes.toBytes(mapperOverlapRatio)));
+            writer.append(new LongWritable(-1), new BytesWritable(Bytes.toBytes(mapperOverlapRatio)));//添加重叠比例 key是-1
 
             // sampling percentage at key 0
-            writer.append(new LongWritable(0L), new BytesWritable(Bytes.toBytes(samplingPercentage)));
+            writer.append(new LongWritable(0L), new BytesWritable(Bytes.toBytes(samplingPercentage)));//添加百分比  key是0
 
-            for (long i : allCuboids) {
+            for (long i : allCuboids) {//添加每一个cuboid对应的对象
                 valueBuf.clear();
-                cuboidHLLMap.get(i).writeRegisters(valueBuf);
+                cuboidHLLMap.get(i).writeRegisters(valueBuf);//将内容写出到输出流中
                 valueBuf.flip();
                 writer.append(new LongWritable(i), new BytesWritable(valueBuf.array(), valueBuf.limit()));
             }

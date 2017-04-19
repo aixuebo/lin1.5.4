@@ -243,7 +243,7 @@ public class MemoryBudgetController {
             while (true) {
                 Runtime.getRuntime().gc();
                 Thread.sleep(1000);
-                int thisMB = getSystemAvailMB();
+                int thisMB = getSystemAvailMB();//系统可用内存--单位是M
 
                 if (lastMB < 0) {
                     lastMB = thisMB;
@@ -260,6 +260,7 @@ public class MemoryBudgetController {
         }
     }
 
+    //系统可用内存
     public static long getSystemAvailBytes() {
         Runtime runtime = Runtime.getRuntime();
         long totalMemory = runtime.totalMemory(); // current heap allocated to the VM process
@@ -270,6 +271,7 @@ public class MemoryBudgetController {
         return availableMemory;
     }
 
+    //系统可用内存--单位是M
     public static int getSystemAvailMB() {
         return (int) (getSystemAvailBytes() / ONE_MB);
     }
@@ -281,7 +283,7 @@ public class MemoryBudgetController {
 
         public void markHigh() {
             // get avail mem without gc
-            int mb = MemoryBudgetController.getSystemAvailMB();
+            int mb = MemoryBudgetController.getSystemAvailMB();//系统可用内存--单位是M
             if (mb < lowAvail) {
                 lowAvail = mb;
                 logger.warn("Lower system avail " + lowAvail + " MB in markHigh()");
@@ -290,7 +292,7 @@ public class MemoryBudgetController {
 
         public void markLow() {
             // get avail mem after gc
-            int mb = MemoryBudgetController.gcAndGetSystemAvailMB();
+            int mb = MemoryBudgetController.gcAndGetSystemAvailMB();//
             if (mb > highAvail) {
                 highAvail = mb;
                 logger.warn("Higher system avail " + highAvail + " MB in markLow()");

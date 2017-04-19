@@ -52,7 +52,7 @@ public class BatchCubingJobBuilder2 extends JobBuilderSupport {
 
         final CubingJob result = CubingJob.createBuildJob((CubeSegment) seg, submitter, config);
         final String jobId = result.getId();
-        final String cuboidRootPath = getCuboidRootPath(jobId);
+        final String cuboidRootPath = getCuboidRootPath(jobId);//cuboid存储的根目录
 
         // Phase 1: Create Flat Table & Materialize Hive View in Lookup Tables
         inputSide.addStepPhase1_CreateFlatTable(result);
@@ -60,22 +60,23 @@ public class BatchCubingJobBuilder2 extends JobBuilderSupport {
         // Phase 2: Build Dictionary
         result.addTask(createFactDistinctColumnsStepWithStats(jobId));
         result.addTask(createBuildDictionaryStep(jobId));
-        result.addTask(createSaveStatisticsStep(jobId));
+        result.addTask(createSaveStatisticsStep(jobId));//根据对cube的统计结果,决定使用什么算法处理cube的build
         outputSide.addStepPhase2_BuildDictionary(result);
 
         // Phase 3: Build Cube
-        addLayerCubingSteps(result, jobId, cuboidRootPath); // layer cubing, only selected algorithm will execute
-        result.addTask(createInMemCubingStep(jobId, cuboidRootPath)); // inmem cubing, only selected algorithm will execute
+        addLayerCubingSteps(result, jobId, cuboidRootPath); // layer cubing, only selected algorithm will execute //执行MR任务,CuboidJob中会进行过滤,只有layout算法的才会被执行,否则都是skip输出,即跳过执行
+        result.addTask(createInMemCubingStep(jobId, cuboidRootPath)); // inmem cubing, only selected algorithm will execute 只有内存方法的时候才会被执行,该函数里面有判断语句
         outputSide.addStepPhase3_BuildCube(result);
 
         // Phase 4: Update Metadata & Cleanup
-        result.addTask(createUpdateCubeInfoAfterBuildStep(jobId));
+        result.addTask(createUpdateCubeInfoAfterBuildStep(jobId));//更新cube的元数据以及segment的元数据信息
         inputSide.addStepPhase4_Cleanup(result);
         outputSide.addStepPhase4_Cleanup(result);
 
         return result;
     }
 
+    //执行MR任务
     private void addLayerCubingSteps(final CubingJob result, final String jobId, final String cuboidRootPath) {
         RowKeyDesc rowKeyDesc = ((CubeSegment) seg).getCubeDesc().getRowkey();
         final int groupRowkeyColumnsCount = ((CubeSegment) seg).getCubeDesc().getBuildLevel();
@@ -90,6 +91,7 @@ public class BatchCubingJobBuilder2 extends JobBuilderSupport {
         }
     }
 
+    //根据对cube的统计结果,决定使用什么算法处理cube的build
     private SaveStatisticsStep createSaveStatisticsStep(String jobId) {
         SaveStatisticsStep result = new SaveStatisticsStep();
         result.setName(ExecutableConstants.STEP_NAME_SAVE_STATISTICS);
@@ -100,6 +102,7 @@ public class BatchCubingJobBuilder2 extends JobBuilderSupport {
         return result;
     }
 
+    //使用内存算法进行build
     private MapReduceExecutable createInMemCubingStep(String jobId, String cuboidRootPath) {
         // base cuboid job
         MapReduceExecutable cubeStep = new MapReduceExecutable();
@@ -111,7 +114,7 @@ public class BatchCubingJobBuilder2 extends JobBuilderSupport {
 
         appendExecCmdParameters(cmd, BatchConstants.ARG_CUBE_NAME, seg.getRealization().getName());
         appendExecCmdParameters(cmd, BatchConstants.ARG_SEGMENT_ID, seg.getUuid());
-        appendExecCmdParameters(cmd, BatchConstants.ARG_OUTPUT, cuboidRootPath);
+        appendExecCmdParameters(cmd, BatchConstants.ARG_OUTPUT, cuboidRootPath);//内存计算结果输出目录
         appendExecCmdParameters(cmd, BatchConstants.ARG_JOB_NAME, "Kylin_Cube_Builder_" + seg.getRealization().getName());
         appendExecCmdParameters(cmd, BatchConstants.ARG_CUBING_JOB_ID, jobId);
 
@@ -125,6 +128,7 @@ public class BatchCubingJobBuilder2 extends JobBuilderSupport {
         return InMemCuboidJob.class;
     }
 
+    //执行base cuboid的MR任务
     private MapReduceExecutable createBaseCuboidStep(String[] cuboidOutputTempPath, String jobId) {
         // base cuboid job
         MapReduceExecutable baseCuboidStep = new MapReduceExecutable();
@@ -152,6 +156,7 @@ public class BatchCubingJobBuilder2 extends JobBuilderSupport {
         return BaseCuboidJob.class;
     }
 
+    //执行非base cuboid的MR任务
     private MapReduceExecutable createNDimensionCuboidStep(String[] cuboidOutputTempPath, int dimNum, int totalRowkeyColumnCount, String jobId) {
         // ND cuboid job
         MapReduceExecutable ndCuboidStep = new MapReduceExecutable();

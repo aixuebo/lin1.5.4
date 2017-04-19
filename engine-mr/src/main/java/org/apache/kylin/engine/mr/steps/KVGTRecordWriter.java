@@ -46,7 +46,7 @@ public abstract class KVGTRecordWriter implements ICuboidWriter {
 
     private AbstractRowKeyEncoder rowKeyEncoder;
     private int dimensions;
-    private int measureCount;
+    private int measureCount;//度量的个数
     private byte[] keyBuf;
     private ImmutableBitSet measureColumns;
     private ByteBuffer valueBuf = ByteBuffer.allocate(BufferedMeasureEncoder.DEFAULT_BUFFER_SIZE);

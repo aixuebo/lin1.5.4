@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author George Song (ysong1)
- * 
+ * key还是rowkey不变化,value是对相同内容的rowkey进行聚合处理
  */
 public class CuboidReducer extends KylinReducer<Text, Text, Text, Text> {
 
@@ -85,11 +85,14 @@ public class CuboidReducer extends KylinReducer<Text, Text, Text, Text> {
         }
     }
 
+    /**
+     * rowkey组成的内容相同作为key,即字段内容相同的作为key
+     */
     @Override
     public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
         aggs.reset();
 
-        for (Text value : values) {
+        for (Text value : values) {//表示每一个度量的值,在这里主要对度量的值进行聚合
             codec.decode(ByteBuffer.wrap(value.getBytes(), 0, value.getLength()), input);
             if (cuboidLevel > 0) {
                 aggs.aggregate(input, needAggr);

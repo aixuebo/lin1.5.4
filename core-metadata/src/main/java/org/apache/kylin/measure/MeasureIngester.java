@@ -40,6 +40,12 @@ abstract public class MeasureIngester<V> {
         return result;
     }
 
+    /**
+     * @param values 该度量函数执行时候的参数集合,这里面参数已经转换成具体的值了,比如sum(account)此时account已经是具体的值了
+     * @param measureDesc 度量对象
+     * @param dictionaryMap 度量对象中需要的每一个列与字典的对应关系
+     * 返回该属性此时具体的值
+     */
     abstract public V valueOf(String[] values, MeasureDesc measureDesc, Map<TblColRef, Dictionary<String>> dictionaryMap);
 
     public V reEncodeDictionary(V value, MeasureDesc measureDesc, Map<TblColRef, Dictionary<String>> oldDicts, Map<TblColRef, Dictionary<String>> newDicts) {

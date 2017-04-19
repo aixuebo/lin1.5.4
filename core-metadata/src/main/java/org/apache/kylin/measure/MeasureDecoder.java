@@ -32,8 +32,8 @@ import org.apache.kylin.metadata.model.MeasureDesc;
 @SuppressWarnings({ "rawtypes" })
 public class MeasureDecoder {
 
-    int nMeasures;//有多少个调度
-    DataTypeSerializer[] serializers;//每一个调度的返回值类型如何序列化和反序列化
+    int nMeasures;//有多少个度量
+    DataTypeSerializer[] serializers;//每一个度量的返回值类型如何序列化和反序列化
 
     public MeasureDecoder(Collection<MeasureDesc> measureDescs) {
         this((MeasureDesc[]) measureDescs.toArray(new MeasureDesc[measureDescs.size()]));

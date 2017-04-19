@@ -55,7 +55,7 @@ public class MapReduceExecutable extends AbstractExecutable {
     public static final String MAP_REDUCE_WAIT_TIME = "mapReduceWaitTime";
     private static final String KEY_MR_JOB = "MR_JOB_CLASS";//该job的main class
     private static final String KEY_PARAMS = "MR_JOB_PARAMS";//执行job的输入参数集合,比如-table xxx -output xxx
-    private static final String KEY_COUNTER_SAVEAS = "MR_COUNTER_SAVEAS";
+    private static final String KEY_COUNTER_SAVEAS = "MR_COUNTER_SAVEAS";//用逗号拆分要统计的值对应的key
 
     protected static final Logger logger = LoggerFactory.getLogger(MapReduceExecutable.class);
 

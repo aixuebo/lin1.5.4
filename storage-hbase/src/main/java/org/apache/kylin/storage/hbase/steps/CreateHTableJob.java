@@ -67,7 +67,7 @@ public class CreateHTableJob extends AbstractHadoopJob {
     CubeDesc cubeDesc = null;
     String segmentID = null;
     KylinConfig kylinConfig;
-    Path partitionFilePath;
+    Path partitionFilePath;//rowkey划分存储的partition的路径
 
     @Override
     public int run(String[] args) throws Exception {
@@ -80,7 +80,7 @@ public class CreateHTableJob extends AbstractHadoopJob {
         parseOptions(options, args);
 
         partitionFilePath = new Path(getOptionValue(OPTION_PARTITION_FILE_PATH));
-        boolean statsEnabled = Boolean.parseBoolean(getOptionValue(OPTION_STATISTICS_ENABLED));
+        boolean statsEnabled = Boolean.parseBoolean(getOptionValue(OPTION_STATISTICS_ENABLED));//是否统计
 
         String cubeName = getOptionValue(OPTION_CUBE_NAME).toUpperCase();
         CubeManager cubeMgr = CubeManager.getInstance(KylinConfig.getInstanceFromEnv());
@@ -88,16 +88,16 @@ public class CreateHTableJob extends AbstractHadoopJob {
         cubeDesc = cube.getDescriptor();
         kylinConfig = cube.getConfig();
         segmentID = getOptionValue(OPTION_SEGMENT_ID);
-        CubeSegment cubeSegment = cube.getSegmentById(segmentID);
+        CubeSegment cubeSegment = cube.getSegmentById(segmentID);//获取本次要插入的segment对象
 
-        Configuration conf = HBaseConnection.getCurrentHBaseConfiguration();
+        Configuration conf = HBaseConnection.getCurrentHBaseConfiguration();//获取hbase的配置信息
 
         try {
             byte[][] splitKeys;
-            if (statsEnabled) {
-                final Map<Long, Double> cuboidSizeMap = new CubeStatsReader(cubeSegment, kylinConfig).getCuboidSizeMap();
+            if (statsEnabled) {//如果统计
+                final Map<Long, Double> cuboidSizeMap = new CubeStatsReader(cubeSegment, kylinConfig).getCuboidSizeMap();//计算每一个cuboid占用多少字节,单位是M
                 splitKeys = getRegionSplitsFromCuboidStatistics(cuboidSizeMap, kylinConfig, cubeSegment, partitionFilePath.getParent());
-            } else {
+            } else {//不统计
                 splitKeys = getRegionSplits(conf, partitionFilePath);
             }
 
@@ -111,6 +111,7 @@ public class CreateHTableJob extends AbstractHadoopJob {
         }
     }
 
+    //获取多少个region分区,每一个分区对应的是rowkey的字节数组
     @SuppressWarnings("deprecation")
     public byte[][] getRegionSplits(Configuration conf, Path path) throws Exception {
         FileSystem fs = path.getFileSystem(conf);
@@ -122,10 +123,10 @@ public class CreateHTableJob extends AbstractHadoopJob {
         List<byte[]> rowkeyList = new ArrayList<byte[]>();
         SequenceFile.Reader reader = null;
         try {
-            reader = new SequenceFile.Reader(fs, path, conf);
+            reader = new SequenceFile.Reader(fs, path, conf);//读取hdfs上的数据
             Writable key = (Writable) ReflectionUtils.newInstance(reader.getKeyClass(), conf);
             Writable value = (Writable) ReflectionUtils.newInstance(reader.getValueClass(), conf);
-            while (reader.next(key, value)) {
+            while (reader.next(key, value)) {//每次读取一行数据
                 rowkeyList.add(((Text) key).copyBytes());
             }
         } catch (Exception e) {

@@ -62,10 +62,10 @@ public class InMemCuboidMapper<KEYIN> extends KylinMapper<KEYIN, Object, ByteArr
     private CubeInstance cube;
     private CubeDesc cubeDesc;
     private CubeSegment cubeSegment;
-    private IMRTableInputFormat flatTableInputFormat;
+    private IMRTableInputFormat flatTableInputFormat;//读取hive的大宽表
 
     private int counter;
-    private BlockingQueue<List<String>> queue = new ArrayBlockingQueue<List<String>>(64);
+    private BlockingQueue<List<String>> queue = new ArrayBlockingQueue<List<String>>(64);//存储每一行的数据内容,一行数据内容是一个List数组
     private Future<?> future;
 
     @Override
@@ -83,11 +83,11 @@ public class InMemCuboidMapper<KEYIN> extends KylinMapper<KEYIN, Object, ByteArr
         flatTableInputFormat = MRUtil.getBatchCubingInputSide(cubeSegment).getFlatTableInputFormat();
         IJoinedFlatTableDesc flatDesc = EngineFactory.getJoinedFlatTableDesc(cubeSegment);
 
-        Map<TblColRef, Dictionary<String>> dictionaryMap = Maps.newHashMap();
+        Map<TblColRef, Dictionary<String>> dictionaryMap = Maps.newHashMap();//每一个列对应的字典
 
         // dictionary
-        for (TblColRef col : cubeDesc.getAllColumnsHaveDictionary()) {
-            Dictionary<?> dict = cubeSegment.getDictionary(col);
+        for (TblColRef col : cubeDesc.getAllColumnsHaveDictionary()) {//循环每一个有字典的列
+            Dictionary<?> dict = cubeSegment.getDictionary(col);//每一个列对应的字典
             if (dict == null) {
                 logger.warn("Dictionary for " + col + " was not found.");
             }
@@ -96,18 +96,19 @@ public class InMemCuboidMapper<KEYIN> extends KylinMapper<KEYIN, Object, ByteArr
         }
 
         DoggedCubeBuilder cubeBuilder = new DoggedCubeBuilder(cube.getDescriptor(), flatDesc, dictionaryMap);
-        cubeBuilder.setReserveMemoryMB(calculateReserveMB(context.getConfiguration()));
+        cubeBuilder.setReserveMemoryMB(calculateReserveMB(context.getConfiguration()));//设置系统应该保留多少内存去完成该任务
 
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        ExecutorService executorService = Executors.newSingleThreadExecutor();//线程池
         future = executorService.submit(cubeBuilder.buildAsRunnable(queue, new MapContextGTRecordWriter(context, cubeDesc, cubeSegment)));
 
     }
 
+    //计算系统应该保留多少内存去完成该任务
     private int calculateReserveMB(Configuration configuration) {
-        int sysAvailMB = MemoryBudgetController.getSystemAvailMB();
-        int mrReserve = configuration.getInt("mapreduce.task.io.sort.mb", 100);
-        int sysReserve = Math.max(sysAvailMB / 10, 100);
-        int reserveMB = mrReserve + sysReserve;
+        int sysAvailMB = MemoryBudgetController.getSystemAvailMB();//系统可用内存--单位是M
+        int mrReserve = configuration.getInt("mapreduce.task.io.sort.mb", 100);//MR需多少M内存
+        int sysReserve = Math.max(sysAvailMB / 10, 100);//最多不允许超过1G,比如sysAvailMB是1G,则/10就变成100M----系统保留多少M内存
+        int reserveMB = mrReserve + sysReserve;//保留总内存
         logger.info("Reserve " + reserveMB + " MB = " + mrReserve + " (MR reserve) + " + sysReserve + " (SYS reserve)");
         return reserveMB;
     }
@@ -116,10 +117,10 @@ public class InMemCuboidMapper<KEYIN> extends KylinMapper<KEYIN, Object, ByteArr
     public void map(KEYIN key, Object record, Context context) throws IOException, InterruptedException {
         // put each row to the queue
         String[] row = flatTableInputFormat.parseMapperInput(record);
-        List<String> rowAsList = Arrays.asList(row);
+        List<String> rowAsList = Arrays.asList(row);//一行的数据内容
 
         while (!future.isDone()) {
-            if (queue.offer(rowAsList, 1, TimeUnit.SECONDS)) {
+            if (queue.offer(rowAsList, 1, TimeUnit.SECONDS)) {//false说明队列已经满了,true说明已经添加成功
                 counter++;
                 if (counter % BatchConstants.NORMAL_RECORD_LOG_THRESHOLD == 0) {
                     logger.info("Handled " + counter + " records!");

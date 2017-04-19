@@ -45,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 只针对AlgorithmEnum.INMEM算法进行处理
  */
 public class InMemCuboidJob extends AbstractHadoopJob {
 
@@ -88,6 +89,7 @@ public class InMemCuboidJob extends AbstractHadoopJob {
             CubeSegment cubeSeg = cube.getSegmentById(segmentID);
             String cubingJobId = getOptionValue(OPTION_CUBING_JOB_ID);
 
+            //不是AlgorithmEnum.INMEM 算法,则直接退出
             if (checkSkip(cubingJobId)) {
                 logger.info("Skip job " + getOptionValue(OPTION_JOB_NAME) + " for " + cubeSeg);
                 return 0;
@@ -99,7 +101,7 @@ public class InMemCuboidJob extends AbstractHadoopJob {
 
             setJobClasspath(job, cube.getConfig());
 
-            // add metadata to distributed cache
+            // add metadata to distributed cache 为hadoop添加cube的元数据信息
             attachKylinPropsAndMetadata(cube, job.getConfiguration());
 
             // set job configuration
@@ -107,7 +109,7 @@ public class InMemCuboidJob extends AbstractHadoopJob {
             job.getConfiguration().set(BatchConstants.CFG_CUBE_SEGMENT_ID, segmentID);
 
             // set input
-            IMRTableInputFormat flatTableInputFormat = MRUtil.getBatchCubingInputSide(cubeSeg).getFlatTableInputFormat();
+            IMRTableInputFormat flatTableInputFormat = MRUtil.getBatchCubingInputSide(cubeSeg).getFlatTableInputFormat();//获取宽表的hive输入源
             flatTableInputFormat.configureJob(job);
 
             // set mapper
@@ -140,19 +142,20 @@ public class InMemCuboidJob extends AbstractHadoopJob {
         }
     }
 
+    //计算需要多少个reduce
     private int calculateReducerNum(CubeSegment cubeSeg) throws IOException {
         KylinConfig kylinConfig = cubeSeg.getConfig();
 
-        Map<Long, Double> cubeSizeMap = new CubeStatsReader(cubeSeg, kylinConfig).getCuboidSizeMap();
+        Map<Long, Double> cubeSizeMap = new CubeStatsReader(cubeSeg, kylinConfig).getCuboidSizeMap();//读取统计信息
         double totalSizeInM = 0;
         for (Double cuboidSize : cubeSizeMap.values()) {
             totalSizeInM += cuboidSize;
         }
 
-        double perReduceInputMB = kylinConfig.getDefaultHadoopJobReducerInputMB();
+        double perReduceInputMB = kylinConfig.getDefaultHadoopJobReducerInputMB();//默认一个reduce读取多少M数据
 
         // number of reduce tasks
-        int numReduceTasks = (int) Math.round(totalSizeInM / perReduceInputMB);
+        int numReduceTasks = (int) Math.round(totalSizeInM / perReduceInputMB);//设置多少个reduce
 
         // at least 1 reducer by default
         numReduceTasks = Math.max(kylinConfig.getHadoopJobMinReducerNumber(), numReduceTasks);

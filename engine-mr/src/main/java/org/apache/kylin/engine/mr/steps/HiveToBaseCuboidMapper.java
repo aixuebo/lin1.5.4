@@ -27,6 +27,7 @@ import org.apache.kylin.engine.mr.common.BatchConstants;
 /**
  * @author George Song (ysong1)
  * 从hive表读取数据,处理基本cuboid
+ * 对基本的cuboid进行处理---设置rowkey为需要的全部字段,设置value为需要的全部度量的值
  */
 public class HiveToBaseCuboidMapper<KEYIN> extends BaseCuboidMapperBase<KEYIN, Object> {
 

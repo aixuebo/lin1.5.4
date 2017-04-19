@@ -21,6 +21,10 @@ package org.apache.kylin.engine.mr;
 import org.apache.kylin.cube.CubeSegment;
 import org.apache.kylin.job.execution.DefaultChainedExecutable;
 
+/**
+ org.apache.kylin.storage.hbase.steps.HBaseMROutput
+ org.apache.kylin.storage.hbase.steps.HBaseMROutput2Transition
+ */
 public interface IMROutput {
 
     /** Return a helper to participate in batch cubing job flow. */
@@ -46,6 +50,8 @@ public interface IMROutput {
          * The cuboid output is a directory of sequence files, where key is CUBOID+D1+D2+..+Dn, 
          * value is M1+M2+..+Mm. CUBOID is 8 bytes cuboid ID; Dx is dimension value with
          * dictionary encoding; Mx is measure value serialization form.
+         *
+         * cuboidRootPath 表示ccuboid输出的根目录
          */
         public void addStepPhase3_BuildCube(DefaultChainedExecutable jobFlow, String cuboidRootPath);
 

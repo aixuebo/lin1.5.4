@@ -91,8 +91,8 @@ public class DictionaryDimEnc extends DimensionEncoding {
     @Override
     public void encode(byte[] value, int valueLen, byte[] output, int outputOffset) {
         try {
-            int id = dict.getIdFromValueBytes(value, 0, valueLen, roundingFlag);
-            BytesUtil.writeUnsigned(id, output, outputOffset, fixedLen);
+            int id = dict.getIdFromValueBytes(value, 0, valueLen, roundingFlag);//获取值对应的字典ID
+            BytesUtil.writeUnsigned(id, output, outputOffset, fixedLen);//将ID写入到字节数组中
         } catch (IllegalArgumentException ex) {
             for (int i = outputOffset; i < outputOffset + fixedLen; i++) {
                 output[i] = defaultByte;

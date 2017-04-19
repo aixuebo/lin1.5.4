@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 更新cube的元数据以及segment的元数据信息
  */
 public class UpdateCubeInfoAfterBuildStep extends AbstractExecutable {
     private static final Logger logger = LoggerFactory.getLogger(UpdateCubeInfoAfterBuildStep.class);
@@ -47,19 +48,19 @@ public class UpdateCubeInfoAfterBuildStep extends AbstractExecutable {
         final CubeSegment segment = cube.getSegmentById(CubingExecutableUtil.getSegmentId(this.getParams()));
 
         CubingJob cubingJob = (CubingJob) executableManager.getJob(CubingExecutableUtil.getCubingJobId(this.getParams()));
-        long sourceCount = cubingJob.findSourceRecordCount();
-        long sourceSizeBytes = cubingJob.findSourceSizeBytes();
-        long cubeSizeBytes = cubingJob.findCubeSizeBytes();
+        long sourceCount = cubingJob.findSourceRecordCount();//原始文件行数
+        long sourceSizeBytes = cubingJob.findSourceSizeBytes();//原始文件大小
+        long cubeSizeBytes = cubingJob.findCubeSizeBytes();//cube大小
 
-        segment.setLastBuildJobID(CubingExecutableUtil.getCubingJobId(this.getParams()));
-        segment.setIndexPath(CubingExecutableUtil.getIndexPath(this.getParams()));
-        segment.setLastBuildTime(System.currentTimeMillis());
+        segment.setLastBuildJobID(CubingExecutableUtil.getCubingJobId(this.getParams()));//设置该cube最后一次执行的时候的jobID
+        segment.setIndexPath(CubingExecutableUtil.getIndexPath(this.getParams()));//设置二级索引目录
+        segment.setLastBuildTime(System.currentTimeMillis());//设置该cube最后一次执行的时候时间戳
         segment.setSizeKB(cubeSizeBytes / 1024);
         segment.setInputRecords(sourceCount);
         segment.setInputRecordsSize(sourceSizeBytes);
 
         try {
-            cubeManager.promoteNewlyBuiltSegments(cube, segment);
+            cubeManager.promoteNewlyBuiltSegments(cube, segment);//保存cube的信息
             return new ExecuteResult(ExecuteResult.State.SUCCEED, "succeed");
         } catch (IOException e) {
             logger.error("fail to update cube after build", e);

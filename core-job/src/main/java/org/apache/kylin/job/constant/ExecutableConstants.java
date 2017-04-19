@@ -44,19 +44,23 @@ public final class ExecutableConstants {
     public static final String STEP_NAME_COUNT_HIVE_TABLE = "Count Source Table";//表的记录条数
     public static final String STEP_NAME_FACT_DISTINCT_COLUMNS = "Extract Fact Table Distinct Columns";//1.用于将rowkey中每一个字典列需要的字段值收集起来,一个reduce一个字段的不重复的字典值  2.统计rowkey的各种组合情况,即每一个cuboid有多少个不同的元素
     public static final String STEP_NAME_BUILD_DICTIONARY = "Build Dimension Dictionary";//STEP_NAME_FACT_DISTINCT_COLUMNS任务的输出目录作为输入目录,主要处理字典信息以及对lookup表设置快照
-    public static final String STEP_NAME_BUILD_BASE_CUBOID = "Build Base Cuboid Data";//对baseCuboid进行mr处理
-    public static final String STEP_NAME_BUILD_IN_MEM_CUBE = "Build Cube";
-    public static final String STEP_NAME_BUILD_N_D_CUBOID = "Build N-Dimension Cuboid Data";
-    public static final String STEP_NAME_GET_CUBOID_KEY_DISTRIBUTION = "Calculate HTable Region Splits";
-    public static final String STEP_NAME_CREATE_HBASE_TABLE = "Create HTable";
+    public static final String STEP_NAME_SAVE_STATISTICS = "Save Cuboid Statistics";//根据对cube的统计结果,决定使用什么算法处理cube的build
+
+    //执行MR处理或者基于内存处理,选择一种执行方式去执行
+    public static final String STEP_NAME_BUILD_BASE_CUBOID = "Build Base Cuboid Data";//对baseCuboid进行mr处理 -----对基本的cuboid进行处理---设置rowkey为需要的全部字段,设置value为需要的全部度量的值
+    public static final String STEP_NAME_BUILD_N_D_CUBOID = "Build N-Dimension Cuboid Data";//处理每一个cuboid子任务
+    public static final String STEP_NAME_BUILD_IN_MEM_CUBE = "Build Cube";//执行内存操作
+
     public static final String STEP_NAME_CONVERT_CUBOID_TO_HFILE = "Convert Cuboid Data to HFile";
     public static final String STEP_NAME_BULK_LOAD_HFILE = "Load HFile to HBase Table";
+    public static final String STEP_NAME_UPDATE_CUBE_INFO = "Update Cube Info";//更新cube的元数据以及segment的元数据信息
+    public static final String STEP_NAME_GARBAGE_COLLECTION = "Garbage Collection";//删除数据库以及HDFS的内容任务
+
+    public static final String STEP_NAME_GET_CUBOID_KEY_DISTRIBUTION = "Calculate HTable Region Splits";
+    public static final String STEP_NAME_CREATE_HBASE_TABLE = "Create HTable";
     public static final String STEP_NAME_MERGE_DICTIONARY = "Merge Cuboid Dictionary";
     public static final String STEP_NAME_MERGE_STATISTICS = "Merge Cuboid Statistics";
-    public static final String STEP_NAME_SAVE_STATISTICS = "Save Cuboid Statistics";
     public static final String STEP_NAME_MERGE_CUBOID = "Merge Cuboid Data";
-    public static final String STEP_NAME_UPDATE_CUBE_INFO = "Update Cube Info";
-    public static final String STEP_NAME_GARBAGE_COLLECTION = "Garbage Collection";//删除数据库以及HDFS的内容任务
     public static final String STEP_NAME_GARBAGE_COLLECTION_HDFS = "Garbage Collection on HDFS";
     public static final String STEP_NAME_BUILD_II = "Build Inverted Index";
     public static final String STEP_NAME_CONVERT_II_TO_HFILE = "Convert Inverted Index Data to HFile";

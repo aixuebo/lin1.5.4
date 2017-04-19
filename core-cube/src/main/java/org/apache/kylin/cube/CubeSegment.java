@@ -78,15 +78,15 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
     @JsonProperty("status")
     private SegmentStatusEnum status;//状态
     @JsonProperty("size_kb")
-    private long sizeKB;
+    private long sizeKB;//cube的大小,单位M
     @JsonProperty("input_records")
-    private long inputRecords;
+    private long inputRecords;//原始文件行数
     @JsonProperty("input_records_size")
-    private long inputRecordsSize;
+    private long inputRecordsSize;//原始文件大小
     @JsonProperty("last_build_time")
-    private long lastBuildTime;
+    private long lastBuildTime;//设置该cube最后一次执行的时候时间戳
     @JsonProperty("last_build_job_id")
-    private String lastBuildJobID;
+    private String lastBuildJobID;//设置该cube最后一次执行的时候的jobID
     @JsonProperty("create_time_utc")
     private long createTimeUTC;//创建时间
     @JsonProperty("cuboid_shard_nums")
@@ -108,7 +108,7 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
     private ConcurrentHashMap<String, String> snapshots; // table name ==> snapshot resource path 存储cube的快照
 
     @JsonProperty("index_path")
-    private String indexPath;
+    private String indexPath;//设置二级索引目录
 
     @JsonProperty("rowkey_stats")
     private List<Object[]> rowkeyStats = Lists.newArrayList();
@@ -483,14 +483,17 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
         return cubeInstance.getStorageType();
     }
 
+    //是否可以分片,默认是false
     public boolean isEnableSharding() {
         return getCubeDesc().isEnableSharding();
     }
 
+    //设置分片的列集合
     public Set<TblColRef> getShardByColumns() {
         return getCubeDesc().getShardByColumns();
     }
 
+    //sharding需要的字节长度+cuboid需要的字节长度
     public int getRowKeyPreambleSize() {
         return isEnableSharding() ? RowConstants.ROWKEY_SHARD_AND_CUBOID_LEN : RowConstants.ROWKEY_CUBOIDID_LEN;
     }

@@ -19,6 +19,7 @@
 package org.apache.kylin.metadata.realization;
 
 /**
+ * 表示Hbase的表的元数据
  */
 public class IRealizationConstants {
 
@@ -32,14 +33,14 @@ public class IRealizationConstants {
      */
     public final static String HTableTag = "KYLIN_HOST";//可能对应的值是kylin_metadata
 
-    public final static String HTableOwner = "OWNER";
+    public final static String HTableOwner = "OWNER";//hbase表的所有者---创建人
 
-    public final static String HTableUser = "USER";
+    public final static String HTableUser = "USER";//CubeInstance对应的创建人
 
-    public final static String HTableCreationTime = "CREATION_TIME";
+    public final static String HTableCreationTime = "CREATION_TIME";//hbase的表的创建时间
 
-    public final static String HTableSegmentTag = "SEGMENT";
+    public final static String HTableSegmentTag = "SEGMENT";//该hbase对应哪个segment
 
-    public final static String HTableGitTag = "GIT_COMMIT";
+    public final static String HTableGitTag = "GIT_COMMIT"; //获取git版本信息
 
 }

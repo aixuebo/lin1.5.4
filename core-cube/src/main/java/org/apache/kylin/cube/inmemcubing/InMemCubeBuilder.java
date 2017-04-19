@@ -70,10 +70,11 @@ public class InMemCubeBuilder extends AbstractInMemCubeBuilder {
 
     private final CuboidScheduler cuboidScheduler;
     private final long baseCuboidId;
-    private final int totalCuboidCount;
-    private final String[] metricsAggrFuncs;
-    private final MeasureDesc[] measureDescs;
-    private final int measureCount;
+    private final int totalCuboidCount;//总cuboid的个数
+
+    private final MeasureDesc[] measureDescs;//度量的对象集合
+    private final int measureCount;//度量的个数
+    private final String[] metricsAggrFuncs;//每一个度量对应的表达式
 
     private MemoryBudgetController memBudget;
     private MemoryWaterLevel baseCuboidMemTracker;

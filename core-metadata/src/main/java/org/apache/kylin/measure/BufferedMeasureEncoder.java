@@ -29,6 +29,7 @@ import org.apache.kylin.metadata.model.MeasureDesc;
  * This class embeds a reusable byte buffer for measure encoding, and is not thread-safe.
  * The buffer will grow to accommodate BufferOverflowException until a limit.
  * The problem here to solve is some measure type cannot provide accurate DataTypeSerializer.maxLength()
+ * 对度量的值进行编码,存户到hbase中
  */
 @SuppressWarnings({ "unchecked" })
 public class BufferedMeasureEncoder {
@@ -80,7 +81,7 @@ public class BufferedMeasureEncoder {
         codec.decode(buf, result);
     }
 
-    //编码
+    //编码---每一个value是一个度量的结果
     public ByteBuffer encode(Object[] values) {
         if (buf == null) {
             setBufferSize(DEFAULT_BUFFER_SIZE);

@@ -58,14 +58,16 @@ public class CubingJob extends DefaultChainedExecutable {
 
     private static final Logger logger = LoggerFactory.getLogger(CubingJob.class);
 
+    //根据对cube的统计结果,决定使用什么算法处理cube的build
     public enum AlgorithmEnum {
-        LAYER, INMEM
+        LAYER,//耗费内存时候使用该算法
+        INMEM
     }
 
     // KEYS of Output.extraInfo map, info passed across job steps
-    public static final String SOURCE_RECORD_COUNT = "sourceRecordCount";
-    public static final String SOURCE_SIZE_BYTES = "sourceSizeBytes";
-    public static final String CUBE_SIZE_BYTES = "byteSizeBytes";
+    public static final String SOURCE_RECORD_COUNT = "sourceRecordCount";//原始记录数
+    public static final String SOURCE_SIZE_BYTES = "sourceSizeBytes";//原始文件大小
+    public static final String CUBE_SIZE_BYTES = "byteSizeBytes";//cube的文件大小
     public static final String MAP_REDUCE_WAIT_TIME = "mapReduceWaitTime";
     private static final String DEPLOY_ENV_NAME = "envName";
     private static final String PROJECT_INSTANCE_NAME = "projectName";
@@ -285,6 +287,7 @@ public class CubingJob extends DefaultChainedExecutable {
     /**
      * 查找key对应的输出的value信息
      * @param backward 表示任务集合从前往后找,还是从后往前找
+     * @param dft 默认值
      */
     private String findExtraInfo(String key, String dft, boolean backward) {
         ArrayList<AbstractExecutable> tasks = new ArrayList<AbstractExecutable>(getTasks());//任务集合

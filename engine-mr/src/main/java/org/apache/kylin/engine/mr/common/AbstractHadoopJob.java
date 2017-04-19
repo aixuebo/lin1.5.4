@@ -484,6 +484,7 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
         attachKylinPropsAndMetadata(dumpList, KylinConfig.getInstanceFromEnv(), conf);
     }
 
+    //为hadoop添加cube的元数据信息
     protected void attachKylinPropsAndMetadata(CubeInstance cube, Configuration conf) throws IOException {
         MetadataManager metaMgr = MetadataManager.getInstance(cube.getConfig());
 

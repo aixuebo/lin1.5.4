@@ -45,8 +45,13 @@ abstract public class AbstractInMemCubeBuilder {
     final protected Map<TblColRef, Dictionary<String>> dictionaryMap;
 
     protected int taskThreadCount = 4;
-    protected int reserveMemoryMB = 100;
+    protected int reserveMemoryMB = 100;//需要保留多少M内存完成任务,该任务有两方面,一个是map的执行内存,一个是保留的内存
 
+    /**
+     * @param cubeDesc cube对象
+     * @param flatDesc cube要处理的宽表
+     * @param dictionaryMap cube需要的字典对象映射
+     */
     public AbstractInMemCubeBuilder(CubeDesc cubeDesc, IJoinedFlatTableDesc flatDesc, Map<TblColRef, Dictionary<String>> dictionaryMap) {
         if (flatDesc == null)
             throw new NullPointerException();
@@ -72,6 +77,7 @@ abstract public class AbstractInMemCubeBuilder {
         return this.reserveMemoryMB;
     }
 
+    //一个线程处理数据,不断的从队列获取一行数据内容
     public Runnable buildAsRunnable(final BlockingQueue<List<String>> input, final ICuboidWriter output) {
         return new Runnable() {
             @Override
@@ -85,6 +91,12 @@ abstract public class AbstractInMemCubeBuilder {
         };
     }
 
+    /**
+     *
+     * @param input 一行数据内容组成的队列
+     * @param output 输出文件流
+     * @throws IOException
+     */
     abstract public void build(BlockingQueue<List<String>> input, ICuboidWriter output) throws IOException;
 
     protected void outputCuboid(long cuboidId, GridTable gridTable, ICuboidWriter output) throws IOException {

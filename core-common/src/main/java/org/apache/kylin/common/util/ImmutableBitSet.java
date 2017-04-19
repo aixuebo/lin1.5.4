@@ -20,6 +20,7 @@ package org.apache.kylin.common.util;
 import java.nio.ByteBuffer;
 import java.util.BitSet;
 
+//不可变的bitSet对象
 public class ImmutableBitSet {
 
     public static final ImmutableBitSet EMPTY = new ImmutableBitSet(new BitSet());

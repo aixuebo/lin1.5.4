@@ -178,7 +178,7 @@ public class FactDistinctColumnsReducer extends KylinReducer<Text, Text, NullWri
             }
         } else {//统计输出
             //output the hll info;
-            long grandTotal = 0;//总的不同的数据数量
+            long grandTotal = 0;//总的不同的数据数量   因为不同的map节点的输出会汇总,因此就有了重叠部分的数据
             for (HyperLogLogPlusCounter hll : cuboidHLLMap.values()) {//循环每一个cuboid
                 grandTotal += hll.getCountEstimate();
             }

@@ -28,6 +28,10 @@ import org.apache.kylin.cube.kv.RowKeyColumnIO;
 import org.apache.kylin.cube.model.CubeDesc;
 import org.apache.kylin.metadata.model.TblColRef;
 
+/**
+ * 解析一个rowkey的编码
+ * 具体逻辑参见org.apache.kylin.cube.kv.RowKeyEncoder编码器
+ */
 public class RowKeySplitter {
 
     private CubeDesc cubeDesc;
@@ -84,6 +88,7 @@ public class RowKeySplitter {
     /**
      * @param bytes
      * @return cuboid ID
+     * 具体逻辑参见org.apache.kylin.cube.kv.RowKeyEncoder编码器
      */
     public long split(byte[] bytes) {
         this.bufferSize = 0;
@@ -102,14 +107,14 @@ public class RowKeySplitter {
         // extract cuboid id
         SplittedBytes cuboidIdSplit = this.splitBuffers[this.bufferSize++];
         cuboidIdSplit.length = RowConstants.ROWKEY_CUBOIDID_LEN;
-        System.arraycopy(bytes, offset, cuboidIdSplit.value, 0, RowConstants.ROWKEY_CUBOIDID_LEN);
+        System.arraycopy(bytes, offset, cuboidIdSplit.value, 0, RowConstants.ROWKEY_CUBOIDID_LEN);//读取8个字节表示uboid
         offset += RowConstants.ROWKEY_CUBOIDID_LEN;
 
-        lastSplittedCuboidId = Bytes.toLong(cuboidIdSplit.value, 0, cuboidIdSplit.length);
+        lastSplittedCuboidId = Bytes.toLong(cuboidIdSplit.value, 0, cuboidIdSplit.length);//将8个字节转换成long的cuboid
         Cuboid cuboid = Cuboid.findById(cubeDesc, lastSplittedCuboidId);
 
         // rowkey columns
-        for (int i = 0; i < cuboid.getColumns().size(); i++) {
+        for (int i = 0; i < cuboid.getColumns().size(); i++) {//获取每一个列对象以及对应的列对象的值
             splitOffsets[i] = offset;
             TblColRef col = cuboid.getColumns().get(i);
             int colLength = colIO.getColumnLength(col);

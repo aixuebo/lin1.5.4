@@ -44,9 +44,9 @@ public class CubingExecutableUtil {
     public static final String SEGMENT_ID = "segmentId";//设置要执行的segment的uuid
     public static final String MERGING_SEGMENT_IDS = "mergingSegmentIds";
     public static final String STATISTICS_PATH = "statisticsPath";
-    public static final String CUBING_JOB_ID = "cubingJobId";
+    public static final String CUBING_JOB_ID = "cubingJobId";//执行该cube的jobID
     public static final String MERGED_STATISTICS_PATH = "mergedStatisticsPath";
-    public static final String INDEX_PATH = "indexPath";
+    public static final String INDEX_PATH = "indexPath";//设置二级索引目录
 
     public static void setStatisticsPath(String path, Map<String, String> params) {
         params.put(STATISTICS_PATH, path);
@@ -142,6 +142,7 @@ public class CubingExecutableUtil {
         return params.get(MERGED_STATISTICS_PATH);
     }
 
+    //设置二级索引目录
     public static void setIndexPath(String indexPath, Map<String, String> params) {
         params.put(INDEX_PATH, indexPath);
     }

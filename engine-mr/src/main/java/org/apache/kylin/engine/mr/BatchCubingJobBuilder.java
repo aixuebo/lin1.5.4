@@ -72,7 +72,7 @@ public class BatchCubingJobBuilder extends JobBuilderSupport {
         final int groupRowkeyColumnsCount = ((CubeSegment) seg).getCubeDesc().getBuildLevel();//所有的级别的cuboid
         final int totalRowkeyColumnsCount = rowKeyDesc.getRowKeyColumns().length;
         final String[] cuboidOutputTempPath = getCuboidOutputPaths(cuboidRootPath, totalRowkeyColumnsCount, groupRowkeyColumnsCount);
-        // base cuboid step
+        // base cuboid step -----对基本的cuboid进行处理---设置rowkey为需要的全部字段,设置value为需要的全部度量的值
         result.addTask(createBaseCuboidStep(cuboidOutputTempPath, jobId));//对baseCuboid进行mr处理
         // n dim cuboid steps
         for (int i = 1; i <= groupRowkeyColumnsCount; i++) {//对每一个cuboid进行mr处理
@@ -89,7 +89,7 @@ public class BatchCubingJobBuilder extends JobBuilderSupport {
         return result;
     }
 
-    //对baseCuboid进行mr处理
+    //对baseCuboid进行mr处理-----对基本的cuboid进行处理---设置rowkey为需要的全部字段,设置value为需要的全部度量的值
     private MapReduceExecutable createBaseCuboidStep(String[] cuboidOutputTempPath, String jobId) {
         // base cuboid job
         MapReduceExecutable baseCuboidStep = new MapReduceExecutable();
@@ -113,6 +113,7 @@ public class BatchCubingJobBuilder extends JobBuilderSupport {
         return baseCuboidStep;
     }
 
+    //处理每一个cuboid子任务
     private MapReduceExecutable createNDimensionCuboidStep(String[] cuboidOutputTempPath, int dimNum, int totalRowkeyColumnCount) {
         // ND cuboid job
         MapReduceExecutable ndCuboidStep = new MapReduceExecutable();

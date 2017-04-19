@@ -54,7 +54,7 @@ public interface BatchConstants {
     String CFG_STATISTICS_OUTPUT = "statistics.ouput";//spell error, for compatibility issue better not change it //统计的输出目录
     String CFG_STATISTICS_SAMPLING_PERCENT = "statistics.sampling.percent";//统计抽样的百分比
     String CFG_STATISTICS_CUBE_ESTIMATION_FILENAME = "cube_statistics.txt";
-    String CFG_STATISTICS_CUBOID_ESTIMATION_FILENAME = "cuboid_statistics.seq";
+    String CFG_STATISTICS_CUBOID_ESTIMATION_FILENAME = "cuboid_statistics.seq";//统计文件的名字
 
     /**
      * command line ARGuments

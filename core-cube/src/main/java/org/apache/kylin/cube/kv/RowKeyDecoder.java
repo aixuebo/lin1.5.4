@@ -32,7 +32,7 @@ import org.apache.kylin.metadata.model.TblColRef;
 /**
  * 
  * @author xjiang
- * 
+ * 解码器---具体逻辑参见org.apache.kylin.cube.kv.RowKeyEncoder编码器
  */
 public class RowKeyDecoder {
 
@@ -40,8 +40,8 @@ public class RowKeyDecoder {
     private final RowKeyColumnIO colIO;
     private final RowKeySplitter rowKeySplitter;
 
-    private Cuboid cuboid;
-    private List<String> values;
+    private Cuboid cuboid;//设置rowkey对应的cuboid
+    private List<String> values;//设置每一个列对应的值
 
     public RowKeyDecoder(CubeSegment cubeSegment) {
         this.cubeDesc = cubeSegment.getCubeDesc();
@@ -58,11 +58,11 @@ public class RowKeyDecoder {
 
         SplittedBytes[] splits = rowKeySplitter.getSplitBuffers();
 
-        int offset = rowKeySplitter.getBodySplitOffset(); // skip shard and cuboid id part
+        int offset = rowKeySplitter.getBodySplitOffset(); // skip shard and cuboid id part,body的开始位置
 
-        for (int i = 0; i < this.cuboid.getColumns().size(); i++) {
-            TblColRef col = this.cuboid.getColumns().get(i);
-            collectValue(col, splits[offset].value, splits[offset].length);
+        for (int i = 0; i < this.cuboid.getColumns().size(); i++) {//有多少列
+            TblColRef col = this.cuboid.getColumns().get(i);//获取每一个列对象
+            collectValue(col, splits[offset].value, splits[offset].length);//设置每一个列的值
             offset++;
         }
 
@@ -76,6 +76,7 @@ public class RowKeyDecoder {
         this.cuboid = Cuboid.findById(cubeDesc, cuboidID);
     }
 
+    //设置每一个列对应的值
     private void collectValue(TblColRef col, byte[] valueBytes, int length) throws IOException {
         String strValue = colIO.readColumnString(col, valueBytes, 0, length);
         values.add(strValue);

@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author ysong1
- * 
+ * 将一个hfile的文件路径,插入到hbase的一个表下
  */
 public class BulkLoadJob extends AbstractHadoopJob {
 
@@ -49,11 +49,11 @@ public class BulkLoadJob extends AbstractHadoopJob {
             options.addOption(OPTION_CUBE_NAME);
             parseOptions(options, args);
 
-            String tableName = getOptionValue(OPTION_HTABLE_NAME).toUpperCase();
+            String tableName = getOptionValue(OPTION_HTABLE_NAME).toUpperCase();//hbase的表名字
             // e.g
             // /tmp/kylin-3f150b00-3332-41ca-9d3d-652f67f044d7/test_kylin_cube_with_slr_ready_2_segments/hfile/
             // end with "/"
-            String input = getOptionValue(OPTION_INPUT_PATH);
+            String input = getOptionValue(OPTION_INPUT_PATH);//输入路径
 
             Configuration conf = HBaseConnection.getCurrentHBaseConfiguration();
             FsShell shell = new FsShell(conf);
@@ -69,7 +69,7 @@ public class BulkLoadJob extends AbstractHadoopJob {
             newArgs[1] = tableName;
 
             logger.debug("Start to run LoadIncrementalHFiles");
-            int ret = ToolRunner.run(new LoadIncrementalHFiles(conf), newArgs);
+            int ret = ToolRunner.run(new LoadIncrementalHFiles(conf), newArgs);//调用Hbase的API进行导入到hbase的数据库中
             logger.debug("End to run LoadIncrementalHFiles");
             return ret;
         } catch (Exception e) {

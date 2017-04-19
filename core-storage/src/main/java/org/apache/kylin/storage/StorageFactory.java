@@ -26,6 +26,8 @@ import org.apache.kylin.metadata.model.IStorageAware;
 import org.apache.kylin.metadata.realization.IRealization;
 
 /**
+ r.put(0, "org.apache.kylin.storage.hbase.HBaseStorage");
+ r.put(1, "org.apache.kylin.storage.hybrid.HybridStorage");
  */
 public class StorageFactory {
 

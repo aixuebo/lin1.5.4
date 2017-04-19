@@ -25,6 +25,7 @@ import org.apache.kylin.metadata.datatype.DataType;
 
 /**
  * @author yangli9
+ * 对值进行比较
  */
 abstract public class RowKeyColumnOrder implements Comparator<String> {
 

@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 /**
  * 
  * @author xjiang
- * 
+ * 为一个segment的cuboid进行编码
  */
 public abstract class AbstractRowKeyEncoder {
 
@@ -80,10 +80,16 @@ public abstract class AbstractRowKeyEncoder {
      * when a rowkey's body is provided, help to encode cuboid & shard (if apply)
      * @param bodyBytes
      * @param outputBuf
+     * 将body字节数组内容输出到outputBuf指定位置中
+     * 注意:
+     * 1.bodyBytes字节数组内容必须是合法的bodyLength长度
+     * 2.bodyBytes的内容长度+header的内容长度 一定 等于 outputBuf的字节长度
      */
     abstract public void encode(ByteArray bodyBytes, ByteArray outputBuf);
 
+    //存储每一个字段对应的value值
     abstract public byte[] encode(Map<TblColRef, String> valueMap);
 
+    //参数是rowkey的字段对应的值,每一个字段的值对应的是字节数组
     abstract public byte[] encode(byte[][] values);
 }

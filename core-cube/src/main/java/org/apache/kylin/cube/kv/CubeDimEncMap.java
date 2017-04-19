@@ -35,14 +35,17 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Maps;
 
+/**
+ * 对cube的每一个列对应的字典等描述信息的映射
+ */
 public class CubeDimEncMap implements IDimensionEncodingMap {
 
     private static final Logger logger = LoggerFactory.getLogger(CubeDimEncMap.class);
 
     final private CubeDesc cubeDesc;
     final private CubeSegment seg;
-    final private Map<TblColRef, Dictionary<String>> dictionaryMap;
-    final private Map<TblColRef, DimensionEncoding> encMap = Maps.newHashMap();
+    final private Map<TblColRef, Dictionary<String>> dictionaryMap;//描述每一个字段对应的字典对象的映射
+    final private Map<TblColRef, DimensionEncoding> encMap = Maps.newHashMap();//描述每一个字段对应的编码映射
 
     public CubeDimEncMap(CubeSegment seg) {
         this.cubeDesc = seg.getCubeDesc();

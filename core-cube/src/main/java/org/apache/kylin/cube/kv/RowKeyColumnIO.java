@@ -39,22 +39,28 @@ public class RowKeyColumnIO {
         this.dimEncMap = dimEncMap;
     }
 
+    //返回该列对应的编码长度
     public int getColumnLength(TblColRef col) {
         return dimEncMap.get(col).getLengthOfEncoding();
     }
 
+    //获取该列对应的编码字典
     public Dictionary<String> getDictionary(TblColRef col) {
         return dimEncMap.getDictionary(col);
     }
 
+    /**
+     * 将该列col对应的值value字节数组转换成字典ID,将字典ID存储到output中
+     */
     public void writeColumn(TblColRef col, byte[] value, int valueLen, int roundingFlag, byte defaultValue, byte[] output, int outputOffset) {
-        DimensionEncoding dimEnc = dimEncMap.get(col);
+        DimensionEncoding dimEnc = dimEncMap.get(col);//该列的编码情况
         if (dimEnc instanceof DictionaryDimEnc)
             dimEnc = ((DictionaryDimEnc) dimEnc).copy(roundingFlag, defaultValue);
 
         dimEnc.encode(value, valueLen, output, outputOffset);
     }
 
+    //将该列具体的值读入到bytes中
     public String readColumnString(TblColRef col, byte[] bytes, int offset, int length) {
         DimensionEncoding dimEnc = dimEncMap.get(col);
         return dimEnc.decode(bytes, offset, length);

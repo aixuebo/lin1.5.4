@@ -22,9 +22,8 @@ import org.apache.hadoop.util.ToolRunner;
 
 /**
  * @author honma
- * 
+ * 对基本的cuboid进行处理---设置rowkey为需要的全部字段,设置value为需要的全部度量的值
  */
-
 public class BaseCuboidJob extends CuboidJob {
 
     public BaseCuboidJob() {

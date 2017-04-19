@@ -28,9 +28,9 @@ public class RowConstants {
     public static final byte ROWKEY_UPPER_BYTE = (byte) 0xff;
 
     // row key cuboid id length
-    public static final int ROWKEY_CUBOIDID_LEN = 8;
+    public static final int ROWKEY_CUBOIDID_LEN = 8;//表示存储cuboid的字节长度
     // row key shard length
-    public static final int ROWKEY_SHARDID_LEN = 2;
+    public static final int ROWKEY_SHARDID_LEN = 2;//表示存储rowkey的shard的字节长度
 
     public static final int ROWKEY_SHARD_AND_CUBOID_LEN = ROWKEY_CUBOIDID_LEN + ROWKEY_SHARDID_LEN;
 

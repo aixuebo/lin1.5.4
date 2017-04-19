@@ -256,6 +256,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
     //用于扩展字段
     private Map<TblColRef, DeriveInfo> extendedColumnToHosts = Maps.newHashMap();
 
+    //默认是false,因为未来版本将会扩展可以shard的存储设备
     public boolean isEnableSharding() {
         //in the future may extend to other storage that is shard-able
         return storageType != IStorageAware.ID_HBASE && storageType != IStorageAware.ID_HYBRID;

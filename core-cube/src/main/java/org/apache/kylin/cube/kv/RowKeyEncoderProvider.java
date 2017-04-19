@@ -25,16 +25,18 @@ import org.apache.kylin.cube.cuboid.Cuboid;
 
 import com.google.common.collect.Maps;
 
+//一个cube对应的编码器的映射---每一个cuboid对应一个rowkey编码器
 public class RowKeyEncoderProvider {
 
     private CubeSegment cubeSegment;
-    private HashMap<Long, RowKeyEncoder> rowKeyEncoders;
+    private HashMap<Long, RowKeyEncoder> rowKeyEncoders;//不同的cuboid对应不同的编码器
 
     public RowKeyEncoderProvider(CubeSegment cubeSegment) {
         this.cubeSegment = cubeSegment;
         this.rowKeyEncoders = Maps.newHashMap();
     }
 
+    //获取一个编码器
     public RowKeyEncoder getRowkeyEncoder(Cuboid cuboid) {
         RowKeyEncoder rowKeyEncoder = rowKeyEncoders.get(cuboid.getId());
         if (rowKeyEncoder == null) {
