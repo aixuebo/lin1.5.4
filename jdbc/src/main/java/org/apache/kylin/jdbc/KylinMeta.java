@@ -37,6 +37,9 @@ import org.apache.calcite.avatica.remote.TypedValue;
 
 /**
  * Implementation of Avatica interface
+ 按照 SQL 标准的解释，在 SQL 环境下 Catalog 和 Schema 都属于抽象概念，可以把它们理解为一个容器或者数据库对象命名空间中的一个层次，主要用来解决命名冲突问题。
+ 从概念上说，一个数据库系统包含多个 Catalog，每个 Catalog 又包含多个 Schema，而每个 Schema 又包含多个数据库对象（表、视图、字段等），反过来讲一个数据库对象必然属于一个 Schema，
+ 而该 Schema 又必然属于一个 Catalog，这样我们就可以得到该数据库对象的完全限定名称从而解决命名冲突的问题了；例如数据库对象表的完全限定名称就可以表示为：Catalog名称.Schema名称.表名称。
  */
 public class KylinMeta extends MetaImpl {
 
@@ -121,6 +124,7 @@ public class KylinMeta extends MetaImpl {
         // nothing to do
     }
 
+    //获取元数据
     private KMetaProject getMetaProject() {
         try {
             if (metaProject == null) {
@@ -303,9 +307,10 @@ public class KylinMeta extends MetaImpl {
         metaTableTypes.add(new MetaTableType("TABLE"));
     }
 
+    //每一个project与KMetaCatalog集合的映射
     public static class KMetaProject implements NamedWithChildren {
-        public final String projectName;
-        public final List<KMetaCatalog> catalogs;
+        public final String projectName;//project名字
+        public final List<KMetaCatalog> catalogs;//该project下有哪些catalog
 
         public KMetaProject(String projectName, List<KMetaCatalog> catalogs) {
             this.projectName = projectName;
@@ -338,9 +343,12 @@ public class KylinMeta extends MetaImpl {
         }
     }
 
+    /**
+     * 表示数据库层级的最顶层的Catalog对象
+     */
     public static class KMetaCatalog implements NamedWithChildren {
-        public final String tableCat;
-        public final List<KMetaSchema> schemas;
+        public final String tableCat;//Catalog名字
+        public final List<KMetaSchema> schemas;//该Catalog下所有的schema集合,即数据库集合
 
         public KMetaCatalog(String tableCatalog, List<KMetaSchema> schemas) {
             this.tableCat = tableCatalog;
@@ -358,9 +366,15 @@ public class KylinMeta extends MetaImpl {
         }
     }
 
+    //表示一个schema,即数据库
     public static class KMetaSchema extends MetaSchema implements NamedWithChildren {
-        public final List<KMetaTable> tables;
+        public final List<KMetaTable> tables;//该数据库下所有的表
 
+        /**
+         * @param tableCatalog 该数据库所属的catalog
+         * @param tableSchem 该数据库的库名字
+         * @param tables 该数据库下的表集合
+         */
         public KMetaSchema(String tableCatalog, String tableSchem, List<KMetaTable> tables) {
             super(tableCatalog, tableSchem);
             this.tables = tables;
@@ -372,9 +386,17 @@ public class KylinMeta extends MetaImpl {
         }
     }
 
+    //表示一个表对象
     public static class KMetaTable extends MetaTable implements NamedWithChildren {
-        public final List<KMetaColumn> columns;
+        public final List<KMetaColumn> columns;//该表内包含的列集合
 
+        /**
+         * @param tableCat  该表所属的catalog
+         * @param tableSchem 该表所属的schema,即数据库名字
+         * @param tableName 表名
+         * @param tableType
+         * @param columns 该表的列集合
+         */
         public KMetaTable(String tableCat, String tableSchem, String tableName, String tableType, List<KMetaColumn> columns) {
             super(tableCat, tableSchem, tableName, tableType);
             this.columns = columns;
@@ -386,12 +408,30 @@ public class KylinMeta extends MetaImpl {
         }
     }
 
+    //表示一个列对象的元数据
     public static class KMetaColumn extends MetaColumn implements NamedWithChildren {
 
+        /**
+         *
+         * @param tableCat 该列所属的catalog
+         * @param tableSchem 该列所属的schema,即数据库名字
+         * @param tableName 该列所属的table名字
+         * @param columnName 该列的名字
+         * @param dataType 该列的数据类型
+         * @param typeName
+         * @param columnSize
+         * @param decimalDigits
+         * @param numPrecRadix
+         * @param nullable
+         * @param charOctetLength
+         * @param ordinalPosition
+         * @param isNullable
+         */
         public KMetaColumn(String tableCat, String tableSchem, String tableName, String columnName, int dataType, String typeName, int columnSize, Integer decimalDigits, int numPrecRadix, int nullable, int charOctetLength, int ordinalPosition, String isNullable) {
             super(tableCat, tableSchem, tableName, columnName, dataType, typeName, columnSize, decimalDigits, numPrecRadix, nullable, charOctetLength, ordinalPosition, isNullable);
         }
 
+        //列是没有子分类的
         @Override
         public List<NamedWithChildren> getChildren() {
             return Collections.<NamedWithChildren> emptyList();

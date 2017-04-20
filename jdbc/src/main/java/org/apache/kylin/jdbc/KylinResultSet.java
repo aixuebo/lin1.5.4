@@ -48,9 +48,9 @@ public class KylinResultSet extends AvaticaResultSet {
         }
 
         String sql = signature.sql;
-        List<AvaticaParameter> params = signature.parameters;
-        List<Object> paramValues = null;
-        if (!(statement instanceof KylinPreparedStatement)) {
+        List<AvaticaParameter> params = signature.parameters;//预编译的sql中?位置
+        List<Object> paramValues = null;//预编译?对应的值
+        if (!(statement instanceof KylinPreparedStatement)) {//不是预编译的,则参数应该是null,不需要匹配?
             params = null;
         } else if (params != null && params.size() > 0) {
             paramValues = ((KylinPreparedStatement) statement).getParameterJDBCValues();
@@ -59,7 +59,7 @@ public class KylinResultSet extends AvaticaResultSet {
         IRemoteClient client = ((KylinConnection) statement.connection).getRemoteClient();
         QueryResult result;
         try {
-            result = client.executeQuery(sql, params, paramValues);
+            result = client.executeQuery(sql, params, paramValues);//执行sql
         } catch (IOException e) {
             throw new SQLException(e);
         }
@@ -67,7 +67,7 @@ public class KylinResultSet extends AvaticaResultSet {
         columnMetaDataList.clear();
         columnMetaDataList.addAll(result.columnMeta);
 
-        cursor = MetaImpl.createCursor(signature.cursorFactory, result.iterable);
+        cursor = MetaImpl.createCursor(signature.cursorFactory, result.iterable);//游标
         return super.execute2(cursor, columnMetaDataList);
     }
 

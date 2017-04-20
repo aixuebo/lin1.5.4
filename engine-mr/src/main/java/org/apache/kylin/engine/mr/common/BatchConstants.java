@@ -41,10 +41,13 @@ public interface BatchConstants {
     String CFG_TABLE_NAME = "table.name";
     String CFG_IS_MERGE = "is.merge";
     String CFG_CUBE_INTERMEDIATE_TABLE_ROW_DELIMITER = "cube.intermediate.table.row.delimiter";//行分隔符
-    String CFG_REGION_NUMBER_MIN = "region.number.min";
-    String CFG_REGION_NUMBER_MAX = "region.number.max";
-    String CFG_REGION_SPLIT_SIZE = "region.split.size";
-    String CFG_HFILE_SIZE_GB = "hfile.size.gb";
+
+    //hbase的配置
+    //因为hbase是regionserver存储数据,数据以region为单位瘃在regionserver上,而每一个region又分为若干个HFile文件
+    String CFG_REGION_NUMBER_MIN = "region.number.min";//最少需要多少个region
+    String CFG_REGION_NUMBER_MAX = "region.number.max";//最多需要多少个region
+    String CFG_REGION_SPLIT_SIZE = "region.split.size";//最终切分成多少个region
+    String CFG_HFILE_SIZE_GB = "hfile.size.gb";//表示一个hfile文件的大小,单位是G
 
     String CFG_KYLIN_LOCAL_TEMP_DIR = "/tmp/kylin/";
     String CFG_KYLIN_HDFS_TEMP_DIR = "/tmp/kylin/";

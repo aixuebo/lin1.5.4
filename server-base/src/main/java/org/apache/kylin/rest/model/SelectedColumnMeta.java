@@ -21,6 +21,12 @@ package org.apache.kylin.rest.model;
 import java.io.Serializable;
 
 /**
+ * sql查询的结果集---一个列对应一个该对象
+ * metaData 是 ResultSetMetaData对象
+ *
+ * new SelectedColumnMeta(metaData.isAutoIncrement(i), metaData.isCaseSensitive(i), metaData.isSearchable(i), metaData.isCurrency(i), metaData.isNullable(i), metaData.isSigned(i),
+ metaData.getColumnDisplaySize(i), metaData.getColumnLabel(i), metaData.getColumnName(i), metaData.getSchemaName(i), metaData.getCatalogName(i), metaData.getTableName(i),
+ metaData.getPrecision(i), metaData.getScale(i), metaData.getColumnType(i), metaData.getColumnTypeName(i), metaData.isReadOnly(i), metaData.isWritable(i), metaData.isDefinitelyWritable(i))
  */
 public class SelectedColumnMeta implements Serializable {
     public SelectedColumnMeta(boolean isAutoIncrement, boolean isCaseSensitive, boolean isSearchable, boolean isCurrency, int isNullalbe, boolean isSigned, int displaySize, String label, String name, String schemaName, String catelogName, String tableName, int precision, int scale, int columnType, String columnTypeName, boolean isReadOnly, boolean isWritable, boolean isDefinitelyWritable) {

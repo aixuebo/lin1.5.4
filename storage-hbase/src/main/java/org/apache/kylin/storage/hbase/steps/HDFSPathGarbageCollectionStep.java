@@ -40,12 +40,13 @@ import com.google.common.collect.Lists;
 
 /**
  * Created by sunyerui on 15/9/17.
+ * 删除HDFS上的垃圾数据
  */
 public class HDFSPathGarbageCollectionStep extends AbstractExecutable {
 
     private static final Logger logger = LoggerFactory.getLogger(HDFSPathGarbageCollectionStep.class);
 
-    public static final String TO_DELETE_PATHS = "toDeletePaths";
+    public static final String TO_DELETE_PATHS = "toDeletePaths";//等待删除的key,value对应的是路径集合
     private StringBuffer output;
     private JobEngineConfig config;
 
@@ -58,8 +59,8 @@ public class HDFSPathGarbageCollectionStep extends AbstractExecutable {
     protected ExecuteResult doWork(ExecutableContext context) throws ExecuteException {
         try {
             config = new JobEngineConfig(context.getConfig());
-            List<String> toDeletePaths = getDeletePaths();
-            dropHdfsPathOnCluster(toDeletePaths, FileSystem.get(HadoopUtil.getCurrentConfiguration()));
+            List<String> toDeletePaths = getDeletePaths();//获取等待要删除的路径集合
+            dropHdfsPathOnCluster(toDeletePaths, FileSystem.get(HadoopUtil.getCurrentConfiguration()));//删除路径
 
             if (StringUtils.isNotEmpty(context.getConfig().getHBaseClusterFs())) {
                 dropHdfsPathOnCluster(toDeletePaths, FileSystem.get(HBaseConnection.getCurrentHBaseConfiguration()));
@@ -73,6 +74,7 @@ public class HDFSPathGarbageCollectionStep extends AbstractExecutable {
         return new ExecuteResult(ExecuteResult.State.SUCCEED, output.toString());
     }
 
+    //删除路径
     private void dropHdfsPathOnCluster(List<String> oldHdfsPaths, FileSystem fileSystem) throws IOException {
         if (oldHdfsPaths != null && oldHdfsPaths.size() > 0) {
             logger.debug("Drop HDFS path on FileSystem: " + fileSystem.getUri());

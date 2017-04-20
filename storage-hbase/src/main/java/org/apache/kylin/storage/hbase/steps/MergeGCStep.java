@@ -42,6 +42,7 @@ import com.google.common.collect.Lists;
 
 /**
  * Drop HBase tables that is no longer needed
+ * 删除老的表集合
  */
 public class MergeGCStep extends AbstractExecutable {
 
@@ -112,6 +113,7 @@ public class MergeGCStep extends AbstractExecutable {
         setParam(OLD_HTABLES, StringUtils.join(ids, ","));
     }
 
+    //获取老的表集合
     private List<String> getOldHTables() {
         final String ids = getParam(OLD_HTABLES);
         if (ids != null) {

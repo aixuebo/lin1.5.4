@@ -170,7 +170,7 @@ abstract public class KylinConfigBase implements Serializable {
         }
     }
 
-    //只能是job和all两种模式
+    //只能是job和all两种模式 kylin节点可以支持构建cube,以及查询的节点专门用于查询
     public String getServerMode() {
         return this.getOptional("kylin.server.mode", "all");
     }
@@ -479,10 +479,12 @@ abstract public class KylinConfigBase implements Serializable {
         return Integer.parseInt(getOptional("kylin.table.snapshot.max_mb", "300"));
     }
 
+    //最少允许多少个hbase的region
     public int getHBaseRegionCountMin() {
         return Integer.parseInt(getOptional("kylin.hbase.region.count.min", "1"));
     }
 
+    //最多允许多少个hbase的region
     public int getHBaseRegionCountMax() {
         return Integer.parseInt(getOptional("kylin.hbase.region.count.max", "500"));
     }
@@ -492,6 +494,7 @@ abstract public class KylinConfigBase implements Serializable {
         setProperty("kylin.hbase.hfile.size.gb", String.valueOf(size));
     }
 
+    //单位GB,hbase的Hfile文件大小
     public float getHBaseHFileSizeGB() {
         return Float.parseFloat(getOptional("kylin.hbase.hfile.size.gb", "2.0"));
     }
@@ -612,6 +615,7 @@ abstract public class KylinConfigBase implements Serializable {
 
     /**
      * HBase region cut size, in GB
+     * 最终切分成多少个region
      * @return
      */
     public float getKylinHBaseRegionCut() {
@@ -629,6 +633,7 @@ abstract public class KylinConfigBase implements Serializable {
         return percent;
     }
 
+    //hbase的数据的压缩算法
     public String getHbaseDefaultCompressionCodec() {
         return getOptional("kylin.hbase.default.compression.codec", "none");
     }
@@ -797,6 +802,7 @@ abstract public class KylinConfigBase implements Serializable {
         return Boolean.parseBoolean(getOptional("kylin.query.endpoint.compression.result", "true"));
     }
 
+    //定义自定义函数 key是函数name,value是函数的class全路径
     public Map<String, String> getUDFs() {
         return getPropertiesByPrefix("kylin.query.udf.");
     }

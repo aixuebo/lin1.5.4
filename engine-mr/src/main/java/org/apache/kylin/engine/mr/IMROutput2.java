@@ -39,7 +39,10 @@ public interface IMROutput2 {
      */
     public interface IMRBatchCubingOutputSide2 {
 
-        /** Add step that executes after build dictionary and before build cube. */
+        /** Add step that executes after build dictionary and before build cube.
+         * 即在cube的之前,和build 字典之后执行该步骤
+         * 读取rowkey的分布范围--创建hbase的table表
+         **/
         public void addStepPhase2_BuildDictionary(DefaultChainedExecutable jobFlow);
 
         /**

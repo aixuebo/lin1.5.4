@@ -35,13 +35,14 @@ import org.apache.commons.cli.Options;
 import org.apache.kylin.common.KylinConfig;
 import org.apache.kylin.query.schema.OLAPSchemaFactory;
 
+//如何执行一个sql
 public class QueryCli {
 
     @SuppressWarnings("static-access")
-    private static final Option OPTION_METADATA = OptionBuilder.withArgName("metadata url").hasArg().isRequired().withDescription("Metadata URL").create("metadata");
+    private static final Option OPTION_METADATA = OptionBuilder.withArgName("metadata url").hasArg().isRequired().withDescription("Metadata URL").create("metadata");//配置文件如何读取
 
     @SuppressWarnings("static-access")
-    private static final Option OPTION_SQL = OptionBuilder.withArgName("input sql").hasArg().isRequired().withDescription("SQL").create("sql");
+    private static final Option OPTION_SQL = OptionBuilder.withArgName("input sql").hasArg().isRequired().withDescription("SQL").create("sql");//sql语句
 
     public static void main(String[] args) throws Exception {
 
@@ -55,13 +56,13 @@ public class QueryCli {
         String sql = commandLine.getOptionValue(OPTION_SQL.getOpt());
 
         Class.forName(Driver.class.getName());
-        File olapTmp = OLAPSchemaFactory.createTempOLAPJson(null, config);
+        File olapTmp = OLAPSchemaFactory.createTempOLAPJson(null, config);//创建该数据库的文件
 
         Connection conn = null;
         Statement stmt = null;
         ResultSet rs = null;
         try {
-            conn = DriverManager.getConnection("jdbc:calcite:model=" + olapTmp.getAbsolutePath());
+            conn = DriverManager.getConnection("jdbc:calcite:model=" + olapTmp.getAbsolutePath());//连接该文件
 
             stmt = conn.createStatement();
             rs = stmt.executeQuery(sql);

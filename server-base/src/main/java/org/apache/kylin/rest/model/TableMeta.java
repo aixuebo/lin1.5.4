@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 表的元数据
  */
 public class TableMeta implements Serializable {
 

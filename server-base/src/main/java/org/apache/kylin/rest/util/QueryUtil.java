@@ -101,14 +101,16 @@ public class QueryUtil {
         }
     }
 
+    //格式化sql
     public static String massageSql(SQLRequest sqlRequest) {
         String sql = sqlRequest.getSql();
         sql = sql.trim();
         sql = sql.replace("\r", " ").replace("\n", System.getProperty("line.separator"));
 
-        while (sql.endsWith(";"))
+        while (sql.endsWith(";")) //一直到;说明sql结束了
             sql = sql.substring(0, sql.length() - 1);
 
+        //加入limit语法
         int limit = sqlRequest.getLimit();
         if (limit > 0 && !sql.toLowerCase().contains("limit")) {
             sql += ("\nLIMIT " + limit);

@@ -26,17 +26,18 @@ import org.apache.kylin.engine.mr.KylinMapper;
 
 /**
  * @author ysong1
- * 
+ * 每个1M字节的时候统计一下rowkey以及对应的字节数
+ * 用于对所有的rowkey进行划分范围
  */
 public class RangeKeyDistributionMapper extends KylinMapper<Text, Text, Text, LongWritable> {
 
-    private static final long ONE_MEGA_BYTES = 1L * 1024L * 1024L;
+    private static final long ONE_MEGA_BYTES = 1L * 1024L * 1024L;//1M
 
     private LongWritable outputValue = new LongWritable(0);
 
-    private long bytesRead = 0;
+    private long bytesRead = 0;//已经读取了多少个字节
 
-    private Text lastKey;
+    private Text lastKey;//最后一个key
 
     @Override
     protected void setup(Context context) throws IOException {
@@ -47,15 +48,15 @@ public class RangeKeyDistributionMapper extends KylinMapper<Text, Text, Text, Lo
     public void map(Text key, Text value, Context context) throws IOException, InterruptedException {
         lastKey = key;
 
-        int bytesLength = key.getLength() + value.getLength();
-        bytesRead += bytesLength;
+        int bytesLength = key.getLength() + value.getLength();//该记录占用多少字节
+        bytesRead += bytesLength;//累加读取的字节数
 
-        if (bytesRead >= ONE_MEGA_BYTES) {
+        if (bytesRead >= ONE_MEGA_BYTES) {//超过伐值
             outputValue.set(bytesRead);
-            context.write(key, outputValue);
+            context.write(key, outputValue);//设置准确的字节数
 
             // reset bytesRead
-            bytesRead = 0;
+            bytesRead = 0;//归0
         }
 
     }
@@ -64,7 +65,7 @@ public class RangeKeyDistributionMapper extends KylinMapper<Text, Text, Text, Lo
     protected void cleanup(Context context) throws IOException, InterruptedException {
         if (lastKey != null) {
             outputValue.set(bytesRead);
-            context.write(lastKey, outputValue);
+            context.write(lastKey, outputValue);//输出最后一个key对应的字节数
         }
     }
 

@@ -47,6 +47,7 @@ public class HBaseMROutput2Transition implements IMROutput2 {
         return new IMRBatchCubingOutputSide2() {
             HBaseMRSteps steps = new HBaseMRSteps(seg);
 
+            //读取rowkey的分布范围--创建hbase的table表
             @Override
             public void addStepPhase2_BuildDictionary(DefaultChainedExecutable jobFlow) {
                 jobFlow.addTask(steps.createCreateHTableStepWithStats(jobFlow.getId()));
@@ -54,8 +55,8 @@ public class HBaseMROutput2Transition implements IMROutput2 {
 
             @Override
             public void addStepPhase3_BuildCube(DefaultChainedExecutable jobFlow) {
-                jobFlow.addTask(steps.createConvertCuboidToHfileStep(jobFlow.getId()));
-                jobFlow.addTask(steps.createBulkLoadStep(jobFlow.getId()));
+                jobFlow.addTask(steps.createConvertCuboidToHfileStep(jobFlow.getId()));//读取rowkey--所有度量的值作为输入源,输出到hbase中,rowkey不变,只是将所有的度量值,拆分成若干个列族,存放到不同的列里面
+                jobFlow.addTask(steps.createBulkLoadStep(jobFlow.getId()));//将一个hfile的文件路径,插入到hbase的一个表下
             }
 
             @Override

@@ -52,6 +52,7 @@ public interface IMROutput {
          * dictionary encoding; Mx is measure value serialization form.
          *
          * cuboidRootPath 表示ccuboid输出的根目录
+         * 将统计的结果存储到hbase中
          */
         public void addStepPhase3_BuildCube(DefaultChainedExecutable jobFlow, String cuboidRootPath);
 

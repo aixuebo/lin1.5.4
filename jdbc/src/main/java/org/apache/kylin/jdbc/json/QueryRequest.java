@@ -18,6 +18,7 @@
 
 package org.apache.kylin.jdbc.json;
 
+//查询请求
 public class QueryRequest {
     private String sql;
     private String project;

@@ -29,6 +29,7 @@ public class HBaseMROutput implements IMROutput {
         return new IMRBatchCubingOutputSide() {
             HBaseMRSteps steps = new HBaseMRSteps(seg);
 
+            //将统计的结果存储到hbase中
             @Override
             public void addStepPhase3_BuildCube(DefaultChainedExecutable jobFlow, String cuboidRootPath) {
                 steps.addSaveCuboidToHTableSteps(jobFlow, cuboidRootPath);

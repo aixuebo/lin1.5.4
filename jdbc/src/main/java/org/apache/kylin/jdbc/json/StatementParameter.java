@@ -18,6 +18,9 @@
 
 package org.apache.kylin.jdbc.json;
 
+/**
+ * 用于预编译sql中每一个value值所属class类型与对应的value映射
+ */
 public class StatementParameter {
 
     private String className;

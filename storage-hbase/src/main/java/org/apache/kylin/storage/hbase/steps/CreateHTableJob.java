@@ -58,6 +58,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 /**
+ * 创建hbase的一个table,使用规划好的rowkey进行拆分该table的regionSplit
+ *
+ * 读取rowkey的分布范围--创建hbase的table表
  */
 public class CreateHTableJob extends AbstractHadoopJob {
 
@@ -67,7 +70,7 @@ public class CreateHTableJob extends AbstractHadoopJob {
     CubeDesc cubeDesc = null;
     String segmentID = null;
     KylinConfig kylinConfig;
-    Path partitionFilePath;//rowkey划分存储的partition的路径
+    Path partitionFilePath;//rowkey划分存储的partition的路径  读取rowkey的分布范围
 
     @Override
     public int run(String[] args) throws Exception {
@@ -75,8 +78,8 @@ public class CreateHTableJob extends AbstractHadoopJob {
 
         options.addOption(OPTION_CUBE_NAME);
         options.addOption(OPTION_SEGMENT_ID);
-        options.addOption(OPTION_PARTITION_FILE_PATH);
-        options.addOption(OPTION_STATISTICS_ENABLED);
+        options.addOption(OPTION_PARTITION_FILE_PATH);//读取rowkey的分布范围
+        options.addOption(OPTION_STATISTICS_ENABLED);//是否统计
         parseOptions(options, args);
 
         partitionFilePath = new Path(getOptionValue(OPTION_PARTITION_FILE_PATH));
@@ -101,7 +104,7 @@ public class CreateHTableJob extends AbstractHadoopJob {
                 splitKeys = getRegionSplits(conf, partitionFilePath);
             }
 
-            CubeHTableUtil.createHTable(cubeSegment, splitKeys);
+            CubeHTableUtil.createHTable(cubeSegment, splitKeys);//为segment创建hbase的表
             return 0;
         } catch (Exception e) {
             printUsage(options);
@@ -124,8 +127,8 @@ public class CreateHTableJob extends AbstractHadoopJob {
         SequenceFile.Reader reader = null;
         try {
             reader = new SequenceFile.Reader(fs, path, conf);//读取hdfs上的数据
-            Writable key = (Writable) ReflectionUtils.newInstance(reader.getKeyClass(), conf);
-            Writable value = (Writable) ReflectionUtils.newInstance(reader.getValueClass(), conf);
+            Writable key = (Writable) ReflectionUtils.newInstance(reader.getKeyClass(), conf);//rowkey
+            Writable value = (Writable) ReflectionUtils.newInstance(reader.getValueClass(), conf);//index,key在切割点集合中的下标
             while (reader.next(key, value)) {//每次读取一行数据
                 rowkeyList.add(((Text) key).copyBytes());
             }
@@ -157,27 +160,37 @@ public class CreateHTableJob extends AbstractHadoopJob {
         return result;
     }
 
+    /**
+     *
+     * @param cubeSizeMap 计算每一个cuboid占用多少字节,单位是M
+     * @param kylinConfig
+     * @param cubeSegment
+     * @param hfileSplitsOutputFolder
+     * @return
+     * @throws IOException
+     */
     public static byte[][] getRegionSplitsFromCuboidStatistics(final Map<Long, Double> cubeSizeMap, final KylinConfig kylinConfig, final CubeSegment cubeSegment, final Path hfileSplitsOutputFolder) throws IOException {
 
         final CubeDesc cubeDesc = cubeSegment.getCubeDesc();
-        float cut = cubeDesc.getConfig().getKylinHBaseRegionCut();
+        float cut = cubeDesc.getConfig().getKylinHBaseRegionCut();//最终切分成多少个region
 
         logger.info("Cut for HBase region is " + cut + "GB");
 
-        double totalSizeInM = 0;
+        double totalSizeInM = 0;//所有的cuboid占用的总字节
         for (Double cuboidSize : cubeSizeMap.values()) {
             totalSizeInM += cuboidSize;
         }
 
-        List<Long> allCuboids = Lists.newArrayList();
+        List<Long> allCuboids = Lists.newArrayList();//存储所有的cuboid集合
         allCuboids.addAll(cubeSizeMap.keySet());
         Collections.sort(allCuboids);
 
-        int nRegion = Math.round((float) (totalSizeInM / (cut * 1024L)));
+        int nRegion = Math.round((float) (totalSizeInM / (cut * 1024L)));//每一个region多少M
+        //校验范围在最大值和最小值之间
         nRegion = Math.max(kylinConfig.getHBaseRegionCountMin(), nRegion);
         nRegion = Math.min(kylinConfig.getHBaseRegionCountMax(), nRegion);
 
-        if (cubeSegment.isEnableSharding()) {//&& (nRegion > 1)) {
+        if (cubeSegment.isEnableSharding()) {//&& (nRegion > 1)) {存在sharding分片
             //use prime nRegions to help random sharding
             int original = nRegion;
             if (nRegion == 0) {

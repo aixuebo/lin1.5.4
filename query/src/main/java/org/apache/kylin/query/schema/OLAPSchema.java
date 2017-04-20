@@ -32,18 +32,29 @@ import org.apache.kylin.metadata.project.ProjectInstance;
 import org.apache.kylin.metadata.project.ProjectManager;
 
 /**
+ * 表示一个数据库
  */
 public class OLAPSchema extends AbstractSchema {
 
     //    private static final Logger logger = LoggerFactory.getLogger(OLAPSchema.class);
 
     private KylinConfig config;
-    private String projectName;
-    private String schemaName;
+
+    private String projectName;//项目名称
+    private String schemaName;//数据库名称
+
     private String storageUrl;
+
+    //数据库的登录url  user  密码
     private String starSchemaUrl;
     private String starSchemaUser;
     private String starSchemaPassword;
+
+    public OLAPSchema(String project, String schemaName) {
+        this.projectName = ProjectInstance.getNormalizedProjectName(project);
+        this.schemaName = schemaName;
+        init();
+    }
 
     private void init() {
         this.config = KylinConfig.getInstanceFromEnv();
@@ -51,12 +62,6 @@ public class OLAPSchema extends AbstractSchema {
         this.starSchemaUrl = config.getHiveUrl();
         this.starSchemaUser = config.getHiveUser();
         this.starSchemaPassword = config.getHivePassword();
-    }
-
-    public OLAPSchema(String project, String schemaName) {
-        this.projectName = ProjectInstance.getNormalizedProjectName(project);
-        this.schemaName = schemaName;
-        init();
     }
 
     /**
@@ -69,12 +74,13 @@ public class OLAPSchema extends AbstractSchema {
         return buildTableMap();
     }
 
+    //获取该product下所有的table集合---数据库名字必须是schemaName
     private Map<String, Table> buildTableMap() {
         Map<String, Table> olapTables = new HashMap<String, Table>();
-        Set<TableDesc> projectTables = ProjectManager.getInstance(config).listExposedTables(projectName);
+        Set<TableDesc> projectTables = ProjectManager.getInstance(config).listExposedTables(projectName);//获取该product下所有的table集合
 
         for (TableDesc tableDesc : projectTables) {
-            if (tableDesc.getDatabase().equals(schemaName)) {
+            if (tableDesc.getDatabase().equals(schemaName)) {//找到符合该数据库
                 final String tableName = tableDesc.getName();//safe to use tableDesc.getName() here, it is in a DB context now
                 final OLAPTable table = new OLAPTable(this, tableDesc);
                 olapTables.put(tableName, table);

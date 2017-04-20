@@ -66,6 +66,7 @@ public class CacheService extends BasicService {
 
     private static final Logger logger = LoggerFactory.getLogger(CacheService.class);
 
+    //每一个project 对应一个数据源,key是project
     private static ConcurrentMap<String, DataSource> olapDataSources = new ConcurrentHashMap<String, DataSource>();
 
     @Autowired
@@ -135,6 +136,7 @@ public class CacheService extends BasicService {
         olapDataSources.clear();
     }
 
+    //获取该项目的DataSource对象
     public DataSource getOLAPDataSource(String project) {
 
         project = ProjectInstance.getNormalizedProjectName(project);
@@ -142,10 +144,10 @@ public class CacheService extends BasicService {
         DataSource ret = olapDataSources.get(project);
         if (ret == null) {
             logger.debug("Creating a new data source, OLAP data source pointing to " + getConfig());
-            File modelJson = OLAPSchemaFactory.createTempOLAPJson(project, getConfig());
+            File modelJson = OLAPSchemaFactory.createTempOLAPJson(project, getConfig());//创建该project的描述
 
             try {
-                String text = FileUtils.readFileToString(modelJson, Charset.defaultCharset());
+                String text = FileUtils.readFileToString(modelJson, Charset.defaultCharset());//读取json文件内容
                 logger.debug("The new temp olap json is :" + text);
             } catch (IOException e) {
                 e.printStackTrace(); // logging failure is not critical

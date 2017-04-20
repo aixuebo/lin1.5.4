@@ -34,8 +34,8 @@ import org.apache.kylin.query.relnode.OLAPContext;
 public class HiveEnumerator implements Enumerator<Object[]> {
 
     private final OLAPContext olapContext;
-    private final Object[] current;
-    private ResultSet rs;
+    private final Object[] current;//具体的值
+    private ResultSet rs;//查询结果
     private Connection conn;
 
     public HiveEnumerator(OLAPContext olapContext) {
@@ -51,9 +51,9 @@ public class HiveEnumerator implements Enumerator<Object[]> {
     @Override
     public boolean moveNext() {
         if (rs == null) {
-            rs = executeQuery();
+            rs = executeQuery();//去执行查询
         }
-        return populateResult();
+        return populateResult();//获取一条结果
     }
 
     private ResultSet executeQuery() {
@@ -88,13 +88,14 @@ public class HiveEnumerator implements Enumerator<Object[]> {
         }
     }
 
+    //获取一条结果
     private boolean populateResult() {
         try {
             boolean hasNext = rs.next();
             if (hasNext) {
                 List<String> allFields = olapContext.returnTupleInfo.getAllFields();
                 for (int i = 0; i < allFields.size(); i++) {
-                    Object value = rs.getObject(allFields.get(i).toLowerCase());
+                    Object value = rs.getObject(allFields.get(i).toLowerCase());//获取属性对应的值
                     current[i] = value;
                 }
             }

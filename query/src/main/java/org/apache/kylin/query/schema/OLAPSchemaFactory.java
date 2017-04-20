@@ -68,26 +68,28 @@ public class OLAPSchemaFactory implements SchemaFactory {
 
     @Override
     public Schema create(SchemaPlus parentSchema, String schemaName, Map<String, Object> operand) {
-        String project = (String) operand.get(SCHEMA_PROJECT);
+        String project = (String) operand.get(SCHEMA_PROJECT);//获取project
         Schema newSchema = new OLAPSchema(project, schemaName);
         return newSchema;
     }
 
+    //创建一个该数据库的json文件,包含自定义函数
     public static File createTempOLAPJson(String project, KylinConfig config) {
         project = ProjectInstance.getNormalizedProjectName(project);
 
-        Set<TableDesc> tables = ProjectManager.getInstance(config).listExposedTables(project);
+        Set<TableDesc> tables = ProjectManager.getInstance(config).listExposedTables(project);//该project下所有的表
 
         // "database" in TableDesc correspond to our schema
         // the logic to decide which schema to be "default" in calcite:
         // if some schema are named "default", use it.
         // other wise use the schema with most tables
-        HashMap<String, Integer> schemaCounts = DatabaseDesc.extractDatabaseOccurenceCounts(tables);
-        String majoritySchemaName = "";
-        int majoritySchemaCount = 0;
+        HashMap<String, Integer> schemaCounts = DatabaseDesc.extractDatabaseOccurenceCounts(tables);//返回参数集合中 存储的每一个数据库下有多少个表
+
+        String majoritySchemaName = "";//主要的数据库
+        int majoritySchemaCount = 0;//该数据库上的表的数量
         for (Map.Entry<String, Integer> e : schemaCounts.entrySet()) {
-            if (e.getKey().equalsIgnoreCase("default")) {
-                majoritySchemaCount = Integer.MAX_VALUE;
+            if (e.getKey().equalsIgnoreCase("default")) {//默认的数据库
+                majoritySchemaCount = Integer.MAX_VALUE;//设置非常大的值,即主要使用default数据库
                 majoritySchemaName = e.getKey();
             }
 
@@ -103,17 +105,17 @@ public class OLAPSchemaFactory implements SchemaFactory {
             FileWriter out = new FileWriter(tmp);
             out.write("{\n");
             out.write("    \"version\": \"1.0\",\n");
-            out.write("    \"defaultSchema\": \"" + majoritySchemaName + "\",\n");
+            out.write("    \"defaultSchema\": \"" + majoritySchemaName + "\",\n");//设置主要的数据库
             out.write("    \"schemas\": [\n");
 
             int counter = 0;
-            for (String schemaName : schemaCounts.keySet()) {
+            for (String schemaName : schemaCounts.keySet()) {//循环每一个数据库
                 out.write("        {\n");
                 out.write("            \"type\": \"custom\",\n");
-                out.write("            \"name\": \"" + schemaName + "\",\n");
+                out.write("            \"name\": \"" + schemaName + "\",\n");//定义的数据库
                 out.write("            \"factory\": \"org.apache.kylin.query.schema.OLAPSchemaFactory\",\n");
                 out.write("            \"operand\": {\n");
-                out.write("                \"" + SCHEMA_PROJECT + "\": \"" + project + "\"\n");
+                out.write("                \"" + SCHEMA_PROJECT + "\": \"" + project + "\"\n");//该数据库所属project
                 out.write("            },\n");
                 createOLAPSchemaFunctions(out);
                 out.write("        }\n");
@@ -137,6 +139,7 @@ public class OLAPSchemaFactory implements SchemaFactory {
         }
     }
 
+    //自定义函数
     private static void createOLAPSchemaFunctions(Writer out) throws IOException {
         out.write("            \"functions\": [\n");
         Map<String, String> udfs = KylinConfig.getInstanceFromEnv().getUDFs();

@@ -58,6 +58,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 /**
+ * 表示一个数据库表
  */
 public class OLAPTable extends AbstractQueryableTable implements TranslatableTable {
 
@@ -88,7 +89,7 @@ public class OLAPTable extends AbstractQueryableTable implements TranslatableTab
         // }
     }
 
-    private final OLAPSchema olapSchema;
+    private final OLAPSchema olapSchema;//数据库对象
     private final TableDesc sourceTable;
     private RelDataType rowType;
     private List<ColumnDesc> exposedColumns;
@@ -164,7 +165,7 @@ public class OLAPTable extends AbstractQueryableTable implements TranslatableTab
 
     private List<ColumnDesc> listSourceColumns() {
         ProjectManager mgr = ProjectManager.getInstance(olapSchema.getConfig());
-        List<ColumnDesc> tableColumns = Lists.newArrayList(mgr.listExposedColumns(olapSchema.getProjectName(), sourceTable.getIdentity()));
+        List<ColumnDesc> tableColumns = Lists.newArrayList(mgr.listExposedColumns(olapSchema.getProjectName(), sourceTable.getIdentity()));//获取该表对应的所有列集合
 
         List<ColumnDesc> metricColumns = Lists.newArrayList();
         List<MeasureDesc> countMeasures = mgr.listEffectiveRewriteMeasures(olapSchema.getProjectName(), sourceTable.getIdentity());
@@ -208,6 +209,7 @@ public class OLAPTable extends AbstractQueryableTable implements TranslatableTab
         return new OLAPTableScan(context.getCluster(), relOptTable, this, fields);
     }
 
+    //产生一个int数组,内容是[0,n]
     private int[] identityList(int n) {
         int[] integers = new int[n];
         for (int i = 0; i < n; i++) {

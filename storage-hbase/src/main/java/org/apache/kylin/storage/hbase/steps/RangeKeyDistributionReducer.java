@@ -36,11 +36,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author ysong1
- * 
+ * 用于对所有的rowkey进行划分范围
  */
 public class RangeKeyDistributionReducer extends KylinReducer<Text, LongWritable, Text, LongWritable> {
 
-    public static final long ONE_GIGA_BYTES = 1024L * 1024L * 1024L;
+    public static final long ONE_GIGA_BYTES = 1024L * 1024L * 1024L;//1G
     private static final Logger logger = LoggerFactory.getLogger(RangeKeyDistributionReducer.class);
 
     private LongWritable outputValue = new LongWritable(0);
@@ -50,7 +50,7 @@ public class RangeKeyDistributionReducer extends KylinReducer<Text, LongWritable
     private float cut = 10.0f;
     private int hfileSizeGB = 1;
     private long bytesRead = 0;
-    private List<Text> gbPoints = new ArrayList<Text>();
+    private List<Text> gbPoints = new ArrayList<Text>();//切分点,切分点的内容是rowkey,1G一个切分点
     private String output = null;
 
     @Override
@@ -80,7 +80,7 @@ public class RangeKeyDistributionReducer extends KylinReducer<Text, LongWritable
         logger.info("Chosen cut for htable is " + cut + ", max region count=" + maxRegionCount + ", min region count=" + minRegionCount + ", hfile size=" + hfileSizeGB);
 
         // add empty key at position 0
-        gbPoints.add(new Text());
+        gbPoints.add(new Text());//先初始化一个空的切分点,表示0
     }
 
     @Override
@@ -89,41 +89,43 @@ public class RangeKeyDistributionReducer extends KylinReducer<Text, LongWritable
             bytesRead += v.get();
         }
 
-        if (bytesRead >= ONE_GIGA_BYTES) {
-            gbPoints.add(new Text(key));
+        if (bytesRead >= ONE_GIGA_BYTES) {//达到一G就设置一个切分点
+            gbPoints.add(new Text(key));//切分点就是rowkey
             bytesRead = 0; // reset bytesRead
         }
     }
 
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
-        int nRegion = Math.round((float) gbPoints.size() / cut);
+        int nRegion = Math.round((float) gbPoints.size() / cut); //最终切分成多少个region
+        //校验region切分的数量一定在最大值和最小值之间
         nRegion = Math.max(minRegionCount, nRegion);
         nRegion = Math.min(maxRegionCount, nRegion);
 
-        int gbPerRegion = gbPoints.size() / nRegion;
-        gbPerRegion = Math.max(1, gbPerRegion);
+        int gbPerRegion = gbPoints.size() / nRegion;//表示每一个region里面有多少个切分点,即有多少G数据
+        gbPerRegion = Math.max(1, gbPerRegion);//最小是1G
 
         if (hfileSizeGB <= 0) {
             hfileSizeGB = gbPerRegion;
         }
-        int hfilePerRegion = (int) (gbPerRegion / hfileSizeGB);
-        hfilePerRegion = Math.max(1, hfilePerRegion);
+        int hfilePerRegion = (int) (gbPerRegion / hfileSizeGB);//表示一个region里面需要多少个hfile文件
+        hfilePerRegion = Math.max(1, hfilePerRegion);//hfile文件至少也是1个
 
-        System.out.println(nRegion + " regions");
-        System.out.println(gbPerRegion + " GB per region");
-        System.out.println(hfilePerRegion + " hfile per region");
+        System.out.println(nRegion + " regions");//打印多少个region
+        System.out.println(gbPerRegion + " GB per region");//每一个region多少G数据
+        System.out.println(hfilePerRegion + " hfile per region");//每一个region有多少个hfile文件
 
-        Path hfilePartitionFile = new Path(output + "/part-r-00000_hfile");
-        SequenceFile.Writer hfilePartitionWriter = new SequenceFile.Writer(hfilePartitionFile.getFileSystem(context.getConfiguration()), context.getConfiguration(), hfilePartitionFile, ImmutableBytesWritable.class, NullWritable.class);
-        int hfileCountInOneRegion = 0;
+
+        Path hfilePartitionFile = new Path(output + "/part-r-00000_hfile");//创建hfile文件---存储每一个切分点的key
+        SequenceFile.Writer hfilePartitionWriter = new SequenceFile.Writer(hfilePartitionFile.getFileSystem(context.getConfiguration()), context.getConfiguration(), hfilePartitionFile, ImmutableBytesWritable.class, NullWritable.class);//文件内容key是ImmutableBytesWritable,value是NullWritable
+        int hfileCountInOneRegion = 0;//表示一个region里面已经存放多少个hfile文件了
         for (int i = hfileSizeGB; i < gbPoints.size(); i += hfileSizeGB) {
-            hfilePartitionWriter.append(new ImmutableBytesWritable(gbPoints.get(i).getBytes()), NullWritable.get());
-            if (++hfileCountInOneRegion >= hfilePerRegion) {
+            hfilePartitionWriter.append(new ImmutableBytesWritable(gbPoints.get(i).getBytes()), NullWritable.get());//存放分割点的rowkey
+            if (++hfileCountInOneRegion >= hfilePerRegion) {//表示该切换region了
                 Text key = gbPoints.get(i);
                 outputValue.set(i);
                 System.out.println(StringUtils.byteToHexString(key.getBytes()) + "\t" + outputValue.get());
-                context.write(key, outputValue);
+                context.write(key, outputValue);//key是切换region时候的rowkey,value是第几个切分点-----配合hfilePartitionFile文件可以读取到value第几个代表的是哪个切分点
 
                 hfileCountInOneRegion = 0;
             }

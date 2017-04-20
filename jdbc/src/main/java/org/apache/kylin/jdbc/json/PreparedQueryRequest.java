@@ -20,8 +20,9 @@ package org.apache.kylin.jdbc.json;
 
 import java.util.List;
 
+//预编译的sql请求
 public class PreparedQueryRequest extends QueryRequest {
-    private List<StatementParameter> params;
+    private List<StatementParameter> params;//用于预编译sql中每一个value值所属class类型与对应的value映射
 
     public List<StatementParameter> getParams() {
         return params;

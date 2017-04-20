@@ -25,9 +25,9 @@ import java.io.Serializable;
 public class ColumnMeta implements Serializable {
     private static final long serialVersionUID = 1L;
     private String TABLE_CAT;
-    private String TABLE_SCHEM;
-    private String TABLE_NAME;
-    private String COLUMN_NAME;
+    private String TABLE_SCHEM;//列所在的数据库
+    private String TABLE_NAME;//列所在的表
+    private String COLUMN_NAME;//列的名字
     private int DATA_TYPE;
     private String TYPE_NAME;
     private int COLUMN_SIZE;

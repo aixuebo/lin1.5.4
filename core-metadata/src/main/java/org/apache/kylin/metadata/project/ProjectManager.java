@@ -393,6 +393,7 @@ public class ProjectManager {
         return l2Cache.listExposedTables(norm(project));
     }
 
+    //获取该表对应的所有列集合
     public Set<ColumnDesc> listExposedColumns(String project, String table) {
         return l2Cache.listExposedColumns(norm(project), table);
     }

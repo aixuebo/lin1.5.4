@@ -119,6 +119,7 @@ public class QueryService extends BasicService {
         return getMetadata(getCubeManager(), project, true);
     }
 
+    //查询sql
     public SQLResponse query(SQLRequest sqlRequest) throws Exception {
         try {
             final String user = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -323,6 +324,9 @@ public class QueryService extends BasicService {
 
     }
 
+    /**
+     * 获取该project下的元数据
+     */
     protected List<TableMeta> getMetadata(CubeManager cubeMgr, String project, boolean cubedOnly) throws SQLException {
 
         Connection conn = null;
@@ -333,15 +337,17 @@ public class QueryService extends BasicService {
         }
         ResultSet JDBCTableMeta = null;
         try {
-            DataSource dataSource = cacheService.getOLAPDataSource(project);
+            DataSource dataSource = cacheService.getOLAPDataSource(project);//获取该project的元数据内容
             conn = dataSource.getConnection();
             DatabaseMetaData metaData = conn.getMetaData();
 
             logger.debug("getting table metas");
             JDBCTableMeta = metaData.getTables(null, null, null, null);
 
-            tableMetas = new LinkedList<TableMeta>();
-            Map<String, TableMeta> tableMap = new HashMap<String, TableMeta>();
+
+            //加载所有的数据表
+            tableMetas = new LinkedList<TableMeta>();//table对象集合
+            Map<String, TableMeta> tableMap = new HashMap<String, TableMeta>();//数据库#tableName作为key,table对象作为value
             while (JDBCTableMeta.next()) {
                 String catalogName = JDBCTableMeta.getString(1);
                 String schemaName = JDBCTableMeta.getString(2);
@@ -356,7 +362,7 @@ public class QueryService extends BasicService {
             }
 
             logger.debug("getting column metas");
-            columnMeta = metaData.getColumns(null, null, null, null);
+            columnMeta = metaData.getColumns(null, null, null, null);//获取所有的列信息
 
             while (columnMeta.next()) {
                 String catalogName = columnMeta.getString(1);
@@ -366,7 +372,7 @@ public class QueryService extends BasicService {
                 ColumnMeta colmnMeta = new ColumnMeta(catalogName == null ? Constant.FakeCatalogName : catalogName, schemaName == null ? Constant.FakeSchemaName : schemaName, columnMeta.getString(3), columnMeta.getString(4), columnMeta.getInt(5), columnMeta.getString(6), columnMeta.getInt(7), getInt(columnMeta.getString(8)), columnMeta.getInt(9), columnMeta.getInt(10), columnMeta.getInt(11), columnMeta.getString(12), columnMeta.getString(13), getInt(columnMeta.getString(14)), getInt(columnMeta.getString(15)), columnMeta.getInt(16), columnMeta.getInt(17), columnMeta.getString(18), columnMeta.getString(19), columnMeta.getString(20), columnMeta.getString(21), getShort(columnMeta.getString(22)), columnMeta.getString(23));
 
                 if (!cubedOnly || getProjectManager().isExposedColumn(project, schemaName + "." + colmnMeta.getTABLE_NAME(), colmnMeta.getCOLUMN_NAME())) {
-                    tableMap.get(colmnMeta.getTABLE_SCHEM() + "#" + colmnMeta.getTABLE_NAME()).addColumn(colmnMeta);
+                    tableMap.get(colmnMeta.getTABLE_SCHEM() + "#" + colmnMeta.getTABLE_NAME()).addColumn(colmnMeta);//将该列添加到对应的table中
                 }
             }
             logger.debug("done column metas");
@@ -381,6 +387,7 @@ public class QueryService extends BasicService {
     }
 
     /**
+     * 执行sql
      * @param sql
      * @param sqlRequest
      * @return
@@ -391,8 +398,9 @@ public class QueryService extends BasicService {
         Statement stat = null;
         ResultSet resultSet = null;
 
-        List<List<String>> results = Lists.newArrayList();
-        List<SelectedColumnMeta> columnMetas = Lists.newArrayList();
+        List<List<String>> results = Lists.newArrayList();//查询的所有数据集合
+
+        List<SelectedColumnMeta> columnMetas = Lists.newArrayList();//每一列对应的元数据
 
         try {
             conn = cacheService.getOLAPDataSource(sqlRequest.getProject()).getConnection();
@@ -400,7 +408,7 @@ public class QueryService extends BasicService {
             if (sqlRequest instanceof PrepareSqlRequest) {
                 PreparedStatement preparedState = conn.prepareStatement(sql);
 
-                for (int i = 0; i < ((PrepareSqlRequest) sqlRequest).getParams().length; i++) {
+                for (int i = 0; i < ((PrepareSqlRequest) sqlRequest).getParams().length; i++) {//为预编译sql设置值
                     setParam(preparedState, i + 1, ((PrepareSqlRequest) sqlRequest).getParams()[i]);
                 }
 
@@ -411,18 +419,20 @@ public class QueryService extends BasicService {
             }
 
             ResultSetMetaData metaData = resultSet.getMetaData();
-            int columnCount = metaData.getColumnCount();
+            int columnCount = metaData.getColumnCount();//有多少列
 
             // Fill in selected column meta
             for (int i = 1; i <= columnCount; ++i) {
-                columnMetas.add(new SelectedColumnMeta(metaData.isAutoIncrement(i), metaData.isCaseSensitive(i), metaData.isSearchable(i), metaData.isCurrency(i), metaData.isNullable(i), metaData.isSigned(i), metaData.getColumnDisplaySize(i), metaData.getColumnLabel(i), metaData.getColumnName(i), metaData.getSchemaName(i), metaData.getCatalogName(i), metaData.getTableName(i), metaData.getPrecision(i), metaData.getScale(i), metaData.getColumnType(i), metaData.getColumnTypeName(i), metaData.isReadOnly(i), metaData.isWritable(i), metaData.isDefinitelyWritable(i)));
+                columnMetas.add(new SelectedColumnMeta(metaData.isAutoIncrement(i), metaData.isCaseSensitive(i), metaData.isSearchable(i), metaData.isCurrency(i), metaData.isNullable(i), metaData.isSigned(i),
+                        metaData.getColumnDisplaySize(i), metaData.getColumnLabel(i), metaData.getColumnName(i), metaData.getSchemaName(i), metaData.getCatalogName(i), metaData.getTableName(i),
+                        metaData.getPrecision(i), metaData.getScale(i), metaData.getColumnType(i), metaData.getColumnTypeName(i), metaData.isReadOnly(i), metaData.isWritable(i), metaData.isDefinitelyWritable(i)));
             }
 
             // fill in results
             while (resultSet.next()) {
-                List<String> oneRow = Lists.newArrayListWithCapacity(columnCount);
+                List<String> oneRow = Lists.newArrayListWithCapacity(columnCount);//有多少列,就有多少值
                 for (int i = 0; i < columnCount; i++) {
-                    oneRow.add((resultSet.getString(i + 1)));
+                    oneRow.add((resultSet.getString(i + 1)));//将每一列的值转换成String
                 }
 
                 results.add(oneRow);
@@ -457,6 +467,7 @@ public class QueryService extends BasicService {
      * @param preparedState
      * @param param
      * @throws SQLException
+     * 为预编译sql设置值
      */
     private void setParam(PreparedStatement preparedState, int index, PrepareSqlRequest.StateParam param) throws SQLException {
         boolean isNull = (null == param.getValue());

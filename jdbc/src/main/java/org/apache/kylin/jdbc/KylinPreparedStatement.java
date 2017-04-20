@@ -41,6 +41,7 @@ public class KylinPreparedStatement extends AvaticaPreparedStatement {
             this.handle.signature = signature;
     }
 
+    //预编译?对应的值
     protected List<Object> getParameterJDBCValues() {
         List<TypedValue> typeValues = getParameterValues();
         List<Object> jdbcValues = new ArrayList<Object>(typeValues.size());

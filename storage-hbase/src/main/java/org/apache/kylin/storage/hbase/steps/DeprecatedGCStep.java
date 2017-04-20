@@ -46,12 +46,13 @@ import com.google.common.collect.Lists;
 
 /**
  * A deprecated job step, used by 0.7 jobs only. Kept here solely for smooth upgrade to 0.8.
- * 
+ * 一个过期的job阶段,删除掉不再使用的资源
  * Drop the resources that is no longer needed, including intermediate hive table 
  * (after cube build) and hbase tables (after cube merge)
  */
 public class DeprecatedGCStep extends AbstractExecutable {
 
+    //设置老的hbase的table  hive的table  hive的hdfs路径
     private static final String OLD_HTABLES = "oldHTables";
 
     private static final String OLD_HIVE_TABLE = "oldHiveTable";
@@ -69,7 +70,6 @@ public class DeprecatedGCStep extends AbstractExecutable {
 
     @Override
     protected ExecuteResult doWork(ExecutableContext context) throws ExecuteException {
-
         try {
             dropHBaseTable(context);
             dropHdfsPath(context);
@@ -83,20 +83,8 @@ public class DeprecatedGCStep extends AbstractExecutable {
         return new ExecuteResult(ExecuteResult.State.SUCCEED, output.toString());
     }
 
-    private void dropHiveTable(ExecutableContext context) throws IOException {
-        final String hiveTable = this.getOldHiveTable();
-        if (StringUtils.isNotEmpty(hiveTable)) {
-            final String dropSQL = "USE " + context.getConfig().getHiveDatabaseForIntermediateTable() + ";" + " DROP TABLE IF EXISTS  " + hiveTable + ";";
-            final HiveCmdBuilder hiveCmdBuilder = new HiveCmdBuilder();
-            hiveCmdBuilder.addStatement(dropSQL);
-            context.getConfig().getCliCommandExecutor().execute(hiveCmdBuilder.build());
-            output.append("Dropped Hive table " + hiveTable + " \n");
-        }
-
-    }
-
     private void dropHBaseTable(ExecutableContext context) throws IOException {
-        List<String> oldTables = getOldHTables();
+        List<String> oldTables = getOldHTables();//获取等待删除的hbase的表集合
         if (oldTables != null && oldTables.size() > 0) {
             String metadataUrlPrefix = KylinConfig.getInstanceFromEnv().getMetadataUrlPrefix();
             Configuration conf = HBaseConnection.getCurrentHBaseConfiguration();
@@ -104,7 +92,7 @@ public class DeprecatedGCStep extends AbstractExecutable {
             try {
                 admin = new HBaseAdmin(conf);
                 for (String table : oldTables) {
-                    if (admin.tableExists(table)) {
+                    if (admin.tableExists(table)) {//如果表存在
                         HTableDescriptor tableDescriptor = admin.getTableDescriptor(Bytes.toBytes(table));
                         String host = tableDescriptor.getValue(IRealizationConstants.HTableTag);
                         if (metadataUrlPrefix.equalsIgnoreCase(host)) {
@@ -120,7 +108,6 @@ public class DeprecatedGCStep extends AbstractExecutable {
                         }
                     }
                 }
-
             } finally {
                 if (admin != null)
                     try {
@@ -133,8 +120,7 @@ public class DeprecatedGCStep extends AbstractExecutable {
     }
 
     private void dropHdfsPath(ExecutableContext context) throws IOException {
-
-        List<String> oldHdfsPaths = this.getOldHdsfPaths();
+        List<String> oldHdfsPaths = this.getOldHdsfPaths();//获取等待删除的hdfs文件集合
         if (oldHdfsPaths != null && oldHdfsPaths.size() > 0) {
             Configuration hconf = HadoopUtil.getCurrentConfiguration();
             FileSystem fileSystem = FileSystem.get(hconf);
@@ -156,6 +142,37 @@ public class DeprecatedGCStep extends AbstractExecutable {
         }
     }
 
+    private void dropHiveTable(ExecutableContext context) throws IOException {
+        final String hiveTable = this.getOldHiveTable();//获取删除的hive的表
+        if (StringUtils.isNotEmpty(hiveTable)) {//删除该table
+            final String dropSQL = "USE " + context.getConfig().getHiveDatabaseForIntermediateTable() + ";" + " DROP TABLE IF EXISTS  " + hiveTable + ";";
+            final HiveCmdBuilder hiveCmdBuilder = new HiveCmdBuilder();
+            hiveCmdBuilder.addStatement(dropSQL);
+            context.getConfig().getCliCommandExecutor().execute(hiveCmdBuilder.build());
+            output.append("Dropped Hive table " + hiveTable + " \n");
+        }
+    }
+
+    //设置临时文件对应的value
+    private void setArrayParam(String paramKey, List<String> paramValues) {
+        setParam(paramKey, StringUtils.join(paramValues, ","));
+    }
+
+    //获取临时文件key对应的value集合
+    private List<String> getArrayParam(String paramKey) {
+        final String ids = getParam(paramKey);
+        if (ids != null) {
+            final String[] splitted = StringUtils.split(ids, ",");//按照逗号拆分
+            ArrayList<String> result = Lists.newArrayListWithExpectedSize(splitted.length);
+            for (String id : splitted) {
+                result.add(id);
+            }
+            return result;
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
     public void setOldHTables(List<String> tables) {
         setArrayParam(OLD_HTABLES, tables);
     }
@@ -170,24 +187,6 @@ public class DeprecatedGCStep extends AbstractExecutable {
 
     private List<String> getOldHdsfPaths() {
         return getArrayParam(OLD_HDFS_PATHS);
-    }
-
-    private void setArrayParam(String paramKey, List<String> paramValues) {
-        setParam(paramKey, StringUtils.join(paramValues, ","));
-    }
-
-    private List<String> getArrayParam(String paramKey) {
-        final String ids = getParam(paramKey);
-        if (ids != null) {
-            final String[] splitted = StringUtils.split(ids, ",");
-            ArrayList<String> result = Lists.newArrayListWithExpectedSize(splitted.length);
-            for (String id : splitted) {
-                result.add(id);
-            }
-            return result;
-        } else {
-            return Collections.emptyList();
-        }
     }
 
     public void setOldHiveTable(String hiveTable) {

@@ -19,6 +19,7 @@
 package org.apache.kylin.rest.request;
 
 /**
+ * 获取某个project下的元数据信息
  */
 public class MetaRequest {
 

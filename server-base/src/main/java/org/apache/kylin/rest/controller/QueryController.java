@@ -88,6 +88,7 @@ public class QueryController extends BasicController {
         Preconditions.checkNotNull(cacheManager, "cacheManager is not injected yet");
     }
 
+    //正常sql查询
     @RequestMapping(value = "/query", method = RequestMethod.POST)
     @ResponseBody
     public SQLResponse query(@RequestBody SQLRequest sqlRequest) {
@@ -95,6 +96,7 @@ public class QueryController extends BasicController {
     }
 
     // TODO should be just "prepare" a statement, get back expected ResultSetMetaData
+    //预编译sql查询
     @RequestMapping(value = "/query/prestate", method = RequestMethod.POST, produces = "application/json")
     @ResponseBody
     public SQLResponse prepareQuery(@RequestBody PrepareSqlRequest sqlRequest) {
@@ -154,6 +156,7 @@ public class QueryController extends BasicController {
         }
     }
 
+    //获取元数据
     @RequestMapping(value = "/tables_and_columns", method = RequestMethod.GET)
     @ResponseBody
     public List<TableMeta> getMetadata(MetaRequest metaRequest) {
@@ -164,6 +167,7 @@ public class QueryController extends BasicController {
         }
     }
 
+    //执行查询
     private SQLResponse doQueryWithCache(SQLRequest sqlRequest) {
         try {
             BackdoorToggles.setToggles(sqlRequest.getBackdoorToggles());

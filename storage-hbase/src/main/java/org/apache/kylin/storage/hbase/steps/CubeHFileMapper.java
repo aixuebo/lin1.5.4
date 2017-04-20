@@ -39,7 +39,8 @@ import com.google.common.collect.Lists;
 
 /**
  * @author George Song (ysong1)
- * 
+ * 读取rowkey--所有度量的值作为输入源
+ * 输出到hbase中,rowkey不变,只是将所有的度量值,拆分成若干个列族,存放到不同的列里面
  */
 public class CubeHFileMapper extends KylinMapper<Text, Text, ImmutableBytesWritable, KeyValue> {
 
@@ -48,9 +49,10 @@ public class CubeHFileMapper extends KylinMapper<Text, Text, ImmutableBytesWrita
     String cubeName;
     CubeDesc cubeDesc;
 
-    MeasureDecoder inputCodec;
-    Object[] inputMeasures;
-    List<KeyValueCreator> keyValueCreators;
+    MeasureDecoder inputCodec;//度量的解码器
+    Object[] inputMeasures;//调用解码器后,每一个度量返回一个反序列化后的值,每一个值都是数组的一个元素
+
+    List<KeyValueCreator> keyValueCreators;//每一个列族对应一个该对象----因为每一个列族是分配了不同的度量值的
 
     @Override
     protected void setup(Context context) throws IOException {
@@ -73,9 +75,14 @@ public class CubeHFileMapper extends KylinMapper<Text, Text, ImmutableBytesWrita
         }
     }
 
+    /**
+     *
+     * @param key  rowkey
+     * @param value 所有的度量集合
+     */
     @Override
     public void map(Text key, Text value, Context context) throws IOException, InterruptedException {
-        outputKey.set(key.getBytes(), 0, key.getLength());
+        outputKey.set(key.getBytes(), 0, key.getLength());//rowkey
         KeyValue outputValue;
 
         int n = keyValueCreators.size();
@@ -86,11 +93,11 @@ public class CubeHFileMapper extends KylinMapper<Text, Text, ImmutableBytesWrita
 
         } else { // normal (complex) case that distributes measures to multiple HBase columns
 
-            inputCodec.decode(ByteBuffer.wrap(value.getBytes(), 0, value.getLength()), inputMeasures);
+            inputCodec.decode(ByteBuffer.wrap(value.getBytes(), 0, value.getLength()), inputMeasures);//对度量的结果反序列化---存储到inputMeasures中
 
             for (int i = 0; i < n; i++) {
                 outputValue = keyValueCreators.get(i).create(key, inputMeasures);
-                context.write(outputKey, outputValue);
+                context.write(outputKey, outputValue);//用于存储 属于该列族下的某一列对应的具体度量值,因为输出文件是hbase的输出文件,因此这种方式符合hbase文件格式
             }
         }
     }

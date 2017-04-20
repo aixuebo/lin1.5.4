@@ -24,6 +24,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
+ * sql查询结果
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SQLResponseStub implements Serializable {
@@ -33,12 +34,12 @@ public class SQLResponseStub implements Serializable {
     // LoggerFactory.getLogger(SQLResponse.class);
 
     // the data type for each column
-    private List<ColumnMetaStub> columnMetas;
+    private List<ColumnMetaStub> columnMetas;//查询的列的元数据
 
     // the results rows, each row contains several columns
-    private List<String[]> results;
+    private List<String[]> results;//查询结果,正常来说每一行数据是String[]数组,表示列的数据存储在String[]数组中
 
-    private String cube;
+    private String cube;//该sql所属cube
 
     // if not select query, only return affected row count
     private int affectedRowCount;

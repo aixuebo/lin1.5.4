@@ -37,8 +37,12 @@ import org.apache.kylin.storage.hbase.HBaseConnection;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 
+/**
+ * 构造hbase的任务入口
+ */
 public class HBaseMRSteps extends JobBuilderSupport {
 
+    //一个该对象持有一个segment
     public HBaseMRSteps(CubeSegment seg) {
         super(seg, null);
     }
@@ -46,18 +50,19 @@ public class HBaseMRSteps extends JobBuilderSupport {
     public void addSaveCuboidToHTableSteps(DefaultChainedExecutable jobFlow, String cuboidRootPath) {
         String jobId = jobFlow.getId();
 
-        // calculate key distribution
+        // calculate key distribution 用于对所有的rowkey进行划分范围
         jobFlow.addTask(createRangeRowkeyDistributionStep(cuboidRootPath, jobId));
         // create htable step
-        jobFlow.addTask(createCreateHTableStep(jobId));
+        jobFlow.addTask(createCreateHTableStep(jobId));//创建hive的表
         // generate hfiles step
-        jobFlow.addTask(createConvertCuboidToHfileStep(jobId));
+        jobFlow.addTask(createConvertCuboidToHfileStep(jobId));//读取rowkey--所有度量的值作为输入源,输出到hbase中,rowkey不变,只是将所有的度量值,拆分成若干个列族,存放到不同的列里面
         // bulk load step
-        jobFlow.addTask(createBulkLoadStep(jobId));
+        jobFlow.addTask(createBulkLoadStep(jobId));//将一个hfile的文件路径,插入到hbase的一个表下
     }
 
+    //用于对所有的rowkey进行划分范围
     public MapReduceExecutable createRangeRowkeyDistributionStep(String cuboidRootPath, String jobId) {
-        String inputPath = cuboidRootPath + (cuboidRootPath.endsWith("/") ? "" : "/") + "*";
+        String inputPath = cuboidRootPath + (cuboidRootPath.endsWith("/") ? "" : "/") + "*";//输入路径
 
         MapReduceExecutable rowkeyDistributionStep = new MapReduceExecutable();
         rowkeyDistributionStep.setName(ExecutableConstants.STEP_NAME_GET_CUBOID_KEY_DISTRIBUTION);
@@ -82,6 +87,7 @@ public class HBaseMRSteps extends JobBuilderSupport {
         return createCreateHTableStep(jobId, true);
     }
 
+    //读取rowkey的分布范围--创建hbase的table表
     private HadoopShellExecutable createCreateHTableStep(String jobId, boolean withStats) {
         HadoopShellExecutable createHtableStep = new HadoopShellExecutable();
         createHtableStep.setName(ExecutableConstants.STEP_NAME_CREATE_HBASE_TABLE);
@@ -122,6 +128,7 @@ public class HBaseMRSteps extends JobBuilderSupport {
         return mergeCuboidDataStep;
     }
 
+    //读取rowkey--所有度量的值作为输入源,输出到hbase中,rowkey不变,只是将所有的度量值,拆分成若干个列族,存放到不同的列里面
     public MapReduceExecutable createConvertCuboidToHfileStep(String jobId) {
         String cuboidRootPath = getCuboidRootPath(jobId);
         String inputPath = cuboidRootPath + (cuboidRootPath.endsWith("/") ? "" : "/") + "*";
@@ -145,6 +152,7 @@ public class HBaseMRSteps extends JobBuilderSupport {
         return createHFilesStep;
     }
 
+    //将一个hfile的文件路径,插入到hbase的一个表下
     public HadoopShellExecutable createBulkLoadStep(String jobId) {
         HadoopShellExecutable bulkLoadStep = new HadoopShellExecutable();
         bulkLoadStep.setName(ExecutableConstants.STEP_NAME_BULK_LOAD_HFILE);
@@ -191,6 +199,7 @@ public class HBaseMRSteps extends JobBuilderSupport {
         return HBaseConnection.makeQualifiedPathInHBaseCluster(getJobWorkingDir(jobId) + "/" + seg.getRealization().getName() + "/hfile/");
     }
 
+    //rowkey的分布输出---输出内容是rowkey集合
     public String getRowkeyDistributionOutputPath(String jobId) {
         return HBaseConnection.makeQualifiedPathInHBaseCluster(getJobWorkingDir(jobId) + "/" + seg.getRealization().getName() + "/rowkey_stats");
     }

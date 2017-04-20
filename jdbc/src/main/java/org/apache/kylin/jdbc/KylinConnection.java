@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * jdbc:kylin://<hostname>:<port>/<kylin_project_name>
+ * 如何连接kylin
  */
 public class KylinConnection extends AvaticaConnection {
 
@@ -59,8 +60,8 @@ public class KylinConnection extends AvaticaConnection {
 
         assert temps.length == 2;
 
-        this.baseUrl = temps[0];
-        this.project = temps[1];
+        this.baseUrl = temps[0];//host:port
+        this.project = temps[1];//projectName
 
         logger.debug("Kylin base url " + this.baseUrl + ", project name " + this.project);
 
@@ -109,10 +110,11 @@ public class KylinConnection extends AvaticaConnection {
     }
 
     // TODO add restful API to prepare SQL, get back expected ResultSetMetaData
+    //预编译sql
     Signature mockPreparedSignature(String sql) {
         List<AvaticaParameter> params = new ArrayList<AvaticaParameter>();
         int startIndex = 0;
-        while (sql.indexOf("?", startIndex) >= 0) {
+        while (sql.indexOf("?", startIndex) >= 0) {//有多少个?,则创建多少个AvaticaParameter对象
             AvaticaParameter param = new AvaticaParameter(false, 0, 0, 0, null, null, null);
             params.add(param);
             startIndex = sql.indexOf("?", startIndex) + 1;

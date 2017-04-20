@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 
 /**
+ * 用于创建hbase的table以及列族
  */
 public class CubeHTableUtil {
 
@@ -96,15 +97,15 @@ public class CubeHTableUtil {
                 tableDesc.addFamily(cf);
             }
 
-            if (admin.tableExists(tableName)) {
+            if (admin.tableExists(tableName)) {//确定表不存在
                 // admin.disableTable(tableName);
                 // admin.deleteTable(tableName);
                 throw new RuntimeException("HBase table " + tableName + " exists!");
             }
 
-            DeployCoprocessorCLI.deployCoprocessor(tableDesc);
+            DeployCoprocessorCLI.deployCoprocessor(tableDesc);//部署协处理器
 
-            admin.createTable(tableDesc, splitKeys);
+            admin.createTable(tableDesc, splitKeys);//创建表以及rowkey作为regionSplit点
             Preconditions.checkArgument(admin.isTableAvailable(tableName), "table " + tableName + " created, but is not available due to some reasons");
             logger.info("create hbase table " + tableName + " done.");
         } finally {
@@ -129,12 +130,14 @@ public class CubeHTableUtil {
         }
     }
 
-    /** create a HTable that has the same performance settings as normal cube table, for benchmark purpose */
+    /** create a HTable that has the same performance settings as normal cube table, for benchmark purpose
+     * 创建一个hbase的table
+     **/
     public static void createBenchmarkHTable(TableName tableName, String cfName) throws IOException {
         Configuration conf = HBaseConnection.getCurrentHBaseConfiguration();
         HBaseAdmin admin = new HBaseAdmin(conf);
         try {
-            if (admin.tableExists(tableName)) {
+            if (admin.tableExists(tableName)) {//如果表存在,先将其删除
                 logger.info("disabling hbase table " + tableName);
                 admin.disableTable(tableName);
                 logger.info("deleting hbase table " + tableName);
@@ -145,10 +148,10 @@ public class CubeHTableUtil {
             tableDesc.setValue(HTableDescriptor.SPLIT_POLICY, DisabledRegionSplitPolicy.class.getName());
 
             KylinConfig kylinConfig = KylinConfig.getInstanceFromEnv();
-            tableDesc.addFamily(createColumnFamily(kylinConfig, cfName, false));
+            tableDesc.addFamily(createColumnFamily(kylinConfig, cfName, false));//添加列族
 
             logger.info("creating hbase table " + tableName);
-            admin.createTable(tableDesc, null);
+            admin.createTable(tableDesc, null);//创建hbase表
             Preconditions.checkArgument(admin.isTableAvailable(tableName), "table " + tableName + " created, but is not available due to some reasons");
             logger.info("create hbase table " + tableName + " done.");
         } finally {

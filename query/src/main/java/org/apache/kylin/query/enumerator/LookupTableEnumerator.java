@@ -95,6 +95,7 @@ public class LookupTableEnumerator implements Enumerator<Object[]> {
         return hasNext;
     }
 
+    //copy当前的值
     @Override
     public Object[] current() {
         // NOTE if without the copy, sql_lookup/query03.sql will yields messy result. Very weird coz other lookup queries are all good.

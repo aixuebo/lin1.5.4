@@ -31,9 +31,9 @@ public class OLAPQuery extends AbstractEnumerable<Object[]> implements Enumerabl
     public static final String PROP_SCAN_THRESHOLD = "scan_threshold";
 
     public enum EnumeratorTypeEnum {
-        OLAP, //finish query with Cube or II, or a combination of both
-        LOOKUP_TABLE, //using a snapshot of lookup table
-        HIVE //using hive
+        OLAP, //finish query with Cube or II, or a combination of both 查询kylin的sql
+        LOOKUP_TABLE, //using a snapshot of lookup table 查询lookup表的快照内容
+        HIVE //using hive  查询hive的sql
     }
 
     private final DataContext optiqContext;

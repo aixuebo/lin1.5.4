@@ -35,20 +35,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 解析hbase的一行数据
  */
 public class RowValueDecoder implements Cloneable {
 
     private static final Logger logger = LoggerFactory.getLogger(RowValueDecoder.class);
 
-    private final HBaseColumnDesc hbaseColumn;
-    private final byte[] hbaseColumnFamily;
-    private final byte[] hbaseColumnQualifier;
+    private final HBaseColumnDesc hbaseColumn;//列族对象
+    private final byte[] hbaseColumnFamily;//列族
+    private final byte[] hbaseColumnQualifier;//列
 
-    private final MeasureDecoder codec;
     private final BitSet projectionIndex;
-    private final MeasureDesc[] measures;
-    private final Object[] values;
 
+    private final MeasureDecoder codec;//如何解析度量对应的值
+    private final MeasureDesc[] measures;//该字段下存储的measureRefs度量对应的度量对象集合
+
+    private final Object[] values;//度量对应的值解析后的集合
+
+    //参数是列族对象
     public RowValueDecoder(HBaseColumnDesc hbaseColumn) {
         this.hbaseColumn = hbaseColumn;
         this.hbaseColumnFamily = Bytes.toBytes(hbaseColumn.getColumnFamilyName());
@@ -67,8 +71,11 @@ public class RowValueDecoder implements Cloneable {
         decode(hbaseRow, false);
     }
 
+    /**
+     * 解析一行hbase的结果集
+     */
     private void decode(Result hbaseRow, boolean convertToJavaObject) {
-        ByteBuffer buffer = Results.getValueAsByteBuffer(hbaseRow, hbaseColumnFamily, hbaseColumnQualifier);
+        ByteBuffer buffer = Results.getValueAsByteBuffer(hbaseRow, hbaseColumnFamily, hbaseColumnQualifier);//获取结果集中属于该列族 该列的字节数组值
         decode(buffer, convertToJavaObject);
     }
 
@@ -76,12 +83,20 @@ public class RowValueDecoder implements Cloneable {
         decode(ByteBuffer.wrap(bytes), true);
     }
 
+    /**
+     * @param bytes  一行hbase的结果集对应的字节数组
+     */
     public void decode(byte[] bytes) {
         decode(ByteBuffer.wrap(bytes), false);
     }
 
+    /**
+     *
+     * @param buffer 一行hbase的结果集对应的字节数组
+     * @param convertToJavaObject
+     */
     private void decode(ByteBuffer buffer, boolean convertToJavaObject) {
-        codec.decode(buffer, values);
+        codec.decode(buffer, values);//解析字节数组,转换成value对象集合
         if (convertToJavaObject) {
             convertToJavaObjects(values, values, convertToJavaObject);
         }

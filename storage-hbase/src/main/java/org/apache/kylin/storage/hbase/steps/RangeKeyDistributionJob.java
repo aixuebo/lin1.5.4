@@ -41,9 +41,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author xjiang, ysong1
- * 
+ * 用于对所有的rowkey进行划分范围
  */
-
 public class RangeKeyDistributionJob extends AbstractHadoopJob {
     protected static final Logger logger = LoggerFactory.getLogger(RangeKeyDistributionJob.class);
 
@@ -57,10 +56,10 @@ public class RangeKeyDistributionJob extends AbstractHadoopJob {
         Options options = new Options();
 
         try {
-            options.addOption(OPTION_INPUT_PATH);
-            options.addOption(OPTION_OUTPUT_PATH);
-            options.addOption(OPTION_JOB_NAME);
-            options.addOption(OPTION_CUBE_NAME);
+            options.addOption(OPTION_INPUT_PATH);//输入
+            options.addOption(OPTION_OUTPUT_PATH);//输出
+            options.addOption(OPTION_JOB_NAME);//jobName
+            options.addOption(OPTION_CUBE_NAME);//cubeName
 
             parseOptions(options, args);
 
@@ -92,14 +91,14 @@ public class RangeKeyDistributionJob extends AbstractHadoopJob {
             job.setOutputFormatClass(SequenceFileOutputFormat.class);
             job.setOutputKeyClass(Text.class);
             job.setOutputValueClass(LongWritable.class);
-            job.setNumReduceTasks(1);
+            job.setNumReduceTasks(1);//一个reduce
 
             this.deletePath(job.getConfiguration(), output);
 
-            float hfileSizeGB = kylinConfig.getHBaseHFileSizeGB();
-            float regionSplitSize = kylinConfig.getKylinHBaseRegionCut();
+            float hfileSizeGB = kylinConfig.getHBaseHFileSizeGB();//单位GB,hbase的Hfile文件大小
+            float regionSplitSize = kylinConfig.getKylinHBaseRegionCut();//最终切分成多少个region
 
-            int compactionThreshold = Integer.valueOf(HBaseConnection.getCurrentHBaseConfiguration().get("hbase.hstore.compactionThreshold", "3"));
+            int compactionThreshold = Integer.valueOf(HBaseConnection.getCurrentHBaseConfiguration().get("hbase.hstore.compactionThreshold", "3"));//压缩比
             if (hfileSizeGB > 0 && hfileSizeGB * compactionThreshold < regionSplitSize) {
                 hfileSizeGB = regionSplitSize / compactionThreshold;
                 logger.info("Adjust hfile size' to " + hfileSizeGB);
@@ -112,7 +111,7 @@ public class RangeKeyDistributionJob extends AbstractHadoopJob {
             job.getConfiguration().set(BatchConstants.CFG_REGION_NUMBER_MAX, String.valueOf(maxRegionCount));
             job.getConfiguration().set(BatchConstants.CFG_REGION_NUMBER_MIN, String.valueOf(minRegionCount));
             // The partition file for hfile is sequenece file consists of ImmutableBytesWritable and NullWritable
-            TableMapReduceUtil.addDependencyJars(job.getConfiguration(), ImmutableBytesWritable.class, NullWritable.class);
+            TableMapReduceUtil.addDependencyJars(job.getConfiguration(), ImmutableBytesWritable.class, NullWritable.class);//添加依赖包
 
             return waitForCompletion(job);
         } catch (Exception e) {

@@ -30,7 +30,7 @@ public class PrepareSqlRequest extends SQLRequest {
         super();
     }
 
-    private StateParam[] params;
+    private StateParam[] params;//有时候是预编译的sql需要的属性值
 
     public StateParam[] getParams() {
         return params;

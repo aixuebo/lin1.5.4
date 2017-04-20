@@ -51,13 +51,13 @@ public final class ExecutableConstants {
     public static final String STEP_NAME_BUILD_N_D_CUBOID = "Build N-Dimension Cuboid Data";//处理每一个cuboid子任务
     public static final String STEP_NAME_BUILD_IN_MEM_CUBE = "Build Cube";//执行内存操作
 
-    public static final String STEP_NAME_CONVERT_CUBOID_TO_HFILE = "Convert Cuboid Data to HFile";
-    public static final String STEP_NAME_BULK_LOAD_HFILE = "Load HFile to HBase Table";
+    public static final String STEP_NAME_CONVERT_CUBOID_TO_HFILE = "Convert Cuboid Data to HFile";//读取rowkey--所有度量的值作为输入源,输出到hbase中,rowkey不变,只是将所有的度量值,拆分成若干个列族,存放到不同的列里面
+    public static final String STEP_NAME_BULK_LOAD_HFILE = "Load HFile to HBase Table";//将一个hfile的文件路径,插入到hbase的一个表下
     public static final String STEP_NAME_UPDATE_CUBE_INFO = "Update Cube Info";//更新cube的元数据以及segment的元数据信息
     public static final String STEP_NAME_GARBAGE_COLLECTION = "Garbage Collection";//删除数据库以及HDFS的内容任务
 
-    public static final String STEP_NAME_GET_CUBOID_KEY_DISTRIBUTION = "Calculate HTable Region Splits";
-    public static final String STEP_NAME_CREATE_HBASE_TABLE = "Create HTable";
+    public static final String STEP_NAME_GET_CUBOID_KEY_DISTRIBUTION = "Calculate HTable Region Splits";//用于对所有的rowkey进行划分范围
+    public static final String STEP_NAME_CREATE_HBASE_TABLE = "Create HTable";//读取rowkey的分布范围--创建hbase的table表
     public static final String STEP_NAME_MERGE_DICTIONARY = "Merge Cuboid Dictionary";
     public static final String STEP_NAME_MERGE_STATISTICS = "Merge Cuboid Statistics";
     public static final String STEP_NAME_MERGE_CUBOID = "Merge Cuboid Data";

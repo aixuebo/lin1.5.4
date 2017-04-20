@@ -161,7 +161,7 @@ public class DeployCoprocessorCLI {
         return result;
     }
 
-    //为该table部署协处理器
+    //为该table部署协处理器----用于创建hbase的table时候的协处理器
     public static void deployCoprocessor(HTableDescriptor tableDesc) {
         try {
             initHTableCoprocessor(tableDesc);
@@ -173,6 +173,7 @@ public class DeployCoprocessorCLI {
         }
     }
 
+    //用于创建hbase的table时候的协处理器
     private static void initHTableCoprocessor(HTableDescriptor desc) throws IOException {
         KylinConfig kylinConfig = KylinConfig.getInstanceFromEnv();
         Configuration hconf = HBaseConnection.getCurrentHBaseConfiguration();

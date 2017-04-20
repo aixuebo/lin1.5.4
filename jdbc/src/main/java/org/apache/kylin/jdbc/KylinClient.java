@@ -71,6 +71,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * jdbc:kylin://<hostname>:<port>/<kylin_project_name>
  * 连接ip:port,使用http去连接一个节点
+ *
+ * 去远程执行sql,然后将返回的结果内容进行转换成对象
  */
 public class KylinClient implements IRemoteClient {
 
@@ -244,7 +246,13 @@ public class KylinClient implements IRemoteClient {
         response.close();
     }
 
-    //获取project下的结果
+    //获取project下元数据结果
+
+    /**
+     按照 SQL 标准的解释，在 SQL 环境下 Catalog 和 Schema 都属于抽象概念，可以把它们理解为一个容器或者数据库对象命名空间中的一个层次，主要用来解决命名冲突问题。
+     从概念上说，一个数据库系统包含多个 Catalog，每个 Catalog 又包含多个 Schema，而每个 Schema 又包含多个数据库对象（表、视图、字段等），反过来讲一个数据库对象必然属于一个 Schema，
+     而该 Schema 又必然属于一个 Catalog，这样我们就可以得到该数据库对象的完全限定名称从而解决命名冲突的问题了；例如数据库对象表的完全限定名称就可以表示为：Catalog名称.Schema名称.表名称。
+     */
     @Override
     public KMetaProject retrieveMetaData(String project) throws IOException {
         assert conn.getProject().equals(project);
@@ -270,6 +278,7 @@ public class KylinClient implements IRemoteClient {
         return new KMetaProject(project, catalogs);
     }
 
+    //一个Catalog下有若干个Schema,每一个Schema下又有若干个表
     private List<KMetaCatalog> convertMetaCatalogs(List<KMetaSchema> schemas) {
         Map<String, List<KMetaSchema>> catalogMap = new LinkedHashMap<String, List<KMetaSchema>>();
         for (KMetaSchema schema : schemas) {
@@ -289,6 +298,7 @@ public class KylinClient implements IRemoteClient {
         return result;
     }
 
+    //一个Catalog+Schema 下有若干个table,因此填写该映射
     private List<KMetaSchema> convertMetaSchemas(List<KMetaTable> tables) {
         Map<String, List<KMetaTable>> schemaMap = new LinkedHashMap<String, List<KMetaTable>>();
         for (KMetaTable table : tables) {
@@ -310,30 +320,39 @@ public class KylinClient implements IRemoteClient {
         return result;
     }
 
+    //先转换成表对象
     private List<KMetaTable> convertMetaTables(List<TableMetaStub> tableMetaStubs) {
-        List<KMetaTable> result = new ArrayList<KMetaTable>(tableMetaStubs.size());
+        List<KMetaTable> result = new ArrayList<KMetaTable>(tableMetaStubs.size());//表的数量
         for (TableMetaStub tableStub : tableMetaStubs) {
-            result.add(convertMetaTable(tableStub));
+            result.add(convertMetaTable(tableStub));//转换成表对象
         }
         return result;
     }
 
+    //一个表对象的转换
     private KMetaTable convertMetaTable(TableMetaStub tableStub) {
-        List<KMetaColumn> columns = new ArrayList<KMetaColumn>(tableStub.getColumns().size());
+        List<KMetaColumn> columns = new ArrayList<KMetaColumn>(tableStub.getColumns().size());//多少列
         for (ColumnMetaStub columnStub : tableStub.getColumns()) {
             columns.add(convertMetaColumn(columnStub));
         }
         return new KMetaTable(tableStub.getTABLE_CAT(), tableStub.getTABLE_SCHEM(), tableStub.getTABLE_NAME(), tableStub.getTABLE_TYPE(), columns);
     }
 
+    //转换成列对象
     private KMetaColumn convertMetaColumn(ColumnMetaStub columnStub) {
         return new KMetaColumn(columnStub.getTABLE_CAT(), columnStub.getTABLE_SCHEM(), columnStub.getTABLE_NAME(), columnStub.getCOLUMN_NAME(), columnStub.getDATA_TYPE(), columnStub.getTYPE_NAME(), columnStub.getCOLUMN_SIZE(), columnStub.getDECIMAL_DIGITS(), columnStub.getNUM_PREC_RADIX(), columnStub.getNULLABLE(), columnStub.getCHAR_OCTET_LENGTH(), columnStub.getORDINAL_POSITION(), columnStub.getIS_NULLABLE());
     }
 
+    //执行查询
+
+    /**
+     * @param  params 表示预编译sql中?的位置
+     * @param  paramValues 表示预编译sql中?对应的值
+     */
     @Override
     public QueryResult executeQuery(String sql, List<AvaticaParameter> params, List<Object> paramValues) throws IOException {
 
-        SQLResponseStub queryResp = executeKylinQuery(sql, convertParameters(params, paramValues));
+        SQLResponseStub queryResp = executeKylinQuery(sql, convertParameters(params, paramValues));//真正的执行sql,到远程kylin节点去查询结果
         if (queryResp.getIsException())
             throw new IOException(queryResp.getExceptionMessage());
 
@@ -343,19 +362,22 @@ public class KylinClient implements IRemoteClient {
         return new QueryResult(metas, data);
     }
 
+    //用于预编译sql中每一个value值所属class类型与对应的value映射
     private List<StatementParameter> convertParameters(List<AvaticaParameter> params, List<Object> paramValues) {
         if (params == null || params.isEmpty())
             return null;
 
         assert params.size() == paramValues.size();
 
+        //用于预编译sql中每一个value值所属class类型与对应的value映射
         List<StatementParameter> result = new ArrayList<StatementParameter>();
-        for (Object v : paramValues) {
+        for (Object v : paramValues) {//循环每一个具体的值
             result.add(new StatementParameter(v.getClass().getCanonicalName(), String.valueOf(v)));
         }
         return result;
     }
 
+    //发送sql请求
     private SQLResponseStub executeKylinQuery(String sql, List<StatementParameter> params) throws IOException {
         String url = baseUrl() + "/kylin/api/query";
         String project = conn.getProject();
@@ -363,7 +385,7 @@ public class KylinClient implements IRemoteClient {
         QueryRequest request = null;
         if (null != params) {
             request = new PreparedQueryRequest();
-            ((PreparedQueryRequest) request).setParams(params);
+            ((PreparedQueryRequest) request).setParams(params);//设置预编译的sql请求
             url += "/prestate"; // means prepared statement..
         } else {
             request = new QueryRequest();
@@ -390,13 +412,15 @@ public class KylinClient implements IRemoteClient {
         return stub;
     }
 
+    //将查询结果转换成列对象,即列的元数据
     private List<ColumnMetaData> convertColumnMeta(SQLResponseStub queryResp) {
         List<ColumnMetaData> metas = new ArrayList<ColumnMetaData>();
         for (int i = 0; i < queryResp.getColumnMetas().size(); i++) {
             SQLResponseStub.ColumnMetaStub scm = queryResp.getColumnMetas().get(i);
-            Class columnClass = convertType(scm.getColumnType());
-            ScalarType type = ColumnMetaData.scalar(scm.getColumnType(), scm.getColumnTypeName(), Rep.of(columnClass));
+            Class columnClass = convertType(scm.getColumnType());//该列类型对应的java对象
+            ScalarType type = ColumnMetaData.scalar(scm.getColumnType(), scm.getColumnTypeName(), Rep.of(columnClass));//列类型对应的java的class
 
+            //描述列对象
             ColumnMetaData meta = new ColumnMetaData(i, scm.isAutoIncrement(), scm.isCaseSensitive(), scm.isSearchable(), scm.isCurrency(), scm.getIsNullable(), scm.isSigned(), scm.getDisplaySize(), scm.getLabel(), scm.getName(), scm.getSchemaName(), scm.getPrecision(), scm.getScale(), scm.getTableName(), scm.getSchemaName(), type, scm.isReadOnly(), scm.isWritable(), scm.isWritable(), columnClass.getCanonicalName());
 
             metas.add(meta);
@@ -405,15 +429,16 @@ public class KylinClient implements IRemoteClient {
         return metas;
     }
 
+    //查询结果以及列对象的详细信息---返回查询结果对象集合,集合内元素因为字段类型不一样,转换后的类型也不一样,因此是Object数组
     private List<Object> convertResultData(SQLResponseStub queryResp, List<ColumnMetaData> metas) {
         List<String[]> stringResults = queryResp.getResults();
-        List<Object> data = new ArrayList<Object>(stringResults.size());
-        for (String[] result : stringResults) {
-            Object[] row = new Object[result.length];
+        List<Object> data = new ArrayList<Object>(stringResults.size());//查询结果的size
+        for (String[] result : stringResults) {//循环每一个查询结果
+            Object[] row = new Object[result.length];//每一个列对应的String转换成java的class对象
 
-            for (int i = 0; i < result.length; i++) {
+            for (int i = 0; i < result.length; i++) {//循环每一个列对应的值
                 ColumnMetaData meta = metas.get(i);
-                row[i] = wrapObject(result[i], meta.type.id);
+                row[i] = wrapObject(result[i], meta.type.id);//对类型的值进行转换
             }
 
             data.add(row);

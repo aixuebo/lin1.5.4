@@ -23,6 +23,9 @@ import java.util.List;
 
 import org.apache.kylin.rest.model.SelectedColumnMeta;
 
+/**
+ * 表示查询结果
+ */
 public class SQLResponse implements Serializable {
     protected static final long serialVersionUID = 1L;
 
@@ -30,10 +33,10 @@ public class SQLResponse implements Serializable {
     // LoggerFactory.getLogger(SQLResponse.class);
 
     // the data type for each column
-    protected List<SelectedColumnMeta> columnMetas;
+    protected List<SelectedColumnMeta> columnMetas;//表示每一个列对应的元数据
 
     // the results rows, each row contains several columns
-    protected List<List<String>> results;
+    protected List<List<String>> results;//表示全部数据集合,每一行数据是一个List
 
     /**
      * for historical reasons it is named "cube", however it might also refer to any realizations like hybrid, II or etc.

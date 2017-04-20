@@ -24,7 +24,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * json的返回值
+ * json的返回值,表示一个table元数据信息
  */
 public class TableMetaStub {
 
