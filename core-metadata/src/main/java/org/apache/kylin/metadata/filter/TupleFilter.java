@@ -39,7 +39,20 @@ public abstract class TupleFilter {
 
     //过滤操作符号
     public enum FilterOperatorEnum {
-        EQ(1), NEQ(2), GT(3), LT(4), GTE(5), LTE(6), ISNULL(7), ISNOTNULL(8), IN(9), NOTIN(10), AND(20), OR(21), NOT(22), COLUMN(30), CONSTANT(31), DYNAMIC(32), EXTRACT(33), CASE(34), FUNCTION(35), MASSIN(36), EVAL_FUNC(37), UNSUPPORTED(38);
+        EQ(1), NEQ(2),//等于  不等于
+        GT(3), LT(4), GTE(5), LTE(6),//大于  小于 大于等于  小于等于
+        ISNULL(7), ISNOTNULL(8),//是否是null
+        IN(9), NOTIN(10),//in 和not in
+        AND(20), OR(21), NOT(22),//关系操作
+        COLUMN(30),//列名字
+        CONSTANT(31),//常量
+        DYNAMIC(32),
+        EXTRACT(33),
+        CASE(34),//case when then操作
+        FUNCTION(35),//函数
+        MASSIN(36),
+        EVAL_FUNC(37),
+        UNSUPPORTED(38);
 
         private final int value;
 
@@ -54,8 +67,8 @@ public abstract class TupleFilter {
 
     public static final int BUFFER_SIZE = 10240;
 
-    protected static final Map<FilterOperatorEnum, FilterOperatorEnum> REVERSE_OP_MAP = Maps.newHashMap();
-    protected static final Map<FilterOperatorEnum, FilterOperatorEnum> SWAP_OP_MAP = Maps.newHashMap();
+    protected static final Map<FilterOperatorEnum, FilterOperatorEnum> REVERSE_OP_MAP = Maps.newHashMap();//可以反转的操作,比如1 >= c1,意味着c1 < 1,表示意义都变化了
+    protected static final Map<FilterOperatorEnum, FilterOperatorEnum> SWAP_OP_MAP = Maps.newHashMap();//可以交换的操作,比如1 >= c1" => "c1 <= 1 等价交换,即左右两边交换一下顺序而已,意义不变化,常常用于将sql属性 和常量的操作写反的时候,交换一下
 
     static {
         REVERSE_OP_MAP.put(FilterOperatorEnum.EQ, FilterOperatorEnum.NEQ);
@@ -79,8 +92,8 @@ public abstract class TupleFilter {
         SWAP_OP_MAP.put(FilterOperatorEnum.GTE, FilterOperatorEnum.LTE);
     }
 
-    protected final List<TupleFilter> children;
-    protected FilterOperatorEnum operator;
+    protected final List<TupleFilter> children;//子类
+    protected FilterOperatorEnum operator;//如何操作子类
 
     protected TupleFilter(List<TupleFilter> filters, FilterOperatorEnum op) {
         this.children = filters;
@@ -201,8 +214,10 @@ public abstract class TupleFilter {
 
     public abstract boolean isEvaluable();
 
+    //执行,true表示执行成功
     public abstract boolean evaluate(IEvaluatableTuple tuple, IFilterCodeSystem<?> cs);
 
+    //执行结果
     public abstract Collection<?> getValues();
 
     public abstract void serialize(IFilterCodeSystem<?> cs, ByteBuffer buffer);

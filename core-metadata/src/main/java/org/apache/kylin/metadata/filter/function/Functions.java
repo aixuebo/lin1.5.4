@@ -30,7 +30,8 @@ import com.google.common.collect.Maps;
 public class Functions {
 
     public enum FilterTableType {
-        HDFS, HBASE_TABLE
+        HDFS,
+        HBASE_TABLE
     }
 
     private static Map<String, Class> SUPPORTED_UDF = Maps.newHashMap();

@@ -27,6 +27,7 @@ import java.util.List;
 
 import org.apache.kylin.metadata.tuple.IEvaluatableTuple;
 
+//支持逻辑的查询
 public class LogicalTupleFilter extends TupleFilter {
 
     public LogicalTupleFilter(FilterOperatorEnum op) {
@@ -97,15 +98,17 @@ public class LogicalTupleFilter extends TupleFilter {
         }
     }
 
+    //与操作
     private boolean evalAnd(IEvaluatableTuple tuple, IFilterCodeSystem<?> cs) {
         for (TupleFilter filter : this.children) {
-            if (!filter.evaluate(tuple, cs)) {
+            if (!filter.evaluate(tuple, cs)) {//都是true结果才是true,有一个是false,结果都是false
                 return false;
             }
         }
         return true;
     }
 
+    //or操作,有一个是true,则结果就是true
     private boolean evalOr(IEvaluatableTuple tuple, IFilterCodeSystem<?> cs) {
         for (TupleFilter filter : this.children) {
             if (filter.evaluate(tuple, cs)) {
@@ -119,6 +122,7 @@ public class LogicalTupleFilter extends TupleFilter {
         return !this.children.get(0).evaluate(tuple, cs);
     }
 
+    //没有返回值
     @Override
     public Collection<?> getValues() {
         return Collections.emptyList();

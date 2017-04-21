@@ -31,22 +31,24 @@ import org.apache.kylin.metadata.tuple.IEvaluatableTuple;
 
 /**
  * @author xjiang
+ * 对两个对象进行比较
  */
 public class CompareTupleFilter extends TupleFilter {
 
-    // operand 1 is either a column or a function
+    // operand 1 is either a column or a function 第一个出现的一定是一个列或者函数,比如列money>90,即出现的是列money
     private TblColRef column;
     private FunctionTupleFilter function;
 
-    // operand 2 is constants
-    private Set<Object> conditionValues;
-    private Object firstCondValue;
-    private Map<String, Object> dynamicVariables;
+    // operand 2 is constants  第二个出现的一定是值
+    private Set<Object> conditionValues;//值集合
+    private Object firstCondValue;//第一个值
+    private Map<String, Object> dynamicVariables;//动态变量
 
     public CompareTupleFilter(FilterOperatorEnum op) {
-        super(new ArrayList<TupleFilter>(2), op);
+        super(new ArrayList<TupleFilter>(2), op);//有两个子类
         this.conditionValues = new HashSet<Object>();
         this.dynamicVariables = new HashMap<String, Object>();
+        //定义支持的操作
         boolean opGood = (op == FilterOperatorEnum.EQ || op == FilterOperatorEnum.NEQ //
                 || op == FilterOperatorEnum.LT || op == FilterOperatorEnum.LTE //
                 || op == FilterOperatorEnum.GT || op == FilterOperatorEnum.GTE //
@@ -65,22 +67,23 @@ public class CompareTupleFilter extends TupleFilter {
         this.dynamicVariables.putAll(another.dynamicVariables);
     }
 
+    //添加一个元素
     @Override
     public void addChild(TupleFilter child) {
         super.addChild(child);
-        if (child instanceof ColumnTupleFilter) {
+        if (child instanceof ColumnTupleFilter) {//说明第一个函数是字段
             ColumnTupleFilter columnFilter = (ColumnTupleFilter) child;
             if (this.column != null) {
                 throw new IllegalStateException("Duplicate columns! old is " + column.getName() + " and new is " + columnFilter.getColumn().getName());
             }
             this.column = columnFilter.getColumn();
-            // if value is before column, we need to reverse the operator. e.g. "1 >= c1" => "c1 <= 1"
+            // if value is before column, we need to reverse the operator. e.g. "1 >= c1" => "c1 <= 1" 如果值出现在列的前面,我们需要反转一下他们的关系
             if (!this.conditionValues.isEmpty() && needSwapOperator()) {
-                this.operator = SWAP_OP_MAP.get(this.operator);
+                this.operator = SWAP_OP_MAP.get(this.operator);//交换操作
                 TupleFilter last = this.children.remove(this.children.size() - 1);
                 this.children.add(0, last);
             }
-        } else if (child instanceof ConstantTupleFilter) {
+        } else if (child instanceof ConstantTupleFilter) {//说明出现的是值
             this.conditionValues.addAll(child.getValues());
             if (!this.conditionValues.isEmpty()) {
                 this.firstCondValue = this.conditionValues.iterator().next();
@@ -90,11 +93,12 @@ public class CompareTupleFilter extends TupleFilter {
             if (!this.dynamicVariables.containsKey(dynamicFilter.getVariableName())) {
                 this.dynamicVariables.put(dynamicFilter.getVariableName(), null);
             }
-        } else if (child instanceof FunctionTupleFilter) {
+        } else if (child instanceof FunctionTupleFilter) {//说明第一个参数是函数
             this.function = (FunctionTupleFilter) child;
         }
     }
 
+    //可以反转则返回true,因为==和!=没有必要反转,所以不会出现在这里面
     private boolean needSwapOperator() {
         return operator == FilterOperatorEnum.LT || operator == FilterOperatorEnum.GT || operator == FilterOperatorEnum.LTE || operator == FilterOperatorEnum.GTE;
     }
@@ -120,6 +124,7 @@ public class CompareTupleFilter extends TupleFilter {
         return dynamicVariables;
     }
 
+    //绑定一个变量值
     public void bindVariable(String variable, Object value) {
         this.dynamicVariables.put(variable, value);
         this.conditionValues.add(value);

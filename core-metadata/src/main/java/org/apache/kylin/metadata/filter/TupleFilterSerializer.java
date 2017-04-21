@@ -44,6 +44,8 @@ public class TupleFilterSerializer {
     }
 
     private static final int BUFFER_SIZE = 65536;
+
+    //所有支持的关联操作集合
     private static final Map<Integer, TupleFilter.FilterOperatorEnum> ID_OP_MAP = new HashMap<Integer, TupleFilter.FilterOperatorEnum>();
 
     static {

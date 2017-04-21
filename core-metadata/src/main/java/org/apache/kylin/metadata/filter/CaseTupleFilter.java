@@ -28,15 +28,15 @@ import org.apache.kylin.metadata.tuple.IEvaluatableTuple;
 
 /**
  * @author xjiang
- * 
+ * case when then操作
  */
 public class CaseTupleFilter extends TupleFilter {
 
     private List<TupleFilter> whenFilters;
     private List<TupleFilter> thenFilters;
     private TupleFilter elseFilter;
-    private Collection<?> values;
-    private int filterIndex;
+    private Collection<?> values;//执行的最终结果
+    private int filterIndex;//添加元素的下标
 
     public CaseTupleFilter() {
         super(new ArrayList<TupleFilter>(), FilterOperatorEnum.CASE);
@@ -63,28 +63,29 @@ public class CaseTupleFilter extends TupleFilter {
         return "CaseTupleFilter [when=" + whenFilters + ", then=" + thenFilters + ", else=" + elseFilter + ", children=" + children + "]";
     }
 
+    //无论如何都会执行完,返回true
     @Override
     public boolean evaluate(IEvaluatableTuple tuple, IFilterCodeSystem<?> cs) {
         if (whenFilters.size() != thenFilters.size()) {
-            elseFilter = whenFilters.remove(whenFilters.size() - 1);
+            elseFilter = whenFilters.remove(whenFilters.size() - 1);//else就是最后一个when表达式
         }
-        boolean matched = false;
+        boolean matched = false;//说明when已经匹配了
         for (int i = 0; i < whenFilters.size(); i++) {
             TupleFilter whenFilter = whenFilters.get(i);
-            if (whenFilter.evaluate(tuple, cs)) {
+            if (whenFilter.evaluate(tuple, cs)) {//true表示执行when成功
                 TupleFilter thenFilter = thenFilters.get(i);
-                thenFilter.evaluate(tuple, cs);
-                values = thenFilter.getValues();
+                thenFilter.evaluate(tuple, cs);//执行then
+                values = thenFilter.getValues();//返回执行结果
                 matched = true;
                 break;
             }
         }
-        if (!matched) {
+        if (!matched) {//说明没有匹配when,要执行else
             if (elseFilter != null) {
                 elseFilter.evaluate(tuple, cs);
-                values = elseFilter.getValues();
+                values = elseFilter.getValues();//返回执行结果
             } else {
-                values = Collections.emptyList();
+                values = Collections.emptyList();//返回空结果集
             }
         }
 

@@ -30,11 +30,11 @@ option java_generate_equals_and_hash = true;
 option optimize_for = SPEED;
 
 message CubeVisitRequest {
-    required bytes gtScanRequest = 1;
+    required bytes gtScanRequest = 1;//扫描请求对应的字节数组
     required bytes hbaseRawScan = 2;
     required int32 rowkeyPreambleSize = 3;
     repeated IntList hbaseColumnsToGT = 4;
-    required string kylinProperties = 5; // kylin properties
+    required string kylinProperties = 5; // kylin properties 表示kylin的配置信息,字符串形式,该内容可以转换成Properties对象
     message IntList {
         repeated int32 ints = 1;
     }

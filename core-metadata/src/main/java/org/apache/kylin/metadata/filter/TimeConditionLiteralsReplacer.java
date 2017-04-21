@@ -73,20 +73,26 @@ public class TimeConditionLiteralsReplacer implements TupleFilterSerializer.Deco
         return filter;
     }
 
+    /**
+     *
+     * @param dateStr 是定义好的时间字符串格式具体的值,比如20160404
+     * @param dataType
+     * @return 返回具体的时间值
+     */
     private String formatTime(String dateStr, DataType dataType) {
-        if (dataType.isDatetime() || dataType.isTime()) {
+        if (dataType.isDatetime() || dataType.isTime()) {//说明数据类型一定不是时间类型的,如果是时间类型的,就没必要进行格式化了
             throw new RuntimeException("Datetime and time type are not supported yet");
         }
 
-        if (DateFormat.isSupportedDateFormat(dateStr)) {
+        if (DateFormat.isSupportedDateFormat(dateStr)) {//true表示dateStr对应的时间值是允许的时间格式
             return dateStr;
         }
 
-        long millis = Long.valueOf(dateStr);
+        long millis = Long.valueOf(dateStr);//说明此时是long时间戳
         if (dataType.isTimestamp()) {
-            return DateFormat.formatToTimeStr(millis);
+            return DateFormat.formatToTimeStr(millis);//转换成yyyy-MM-dd HH:mm:ss.SSS
         } else if (dataType.isDate()) {
-            return DateFormat.formatToDateStr(millis);
+            return DateFormat.formatToDateStr(millis);//转换成yyyy-MM-dd
         } else {
             throw new RuntimeException("Unknown type " + dataType + " to formatTime");
         }

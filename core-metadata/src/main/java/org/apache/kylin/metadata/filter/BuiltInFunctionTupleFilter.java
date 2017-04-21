@@ -35,18 +35,20 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Primitives;
 
+//内部支持的函数
 public class BuiltInFunctionTupleFilter extends FunctionTupleFilter {
     public static final Logger logger = LoggerFactory.getLogger(BuiltInFunctionTupleFilter.class);
 
-    protected String name;
+    protected String name;//函数名字
     // FIXME Only supports single parameter functions currently
     protected TupleFilter columnContainerFilter;//might be a ColumnTupleFilter(simple case) or FunctionTupleFilter(complex case like substr(lower()))
     protected ConstantTupleFilter constantTupleFilter;
     protected int colPosition;
     protected int constantPosition;
-    protected Method method;
-    protected List<Serializable> methodParams;
-    protected boolean isValidFunc = false;
+
+    protected Method method;//说明存在一个内部的函数
+    protected List<Serializable> methodParams;//方法的参数
+    protected boolean isValidFunc = false;//true表示函数是有效的
 
     public BuiltInFunctionTupleFilter(String name) {
         this(name, null);
@@ -58,7 +60,7 @@ public class BuiltInFunctionTupleFilter extends FunctionTupleFilter {
 
         if (name != null) {
             this.name = name.toUpperCase();
-            initMethod();
+            initMethod();//初始化函数方法
         }
     }
 

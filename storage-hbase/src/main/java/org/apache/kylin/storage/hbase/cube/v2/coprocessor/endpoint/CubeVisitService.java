@@ -185,14 +185,18 @@ public class CubeVisitService extends CubeVisitProtos.CubeVisitService implement
             region.startRegionOperation();
 
             // if user change kylin.properties on kylin server, need to manually redeploy coprocessor jar to update KylinConfig of Env.
+            //表示读取kylin的配置信息,字符串形式,该内容可以转换成Properties对象
             String serverPropString = request.getKylinProperties();
             Properties serverProp = new Properties();
             serverProp.load(new StringReader(serverPropString));
+
+            //创建kylin需要的配置对象
             KylinConfig.setKylinConfigInEnvIfMissing(serverProp);
             KylinConfig kylinConfig = KylinConfig.getInstanceFromEnv();
 
-            debugGitTag = region.getTableDesc().getValue(IRealizationConstants.HTableGitTag);
+            debugGitTag = region.getTableDesc().getValue(IRealizationConstants.HTableGitTag);//获取region的table对应的git信息
 
+            //反序列化扫描请求对应的字节数组----转换成扫描请求
             final GTScanRequest scanReq = GTScanRequest.serializer.deserialize(ByteBuffer.wrap(HBaseZeroCopyByteString.zeroCopyGetBytes(request.getGtScanRequest())));
             List<List<Integer>> hbaseColumnsToGT = Lists.newArrayList();
             for (IntList intList : request.getHbaseColumnsToGTList()) {

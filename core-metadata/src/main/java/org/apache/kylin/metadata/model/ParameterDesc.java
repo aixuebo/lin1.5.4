@@ -31,7 +31,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class ParameterDesc {
 
     @JsonProperty("type")
-    private String type;//是常数还是列
+    private String type;//是常数还是列   column 或者 constant
     @JsonProperty("value")
     private String value;//该参数值
 

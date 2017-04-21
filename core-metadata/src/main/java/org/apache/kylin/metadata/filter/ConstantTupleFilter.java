@@ -73,11 +73,13 @@ public class ConstantTupleFilter extends TupleFilter {
         return "" + constantValues;
     }
 
+    //评估
     @Override
     public boolean evaluate(IEvaluatableTuple tuple, IFilterCodeSystem<?> cs) {
         return constantValues.size() > 0;
     }
 
+    //是否可评估
     @Override
     public boolean isEvaluable() {
         return true;
@@ -88,6 +90,7 @@ public class ConstantTupleFilter extends TupleFilter {
         return this.constantValues;
     }
 
+    //序列化
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public void serialize(IFilterCodeSystem cs, ByteBuffer buffer) {
@@ -98,6 +101,7 @@ public class ConstantTupleFilter extends TupleFilter {
         }
     }
 
+    //反序列化
     @Override
     public void deserialize(IFilterCodeSystem<?> cs, ByteBuffer buffer) {
 

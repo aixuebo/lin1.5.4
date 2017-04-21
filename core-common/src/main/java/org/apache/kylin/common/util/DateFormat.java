@@ -27,6 +27,7 @@ import org.apache.commons.lang3.time.FastDateFormat;
 
 public class DateFormat {
 
+    //定义好的时间字符串格式
     public static final String COMPACT_DATE_PATTERN = "yyyyMMdd";
     public static final String DEFAULT_DATE_PATTERN = "yyyy-MM-dd";
     public static final String DEFAULT_TIME_PATTERN = "HH:mm:ss";
@@ -38,6 +39,7 @@ public class DateFormat {
             DEFAULT_DATETIME_PATTERN_WITH_MILLISECONDS, //
             COMPACT_DATE_PATTERN };
 
+    //时间格式,与时间对应的映射
     static final private Map<String, FastDateFormat> formatMap = new ConcurrentHashMap<String, FastDateFormat>();
 
     public static FastDateFormat getDateFormat(String datePattern) {
@@ -49,6 +51,7 @@ public class DateFormat {
         return r;
     }
 
+    //转换成yyyy-MM-dd
     public static String formatToDateStr(long millis) {
         return formatToDateStr(millis, DEFAULT_DATE_PATTERN);
     }
@@ -57,6 +60,7 @@ public class DateFormat {
         return getDateFormat(pattern).format(new Date(millis));
     }
 
+    //转换成yyyy-MM-dd HH:mm:ss.SSS
     public static String formatToTimeStr(long millis) {
         return formatToTimeStr(millis, DEFAULT_DATETIME_PATTERN_WITH_MILLISECONDS);
     }
@@ -77,6 +81,7 @@ public class DateFormat {
         return stringToDate(str, DEFAULT_DATE_PATTERN);
     }
 
+    //将str具体时间,按照时间格式转换成date对象
     public static Date stringToDate(String str, String pattern) {
         Date date = null;
         try {
@@ -125,9 +130,10 @@ public class DateFormat {
         return true;
     }
 
+    //true表示dateStr对应的时间值是允许的时间格式
     public static boolean isSupportedDateFormat(String dateStr) {
         assert dateStr != null;
-        for (String formatStr : SUPPORTED_DATETIME_PATTERN) {
+        for (String formatStr : SUPPORTED_DATETIME_PATTERN) {//循环每一种时间格式
             try {
                 if (dateStr.equals(dateToString(stringToDate(dateStr, formatStr), formatStr))) {
                     return true;
