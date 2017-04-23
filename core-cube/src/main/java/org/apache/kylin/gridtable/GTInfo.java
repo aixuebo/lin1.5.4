@@ -34,6 +34,9 @@ import org.apache.kylin.metadata.model.TblColRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 表示Cuboid Table,即一个Cuboid在hbase中如何存储
+ */
 public class GTInfo {
     private static final Logger logger = LoggerFactory.getLogger(GTInfo.class);
 
@@ -41,19 +44,21 @@ public class GTInfo {
         return new Builder();
     }
 
-    String tableName;
+    String tableName;//存储到hbase表
     IGTCodeSystem codeSystem;
 
     // column schema
-    DataType[] colTypes;
+    DataType[] colTypes;//描述一行数据需要多少列的数据集合 包括维度+度量
+    int nColumns;//多少列--包括维度+度量
+
     ImmutableBitSet colPreferIndex;
-    int nColumns;
     ImmutableBitSet colAll;
     TblColRef[] colRefs;
 
     // grid info
-    ImmutableBitSet primaryKey; // order by, uniqueness is not required
-    ImmutableBitSet[] colBlocks; // primary key must be the first column block
+    ImmutableBitSet primaryKey; // order by, uniqueness is not required,rowkey需要的是哪些列
+    ImmutableBitSet[] colBlocks; // primary key must be the first column block,rowkey列和每一个列族_列对应一个ImmutableBitSet对象,其中rowkey需要的必须是在数组的第一个,ImmutableBitSet表示需要到了哪些列
+
     int rowBlockSize; // 0: disable row block
     ImmutableBitSet colBlocksAll;
 
@@ -231,7 +236,9 @@ public class GTInfo {
             return this;
         }
 
-        /** required */
+        /** required
+         * 对一行数据的数据类型集合
+         **/
         public Builder setColumns(DataType... colTypes) {
             info.nColumns = colTypes.length;
             info.colTypes = colTypes;
@@ -283,6 +290,7 @@ public class GTInfo {
         return ret;
     }
 
+    //序列化与反序列化
     public static final BytesSerializer<GTInfo> serializer = new BytesSerializer<GTInfo>() {
         @Override
         public void serialize(GTInfo value, ByteBuffer out) {

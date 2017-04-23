@@ -24,10 +24,12 @@ public interface IGTStore {
 
     GTInfo getInfo();
 
+    //如何构建一个writer,追加还是重新建一个
     IGTWriter rebuild() throws IOException;
 
     IGTWriter append() throws IOException;
 
+    //读取数据
     IGTScanner scan(GTScanRequest scanRequest) throws IOException;
 
 }

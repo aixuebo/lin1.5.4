@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Benchmark of processing 10 million GTRecords. 5 dimensions of type int4, and 2 measures of type long8.
+ * 用于存储5个维度,2个度量,维度用int类型,度量用long类型
  */
 public class HBaseScannerBenchmark {
 
@@ -118,7 +119,7 @@ public class HBaseScannerBenchmark {
         scan.close();
 
         t = System.currentTimeMillis() - t;
-        logger.info(msg + ", " + count + " rows, " + speed(t) + "K row/sec");
+        logger.info(msg + ", " + count + " rows, " + speed(t) + "K row/sec");//这些日志可以用于做效率分析
     }
 
     @SuppressWarnings("unused")

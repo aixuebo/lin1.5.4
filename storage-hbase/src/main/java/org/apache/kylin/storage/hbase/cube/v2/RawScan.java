@@ -27,12 +27,14 @@ import org.apache.kylin.common.util.Pair;
 
 import com.google.common.collect.Lists;
 
+//组装一个hbase的查询SCcan对象
 public class RawScan {
 
+    //查询的rowkey范围
     public byte[] startKey;
     public byte[] endKey;
-    public List<Pair<byte[], byte[]>> hbaseColumns;//only contain interested columns
-    public List<Pair<byte[], byte[]>> fuzzyKeys;
+    public List<Pair<byte[], byte[]>> hbaseColumns;//only contain interested columns 要去扫描的列族--列名的映射集合
+    public List<Pair<byte[], byte[]>> fuzzyKeys;//如何过滤查询key--value组合
     public int hbaseCaching;
     public int hbaseMaxResultSize;
 
@@ -65,6 +67,7 @@ public class RawScan {
         return BytesUtil.toHex(this.endKey);
     }
 
+    //将fuzzy查询key vslue组合成字符串
     public String getFuzzyKeyAsString() {
         StringBuilder buf = new StringBuilder();
         for (Pair<byte[], byte[]> fuzzyKey : this.fuzzyKeys) {
@@ -76,11 +79,13 @@ public class RawScan {
         return buf.toString();
     }
 
+    //序列化和反序列化
     public static final BytesSerializer<RawScan> serializer = new BytesSerializer<RawScan>() {
         @Override
         public void serialize(RawScan value, ByteBuffer out) {
             BytesUtil.writeByteArray(value.startKey, out);
             BytesUtil.writeByteArray(value.endKey, out);
+
             BytesUtil.writeVInt(value.hbaseColumns.size(), out);
             for (Pair<byte[], byte[]> hbaseColumn : value.hbaseColumns) {
                 BytesUtil.writeByteArray(hbaseColumn.getFirst(), out);

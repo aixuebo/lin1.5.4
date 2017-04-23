@@ -21,6 +21,10 @@ import java.nio.ByteBuffer;
 import java.util.BitSet;
 
 //不可变的bitSet对象
+
+/**
+ * 比如依次存储hbase中列族+列名被选择的位置
+ */
 public class ImmutableBitSet {
 
     public static final ImmutableBitSet EMPTY = new ImmutableBitSet(new BitSet());
@@ -51,6 +55,7 @@ public class ImmutableBitSet {
         }
     }
 
+    //重新设置一个下标的对象
     private static BitSet newBitSet(int index) {
         BitSet set = new BitSet(index);
         set.set(index);
@@ -67,17 +72,23 @@ public class ImmutableBitSet {
         return set;
     }
 
-    /** return number of true bits */
+    /** return number of true bits
+     * 返回多少个位置是1
+     **/
     public int trueBitCount() {
         return arr.length;
     }
 
-    /** return the i-th true bit */
+    /** return the i-th true bit
+     * 返回下标对应的是1的位置具体指
+     **/
     public int trueBitAt(int i) {
         return arr[i];
     }
 
-    /** return the bit's index among true bits */
+    /** return the bit's index among true bits
+     * 找到下标具体值是参数时候 对应的下标
+     **/
     public int trueBitIndexOf(int bitIndex) {
         for (int i = 0; i < arr.length; i++) {
             if (arr[i] == bitIndex)
@@ -90,14 +101,16 @@ public class ImmutableBitSet {
         return (BitSet) set.clone();
     }
 
+    //为该int设置true
     public ImmutableBitSet set(int bitIndex) {
         return set(bitIndex, true);
     }
 
+    //为该位置设置boolena的值
     public ImmutableBitSet set(int bitIndex, boolean value) {
-        if (set.get(bitIndex) == value) {
+        if (set.get(bitIndex) == value) {//说明本来就可以表示该值
             return this;
-        } else {
+        } else {//创造新的对象
             BitSet mutable = mutable();
             mutable.set(bitIndex, value);
             return new ImmutableBitSet(mutable);
@@ -157,6 +170,7 @@ public class ImmutableBitSet {
         return set.isEmpty();
     }
 
+    //序列化与反序列化
     public static final BytesSerializer<ImmutableBitSet> serializer = new BytesSerializer<ImmutableBitSet>() {
         @Override
         public void serialize(ImmutableBitSet value, ByteBuffer out) {

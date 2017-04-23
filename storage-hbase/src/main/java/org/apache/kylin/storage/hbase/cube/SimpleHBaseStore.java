@@ -44,16 +44,19 @@ import org.apache.kylin.gridtable.IGTWriter;
 import org.apache.kylin.storage.hbase.HBaseConnection;
 import org.apache.kylin.storage.hbase.steps.CubeHTableUtil;
 
+//简单的存储,一个rowkey只能对应一个列族,并且该列族下只能有一个列
 public class SimpleHBaseStore implements IGTStore {
 
     static final String CF = "F";
-    static final byte[] CF_B = Bytes.toBytes(CF);
+    static final byte[] CF_B = Bytes.toBytes(CF);//列族
+
     static final String COL = "C";
-    static final byte[] COL_B = Bytes.toBytes(COL);
-    static final int ID_LEN = RowConstants.ROWKEY_CUBOIDID_LEN;
+    static final byte[] COL_B = Bytes.toBytes(COL);//列名
+
+    static final int ID_LEN = RowConstants.ROWKEY_CUBOIDID_LEN;//cuboid的长度
 
     final GTInfo info;
-    final TableName htableName;
+    final TableName htableName;//hbase的数据库表
 
     public SimpleHBaseStore(GTInfo info, TableName htable) {
         this.info = info;
@@ -65,6 +68,7 @@ public class SimpleHBaseStore implements IGTStore {
         return info;
     }
 
+    //删除一个hbase的数据库表
     public void cleanup() throws IOException {
         CubeHTableUtil.deleteHTable(htableName);
     }
@@ -85,6 +89,7 @@ public class SimpleHBaseStore implements IGTStore {
         return new Reader();
     }
 
+    //写入到hbase的一个表中
     private class Writer implements IGTWriter {
         final HTableInterface table;
         final ByteBuffer rowkey = ByteBuffer.allocate(50);
@@ -98,20 +103,22 @@ public class SimpleHBaseStore implements IGTStore {
 
         @Override
         public void write(GTRecord rec) throws IOException {
-            assert info.getColumnBlockCount() == 2;
+            assert info.getColumnBlockCount() == 2;//说明只能有rowkey和一个列族+列存在
 
             rowkey.clear();
-            for (int i = 0; i < ID_LEN; i++) {
+            for (int i = 0; i < ID_LEN; i++) {//因为cuboid占用8个字节,因此先初始化一下,后续补充
                 rowkey.put((byte) 0);
             }
-            rec.exportColumnBlock(0, rowkey);
+            rec.exportColumnBlock(0, rowkey);//将rowkey具体的值存储到rowkey中
             rowkey.flip();
 
             value.clear();
-            rec.exportColumnBlock(1, value);
+            rec.exportColumnBlock(1, value);//将需要的具体函数的值存储到value中
             value.flip();
 
+            //创建hbase的一行数据
             Put put = new Put(rowkey);
+            //列族   列明 具体的存储的值
             put.addImmutable(CF_B, ByteBuffer.wrap(COL_B), HConstants.LATEST_TIMESTAMP, value);
             table.put(put);
         }
@@ -123,6 +130,7 @@ public class SimpleHBaseStore implements IGTStore {
         }
     }
 
+    //读取hbase的表
     class Reader implements IGTScanner {
         final HTableInterface table;
         final ResultScanner scanner;
@@ -134,7 +142,7 @@ public class SimpleHBaseStore implements IGTStore {
             table = conn.getTable(htableName);
 
             Scan scan = new Scan();
-            scan.addFamily(CF_B);
+            scan.addFamily(CF_B);//扫描列族
             scan.setCaching(1024);
             scan.setCacheBlocks(true);
             scanner = table.getScanner(scan);
@@ -148,7 +156,7 @@ public class SimpleHBaseStore implements IGTStore {
         public Iterator<GTRecord> iterator() {
             return new Iterator<GTRecord>() {
                 GTRecord next = null;
-                GTRecord rec = new GTRecord(info);
+                GTRecord rec = new GTRecord(info);//下一跳数据 临时运算过程
 
                 @Override
                 public boolean hasNext() {
@@ -167,11 +175,12 @@ public class SimpleHBaseStore implements IGTStore {
                     return next != null;
                 }
 
+                //处理hbase的一条结果
                 private void loadRecord(Result r) {
-                    Cell[] cells = r.rawCells();
+                    Cell[] cells = r.rawCells();//表示列族+一个列 对应一个cell
                     Cell cell = cells[0];
-                    if (Bytes.compareTo(CF_B, 0, CF_B.length, cell.getFamilyArray(), cell.getFamilyOffset(), cell.getFamilyLength()) != 0 //
-                            || Bytes.compareTo(COL_B, 0, COL_B.length, cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength()) != 0)
+                    if (Bytes.compareTo(CF_B, 0, CF_B.length, cell.getFamilyArray(), cell.getFamilyOffset(), cell.getFamilyLength()) != 0 //先比较列族
+                            || Bytes.compareTo(COL_B, 0, COL_B.length, cell.getQualifierArray(), cell.getQualifierOffset(), cell.getQualifierLength()) != 0)//比较列
                         throw new IllegalStateException();
 
                     rec.loadCellBlock(0, ByteBuffer.wrap(cell.getRowArray(), cell.getRowOffset() + ID_LEN, cell.getRowLength() - ID_LEN));

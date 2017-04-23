@@ -53,6 +53,11 @@ public class CubeCodeSystem implements IGTCodeSystem {
         this(dimEncs, Collections.<Integer, Integer> emptyMap());
     }
 
+    /**
+     *
+     * @param dimEncs 按照rowkey的列顺序,返回每一个列对应的编码方式
+     * @param dependentMetricsMap key和value都是度量函数的序号,key是函数本身,value是该函数依赖哪一个函数,表示度量中如果有依赖关系时,依赖的关系
+     */
     public CubeCodeSystem(DimensionEncoding[] dimEncs, Map<Integer, Integer> dependentMetricsMap) {
         this.dimEncs = dimEncs;
         this.comparator = new DefaultGTComparator();

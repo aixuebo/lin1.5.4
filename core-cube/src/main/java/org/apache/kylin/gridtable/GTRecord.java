@@ -31,7 +31,7 @@ import com.google.common.base.Preconditions;
 public class GTRecord implements Comparable<GTRecord>, Cloneable {
 
     final transient GTInfo info;
-    final ByteArray[] cols;
+    final ByteArray[] cols;//每一个列具体的值是一个ByteArray
 
     public GTRecord(GTInfo info, ByteArray[] cols) {
         this.info = info;
@@ -132,11 +132,12 @@ public class GTRecord implements Comparable<GTRecord>, Cloneable {
         return result;
     }
 
+    //获取需要列值对应的所有字节数
     public int sizeOf(ImmutableBitSet selectedCols) {
         int size = 0;
-        for (int i = 0; i < selectedCols.trueBitCount(); i++) {
-            int c = selectedCols.trueBitAt(i);
-            size += cols[c].length();
+        for (int i = 0; i < selectedCols.trueBitCount(); i++) {//循环每一个选择的列序号
+            int c = selectedCols.trueBitAt(i);//获取该列真正的序号
+            size += cols[c].length();//该列值对应的字节数
         }
         return size;
     }
@@ -264,9 +265,9 @@ public class GTRecord implements Comparable<GTRecord>, Cloneable {
 
     /** write data to given buffer, like serialize */
     public void exportColumns(ImmutableBitSet selectedCols, ByteBuffer buf) {
-        for (int i = 0; i < selectedCols.trueBitCount(); i++) {
-            int c = selectedCols.trueBitAt(i);
-            buf.put(cols[c].array(), cols[c].offset(), cols[c].length());
+        for (int i = 0; i < selectedCols.trueBitCount(); i++) {//循环每一个1的位置
+            int c = selectedCols.trueBitAt(i);//获取每一个位置对应具体的值
+            buf.put(cols[c].array(), cols[c].offset(), cols[c].length());//获取该列具体的值存储到buf中
         }
     }
 
@@ -278,18 +279,22 @@ public class GTRecord implements Comparable<GTRecord>, Cloneable {
 
     /** write data to given buffer, like serialize */
     public void exportColumnBlock(int c, ByteBuffer buf) {
-        exportColumns(info.colBlocks[c], buf);
+        exportColumns(info.colBlocks[c], buf);//rowkey需要哪些列
     }
 
-    /** change pointers to point to data in given buffer, UNLIKE deserialize */
+    /** change pointers to point to data in given buffer, UNLIKE deserialize
+     * 加载数据到buf中
+     **/
     public void loadCellBlock(int c, ByteBuffer buf) {
         loadColumns(info.colBlocks[c], buf);
     }
 
-    /** change pointers to point to data in given buffer, UNLIKE deserialize */
+    /** change pointers to point to data in given buffer, UNLIKE deserialize
+     * 加载数据到buf中
+     **/
     public void loadColumns(ImmutableBitSet selectedCols, ByteBuffer buf) {
         int pos = buf.position();
-        for (int i = 0; i < selectedCols.trueBitCount(); i++) {
+        for (int i = 0; i < selectedCols.trueBitCount(); i++) {//循环每一个选中的列
             int c = selectedCols.trueBitAt(i);
             int len = info.codeSystem.codeLength(c, buf);
             cols[c].set(buf.array(), buf.arrayOffset() + pos, len);

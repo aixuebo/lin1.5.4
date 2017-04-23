@@ -98,18 +98,18 @@ public class RowKeyEncoder extends AbstractRowKeyEncoder {
     public void encode(GTRecord record, ImmutableBitSet keyColumns, byte[] buf) {
         ByteArray byteArray = new ByteArray(buf, getHeaderLength(), 0);
 
-        encodeDims(record, keyColumns, byteArray, defaultValue());
+        encodeDims(record, keyColumns, byteArray, defaultValue());//将维度key对应值写入到buf中
 
         //fill shard and cuboid
         fillHeader(buf);
     }
 
-    //ByteArray representing dimension does not have extra header
+    //ByteArray representing dimension does not have extra header 将维度key对应值写入到buf中
     public void encodeDims(GTRecord record, ImmutableBitSet selectedCols, ByteArray buf, byte defaultValue) {
         int pos = 0;
-        for (int i = 0; i < selectedCols.trueBitCount(); i++) {
-            int c = selectedCols.trueBitAt(i);
-            ByteArray columnC = record.get(c);
+        for (int i = 0; i < selectedCols.trueBitCount(); i++) {//循环每一个rowkey对应的维度列
+            int c = selectedCols.trueBitAt(i);//具体第几列
+            ByteArray columnC = record.get(c);//列值
             if (columnC.array() != null) {
                 System.arraycopy(record.get(c).array(), columnC.offset(), buf.array(), buf.offset() + pos, columnC.length());
                 pos += columnC.length();
@@ -182,6 +182,7 @@ public class RowKeyEncoder extends AbstractRowKeyEncoder {
         return bytes;
     }
 
+    //写入header头信息到参数中
     protected void fillHeader(byte[] bytes) {
         int offset = 0;
 

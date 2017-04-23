@@ -464,6 +464,7 @@ public class CubeManager implements IRealizationProvider {
         return newSegment;
     }
 
+    //重新build过去的一段数据
     public CubeSegment refreshSegment(CubeInstance cube, long startDate, long endDate, long startOffset, long endOffset) throws IOException {
         checkNoBuildingSegment(cube);
 

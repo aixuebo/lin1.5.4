@@ -56,7 +56,7 @@ public abstract class CubeHBaseRPC implements IGTStorage {
     public static final Logger logger = LoggerFactory.getLogger(CubeHBaseRPC.class);
 
     final protected CubeSegment cubeSeg;
-    final protected Cuboid cuboid;
+    final protected Cuboid cuboid;//处理该cuboid数据
     final protected GTInfo fullGTInfo;
     final private RowKeyEncoder fuzzyKeyEncoder;
     final private RowKeyEncoder fuzzyMaskEncoder;
@@ -89,26 +89,36 @@ public abstract class CubeHBaseRPC implements IGTStorage {
             applyFuzzyFilter(scan, rawScan.fuzzyKeys);
         }
         if (rawScan.hbaseColumns != null) {
-            applyHBaseColums(scan, rawScan.hbaseColumns);
+            applyHBaseColums(scan, rawScan.hbaseColumns);//添加hbase要查询的列族---列名的组合
         }
 
         return scan;
     }
 
+    /**
+     *
+     * @param pkStart
+     * @param pkEnd
+     * @param fuzzyKeys
+     * @param selectedColBlocks  解析参数中被选择的列族和列名的映射   已经选择的列族+列名被设置成1,没有选择的被设置成0
+     * @return
+     */
     private RawScan preparedHBaseScan(GTRecord pkStart, GTRecord pkEnd, List<GTRecord> fuzzyKeys, ImmutableBitSet selectedColBlocks) {
-        final List<Pair<byte[], byte[]>> selectedColumns = makeHBaseColumns(selectedColBlocks);
+        final List<Pair<byte[], byte[]>> selectedColumns = makeHBaseColumns(selectedColBlocks);//解析参数中被选择的列族和列名的映射
 
         LazyRowKeyEncoder encoder = new LazyRowKeyEncoder(cubeSeg, cuboid);
+        //创建两个字节数组
         byte[] start = encoder.createBuf();
         byte[] end = encoder.createBuf();
 
         encoder.setBlankByte(RowConstants.ROWKEY_LOWER_BYTE);
-        encoder.encode(pkStart, pkStart.getInfo().getPrimaryKey(), start);
+        encoder.encode(pkStart, pkStart.getInfo().getPrimaryKey(), start);//解析start
 
         encoder.setBlankByte(RowConstants.ROWKEY_UPPER_BYTE);
-        encoder.encode(pkEnd, pkEnd.getInfo().getPrimaryKey(), end);
-        byte[] temp = new byte[end.length + 1];//append extra 0 to the end key to make it inclusive while scanning
-        System.arraycopy(end, 0, temp, 0, end.length);
+        encoder.encode(pkEnd, pkEnd.getInfo().getPrimaryKey(), end);//解析end
+
+        byte[] temp = new byte[end.length + 1];//append extra 0 to the end key to make it inclusive while scanning  因为要额外增加1个0,因此长度比end多一个
+        System.arraycopy(end, 0, temp, 0, end.length);//copy end to temp
         end = temp;
 
         List<Pair<byte[], byte[]>> hbaseFuzzyKeys = translateFuzzyKeys(fuzzyKeys);
@@ -160,18 +170,20 @@ public abstract class CubeHBaseRPC implements IGTStorage {
 
     /**
      * prune untouched hbase columns
+     * 解析参数中被选择的列族和列名的映射
      */
     protected List<Pair<byte[], byte[]>> makeHBaseColumns(ImmutableBitSet selectedColBlocks) {
         List<Pair<byte[], byte[]>> result = Lists.newArrayList();
 
-        int colBlkIndex = 1;
-        HBaseMappingDesc hbaseMapping = cubeSeg.getCubeDesc().getHbaseMapping();
-        for (HBaseColumnFamilyDesc familyDesc : hbaseMapping.getColumnFamily()) {
-            byte[] byteFamily = Bytes.toBytes(familyDesc.getName());
-            for (HBaseColumnDesc hbaseColDesc : familyDesc.getColumns()) {
-                if (selectedColBlocks.get(colBlkIndex)) {
-                    byte[] byteQualifier = Bytes.toBytes(hbaseColDesc.getQualifier());
-                    result.add(Pair.newPair(byteFamily, byteQualifier));
+        int colBlkIndex = 1;//从第1个位置开始读取
+
+        HBaseMappingDesc hbaseMapping = cubeSeg.getCubeDesc().getHbaseMapping();//获取该cube对应的如何存储到hbase中列族和列名 以及 存储哪些度量值
+        for (HBaseColumnFamilyDesc familyDesc : hbaseMapping.getColumnFamily()) {//循环每一个列族
+            byte[] byteFamily = Bytes.toBytes(familyDesc.getName());//列族
+            for (HBaseColumnDesc hbaseColDesc : familyDesc.getColumns()) {//列族下的每一个列
+                if (selectedColBlocks.get(colBlkIndex)) {//说明存储了该列族+列名
+                    byte[] byteQualifier = Bytes.toBytes(hbaseColDesc.getQualifier());//列名字字节数组
+                    result.add(Pair.newPair(byteFamily, byteQualifier));//获取列族和对应的列名字映射
                 }
                 colBlkIndex++;
             }
@@ -210,6 +222,11 @@ public abstract class CubeHBaseRPC implements IGTStorage {
         return ret;
     }
 
+    /**
+     * 添加hbase要查询的列族---列名的组合
+     * @param scan
+     * @param hbaseColumns 列族和列名的对象集合
+     */
     public static void applyHBaseColums(Scan scan, List<Pair<byte[], byte[]>> hbaseColumns) {
         for (Pair<byte[], byte[]> hbaseColumn : hbaseColumns) {
             byte[] byteFamily = hbaseColumn.getFirst();
@@ -218,23 +235,25 @@ public abstract class CubeHBaseRPC implements IGTStorage {
         }
     }
 
+    //添加fuzzyFilter
     public static void applyFuzzyFilter(Scan scan, List<org.apache.kylin.common.util.Pair<byte[], byte[]>> fuzzyKeys) {
         if (fuzzyKeys != null && fuzzyKeys.size() > 0) {
             FuzzyRowFilter rowFilter = new FuzzyRowFilter(convertToHBasePair(fuzzyKeys));
 
-            Filter filter = scan.getFilter();
-            if (filter != null) {
+            Filter filter = scan.getFilter();//获取hbase存在的filter
+            if (filter != null) {//如果存在filter,则追加成list
                 // may have existed InclusiveStopFilter, see buildScan
                 FilterList filterList = new FilterList();
                 filterList.addFilter(filter);
                 filterList.addFilter(rowFilter);
                 scan.setFilter(filterList);
             } else {
-                scan.setFilter(rowFilter);
+                scan.setFilter(rowFilter);//添加参数的filter
             }
         }
     }
 
+    //将kylin的pair对象转换成hbase的pair对象
     private static List<org.apache.hadoop.hbase.util.Pair<byte[], byte[]>> convertToHBasePair(List<org.apache.kylin.common.util.Pair<byte[], byte[]>> pairList) {
         List<org.apache.hadoop.hbase.util.Pair<byte[], byte[]>> result = Lists.newArrayList();
         for (org.apache.kylin.common.util.Pair<byte[], byte[]> pair : pairList) {

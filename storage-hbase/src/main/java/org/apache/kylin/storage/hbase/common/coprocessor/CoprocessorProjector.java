@@ -42,7 +42,7 @@ public class CoprocessorProjector {
             @Override
             protected void fillHeader(byte[] bytes) {
                 Arrays.fill(bytes, 0, this.getHeaderLength(), (byte) 0xff);
-            }
+            }//填充0xff内容
 
             @Override
             protected void fillColumnValue(TblColRef column, int columnLen, byte[] value, int valueLen, byte[] outputValue, int outputValueOffset) {
