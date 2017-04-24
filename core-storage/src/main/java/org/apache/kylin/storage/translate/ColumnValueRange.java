@@ -33,11 +33,12 @@ import com.google.common.collect.Sets;
 /**
  * 
  * @author xjiang
- * 
+ * 设置每一个属性的开始--结束范围
  */
 public class ColumnValueRange {
-    private TblColRef column;
-    private RowKeyColumnOrder order;
+    private TblColRef column;//属性
+    private RowKeyColumnOrder order;//如何对值进行比较
+    //开始和结束值
     private String beginValue;
     private String endValue;
     private Set<String> equalValues;

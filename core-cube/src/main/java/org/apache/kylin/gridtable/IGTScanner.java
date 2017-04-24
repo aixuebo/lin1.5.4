@@ -20,6 +20,9 @@ package org.apache.kylin.gridtable;
 
 import java.io.Closeable;
 
+/**
+ * 如何扫描一组数据,返回每一行数据
+ */
 public interface IGTScanner extends Iterable<GTRecord>, Closeable {
 
     GTInfo getInfo();

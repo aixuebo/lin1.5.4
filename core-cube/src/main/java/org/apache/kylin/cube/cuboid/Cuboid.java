@@ -61,16 +61,16 @@ public class Cuboid implements Comparable<Cuboid> {
 
     public static Cuboid identifyCuboid(CubeDesc cubeDesc, Set<TblColRef> dimensions, Collection<FunctionDesc> metrics) {
         for (FunctionDesc metric : metrics) {
-            if (metric.getMeasureType().onlyAggrInBaseCuboid())
+            if (metric.getMeasureType().onlyAggrInBaseCuboid())//说明仅仅能在baseCuboid上才能发生的聚合,因此返回basecuboid
                 return Cuboid.getBaseCuboid(cubeDesc);
         }
 
         long cuboidID = 0;
-        for (TblColRef column : dimensions) {
+        for (TblColRef column : dimensions) {//所有的维度组成一个cuboid
             int index = cubeDesc.getRowkey().getColumnBitIndex(column);
             cuboidID |= 1L << index;
         }
-        return Cuboid.findById(cubeDesc, cuboidID);
+        return Cuboid.findById(cubeDesc, cuboidID);//找到满足该组合的cuboid
     }
 
     //字节数组转换成long

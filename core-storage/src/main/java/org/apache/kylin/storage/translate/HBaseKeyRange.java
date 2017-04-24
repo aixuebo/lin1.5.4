@@ -112,8 +112,8 @@ public class HBaseKeyRange implements Comparable<HBaseKeyRange> {
             fuzzyValues.put(column, dimRange.getEqualValues());
 
             TblColRef partitionDateColumnRef = cubeSeg.getCubeDesc().getModel().getPartitionDesc().getPartitionDateColumnRef();
-            if (column.equals(partitionDateColumnRef)) {
-                initPartitionRange(dimRange);
+            if (column.equals(partitionDateColumnRef)) {//说明该字段是分区字段
+                initPartitionRange(dimRange);//设置分区
             }
         }
 
@@ -128,6 +128,7 @@ public class HBaseKeyRange implements Comparable<HBaseKeyRange> {
         this.fuzzyKeys = buildFuzzyKeys(fuzzyValues);
     }
 
+    //设置分区的开始位置和结束位置
     private void initPartitionRange(ColumnValueRange dimRange) {
         if (null != dimRange.getBeginValue()) {
             this.partitionColumnStartDate = DateFormat.stringToMillis(dimRange.getBeginValue());

@@ -102,7 +102,7 @@ public abstract class GTCubeStorageQueryBase implements IStorageQuery {
         Set<TblColRef> dimensionsD = new LinkedHashSet<TblColRef>();
         dimensionsD.addAll(groupsD);
         dimensionsD.addAll(otherDimsD);
-        Cuboid cuboid = Cuboid.identifyCuboid(cubeDesc, dimensionsD, metrics);
+        Cuboid cuboid = Cuboid.identifyCuboid(cubeDesc, dimensionsD, metrics);//找到符合查询条件的cuboid
         logger.info("Cuboid identified: cube={}, cuboidId={}", cubeInstance.getName(), cuboid.getId());
         context.setCuboid(cuboid);
 
@@ -444,6 +444,7 @@ public abstract class GTCubeStorageQueryBase implements IStorageQuery {
     }
 
     private void notifyBeforeStorageQuery(SQLDigest sqlDigest) {
+        //key是MeasureType的class实现类,value是该实现类对应了哪些度量对象
         Map<String, List<MeasureDesc>> map = Maps.newHashMap();
         for (MeasureDesc measure : cubeDesc.getMeasures()) {
             MeasureType<?> measureType = measure.getFunction().getMeasureType();

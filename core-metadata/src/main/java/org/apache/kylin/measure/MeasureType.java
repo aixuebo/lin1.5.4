@@ -62,7 +62,9 @@ abstract public class MeasureType<T> {
         return false;
     }
 
-    /** Return true if this MeasureType only aggregate values in base cuboid, and output initial value in child cuboid. */
+    /** Return true if this MeasureType only aggregate values in base cuboid, and output initial value in child cuboid.
+     * true 表示仅仅能在baseCuboid上才能发生的聚合
+     **/
     public boolean onlyAggrInBaseCuboid() {
         return false;
     }

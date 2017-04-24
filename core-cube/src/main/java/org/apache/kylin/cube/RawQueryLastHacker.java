@@ -27,6 +27,9 @@ import org.apache.kylin.metadata.realization.SQLDigest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * hack黑客
+ */
 public class RawQueryLastHacker {
 
     private static final Logger logger = LoggerFactory.getLogger(RawQueryLastHacker.class);

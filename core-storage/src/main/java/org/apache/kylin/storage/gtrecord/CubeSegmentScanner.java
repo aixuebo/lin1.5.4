@@ -41,12 +41,15 @@ import org.apache.kylin.storage.StorageContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 扫描一个segment
+ */
 public class CubeSegmentScanner implements IGTScanner {
 
     private static final Logger logger = LoggerFactory.getLogger(CubeSegmentScanner.class);
 
     final CubeSegment cubeSeg;
-    final ScannerWorker scanner;
+    final ScannerWorker scanner;//如何读取该segment的一行一行的数据
     final Cuboid cuboid;
 
     final GTScanRequest scanRequest;
