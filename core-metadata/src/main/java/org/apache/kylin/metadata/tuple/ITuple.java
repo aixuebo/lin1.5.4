@@ -25,18 +25,20 @@ import org.apache.kylin.metadata.model.TblColRef;
 /**
  * Tuple is a record row, contains multiple values being lookup by either field
  * (calcite notion) or column (kylin notion).
- * 
+ *  代表一行的记录具体的值
+ *  持有一行数据的schema以及具体的值
  * @author yangli9
  */
 public interface ITuple extends IEvaluatableTuple, Cloneable {
 
-    List<String> getAllFields();
+    List<String> getAllFields();//该行数据所有的属性集合
 
-    List<TblColRef> getAllColumns();
+    List<TblColRef> getAllColumns();//该行数据所有的属性对象集合
 
+    //一行数据具体的值
     Object[] getAllValues();
 
-    ITuple makeCopy();
+    ITuple makeCopy();//一份数据的copy
 
     // declared from IEvaluatableTuple:  public Object getValue(TblColRef col);
 

@@ -59,9 +59,11 @@ import com.google.common.collect.Sets;
 
 /**
  * 表示一个数据库表
+ * 指示calcite该接口表示的是一张表
  */
 public class OLAPTable extends AbstractQueryableTable implements TranslatableTable {
 
+    //kylin的数据类型与calcite的数据类型映射
     private static Map<String, SqlTypeName> SQLTYPE_MAPPING = new HashMap<String, SqlTypeName>();
 
     static {
@@ -89,8 +91,8 @@ public class OLAPTable extends AbstractQueryableTable implements TranslatableTab
         // }
     }
 
-    private final OLAPSchema olapSchema;//数据库对象
-    private final TableDesc sourceTable;
+    private final OLAPSchema olapSchema;//calcite对应的数据库对象
+    private final TableDesc sourceTable;//kylin配置的hive表结构
     private RelDataType rowType;
     private List<ColumnDesc> exposedColumns;
 
@@ -109,6 +111,7 @@ public class OLAPTable extends AbstractQueryableTable implements TranslatableTab
         return this.sourceTable;
     }
 
+    //kylin配置的表名字
     public String getTableName() {
         return this.sourceTable.getIdentity();
     }
@@ -127,6 +130,7 @@ public class OLAPTable extends AbstractQueryableTable implements TranslatableTab
         return this.rowType;
     }
 
+    //将kylin中的列对象 转换成calcite的列对象
     private RelDataType deriveRowType(RelDataTypeFactory typeFactory) {
         RelDataTypeFactory.FieldInfoBuilder fieldInfo = typeFactory.builder();
         for (ColumnDesc column : exposedColumns) {
@@ -138,7 +142,7 @@ public class OLAPTable extends AbstractQueryableTable implements TranslatableTab
     }
 
     public static RelDataType createSqlType(RelDataTypeFactory typeFactory, DataType dataType, boolean isNullable) {
-        SqlTypeName sqlTypeName = SQLTYPE_MAPPING.get(dataType.getName());
+        SqlTypeName sqlTypeName = SQLTYPE_MAPPING.get(dataType.getName());//kylin类型转换成calcite的数据类型
         if (sqlTypeName == null)
             throw new IllegalArgumentException("Unrecognized data type " + dataType);
 
@@ -163,6 +167,7 @@ public class OLAPTable extends AbstractQueryableTable implements TranslatableTab
         return result;
     }
 
+    //获取kylin对应的列的集合
     private List<ColumnDesc> listSourceColumns() {
         ProjectManager mgr = ProjectManager.getInstance(olapSchema.getConfig());
         List<ColumnDesc> tableColumns = Lists.newArrayList(mgr.listExposedColumns(olapSchema.getProjectName(), sourceTable.getIdentity()));//获取该表对应的所有列集合
@@ -202,10 +207,11 @@ public class OLAPTable extends AbstractQueryableTable implements TranslatableTab
         return Lists.newArrayList(Iterables.concat(tableColumns, metricColumns));
     }
 
+    //calcite对应的方法--返回如何扫描一个表内容对象
     @Override
     public RelNode toRel(ToRelContext context, RelOptTable relOptTable) {
-        int fieldCount = relOptTable.getRowType().getFieldCount();
-        int[] fields = identityList(fieldCount);
+        int fieldCount = relOptTable.getRowType().getFieldCount();//该table有多少列
+        int[] fields = identityList(fieldCount);//每一个属性对应一个int值表示列的下标索引,从0开始计数
         return new OLAPTableScan(context.getCluster(), relOptTable, this, fields);
     }
 

@@ -28,16 +28,17 @@ import org.apache.kylin.metadata.model.TblColRef;
 /**
  * 
  * @author xjiang
- * 
+ * 查询结果--表示一行记录---属于一行数据属性的schema映射
  */
 public class TupleInfo {
 
-    private final Map<String, Integer> fieldMap;
-    private final Map<TblColRef, Integer> columnMap;
+    private final Map<String, Integer> fieldMap;//属性与下标映射
+    private final Map<TblColRef, Integer> columnMap;//属性对象与下标映射
 
-    private final List<String> fields;
-    private final List<TblColRef> columns;
-    private final List<String> dataTypeNames;
+    private final List<String> fields;//该行记录对应的属性集合
+    private final List<TblColRef> columns;//数据对象集合
+
+    private final List<String> dataTypeNames;//属性的返回值
 
     public TupleInfo() {
         fieldMap = new HashMap<String, Integer>();
@@ -64,6 +65,7 @@ public class TupleInfo {
         return fieldMap.get(fieldName);
     }
 
+    //是否有该属性
     public boolean hasField(String fieldName) {
         return fieldMap.containsKey(fieldName);
     }
@@ -77,6 +79,7 @@ public class TupleInfo {
         return columnMap.containsKey(col);
     }
 
+    //设置属性name、属性对象、下标
     public void setField(String fieldName, TblColRef col, int index) {
         fieldMap.put(fieldName, index);
 

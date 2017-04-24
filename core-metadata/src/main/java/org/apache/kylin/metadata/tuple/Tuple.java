@@ -30,26 +30,30 @@ import net.sf.ehcache.pool.sizeof.annotations.IgnoreSizeOf;
 
 /**
  * @author xjiang
+ * 持有一行数据的schema以及具体的值
  */
 public class Tuple implements ITuple {
 
     @IgnoreSizeOf
-    private final TupleInfo info;
-    private final Object[] values;
+    private final TupleInfo info;//查询结果--表示一行记录
+    private final Object[] values;//具体的值
 
     public Tuple(TupleInfo info) {
         this.info = info;
-        this.values = new Object[info.size()];
+        this.values = new Object[info.size()];//每一个属性表示一个值
     }
 
+    //该行数据所有的属性集合
     public List<String> getAllFields() {
         return info.getAllFields();
     }
 
+    //该行数据所有的属性对象集合
     public List<TblColRef> getAllColumns() {
         return info.getAllColumns();
     }
 
+    //一行数据具体的值
     public Object[] getAllValues() {
         return values;
     }
@@ -68,47 +72,57 @@ public class Tuple implements ITuple {
         return ret;
     }
 
+    //行的属性schema
     public TupleInfo getInfo() {
         return info;
     }
 
+    //属性对应的属性名字
     public String getFieldName(TblColRef col) {
         return info.getFieldName(col);
     }
 
+    //属性名字对应的属性对象
     public TblColRef getFieldColumn(String fieldName) {
         return info.getColumn(fieldName);
     }
 
+    //属性对应的具体的值
     public Object getValue(String fieldName) {
         int index = info.getFieldIndex(fieldName);
         return values[index];
     }
 
+    //属性对应的具体的值
     public Object getValue(TblColRef col) {
         int index = info.getColumnIndex(col);
         return values[index];
     }
 
+    //该属性对应的数据类型
     public String getDataTypeName(int idx) {
         return info.getDataTypeName(idx);
     }
 
+    //为属性--赋予值
     public void setDimensionValue(String fieldName, String fieldValue) {
+        //说先找到该属性对应的下标
         setDimensionValue(info.getFieldIndex(fieldName), fieldValue);
     }
 
+    //为一个下标对应的属性赋予值
     public void setDimensionValue(int idx, String fieldValue) {
-        Object objectValue = convertOptiqCellValue(fieldValue, getDataTypeName(idx));
+        Object objectValue = convertOptiqCellValue(fieldValue, getDataTypeName(idx));//类型转换
         values[idx] = objectValue;
     }
 
+    //为度量设置属性值
     public void setMeasureValue(String fieldName, Object fieldValue) {
         setMeasureValue(info.getFieldIndex(fieldName), fieldValue);
     }
 
     public void setMeasureValue(int idx, Object fieldValue) {
-        fieldValue = convertWritableToJava(fieldValue);
+        fieldValue = convertWritableToJava(fieldValue);//类型转换
 
         String dataType = getDataTypeName(idx);
         // special handling for BigDecimal, allow double be aggregated as
@@ -161,19 +175,26 @@ public class Tuple implements ITuple {
         return sb.toString();
     }
 
+    //获取分区列具体的值
     public static long getTs(ITuple row, TblColRef partitionCol) {
         //ts column type differentiate
-        if (partitionCol.getDatatype().equals("date")) {
-            return epicDaysToMillis(Integer.valueOf(row.getValue(partitionCol).toString()));
+        if (partitionCol.getDatatype().equals("date")) {//是日期
+            return epicDaysToMillis(Integer.valueOf(row.getValue(partitionCol).toString()));//将日期的时间戳加入时分秒
         } else {
-            return Long.valueOf(row.getValue(partitionCol).toString());
+            return Long.valueOf(row.getValue(partitionCol).toString());//直接获取分区列的值
         }
     }
 
+    //days是日期的时间戳,要加入时分秒转换成long
     private static long epicDaysToMillis(int days) {
         return 1L * days * (1000 * 3600 * 24);
     }
 
+    /**
+     * 类型转换
+     * @param strValue 字符串具体的值
+     * @param dataTypeName 属性数据类型
+     */
     public static Object convertOptiqCellValue(String strValue, String dataTypeName) {
         if (strValue == null)
             return null;
@@ -208,6 +229,7 @@ public class Tuple implements ITuple {
         }
     }
 
+    //转换成天的时间戳
     private static int dateToEpicDays(String strValue) {
         long millis = DateFormat.stringToMillis(strValue);
         return (int) (millis / (1000 * 3600 * 24));

@@ -44,12 +44,14 @@ import org.apache.kylin.storage.hybrid.HybridInstance;
 import com.google.common.collect.Lists;
 
 /**
+ * 查询的上下文对象
  */
 public class OLAPContext {
 
-    public static final String PRM_ACCEPT_PARTIAL_RESULT = "AcceptPartialResult";
-    public static final String PRM_USER_AUTHEN_INFO = "UserAuthenInfo";
+    public static final String PRM_ACCEPT_PARTIAL_RESULT = "AcceptPartialResult";//是否接受部分结果
+    public static final String PRM_USER_AUTHEN_INFO = "UserAuthenInfo";//用户权限信息
 
+    //本地sql提交的参数集合
     private static final ThreadLocal<Map<String, String>> _localPrarameters = new ThreadLocal<Map<String, String>>();
 
     private static final ThreadLocal<Map<Integer, OLAPContext>> _localContexts = new ThreadLocal<Map<Integer, OLAPContext>>();
@@ -107,7 +109,7 @@ public class OLAPContext {
     // query info
     public OLAPSchema olapSchema = null;
     public OLAPTableScan firstTableScan = null; // to be fact table scan except "select * from lookupTable"
-    public TupleInfo returnTupleInfo = null;
+    public TupleInfo returnTupleInfo = null;//一行数据的返回值类型说明
     public boolean afterAggregate = false;
     public boolean afterSkippedFilter = false;
     public boolean afterJoin = false;
@@ -131,7 +133,7 @@ public class OLAPContext {
 
     public int limit;
 
-    // hive query
+    // hive query 具体的hive查询sql
     public String sql = "";
 
     public OLAPAuthentication olapAuthen = new OLAPAuthentication();

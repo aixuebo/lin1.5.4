@@ -38,7 +38,7 @@ public class OLAPQuery extends AbstractEnumerable<Object[]> implements Enumerabl
 
     private final DataContext optiqContext;
     private final EnumeratorTypeEnum type;
-    private final int contextId;
+    private final int contextId;//查询的上下文ID
 
     public OLAPQuery(DataContext optiqContext, EnumeratorTypeEnum type, int ctxId) {
         this.optiqContext = optiqContext;

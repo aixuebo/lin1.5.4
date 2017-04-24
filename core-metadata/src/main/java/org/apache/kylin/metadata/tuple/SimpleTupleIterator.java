@@ -21,7 +21,7 @@ package org.apache.kylin.metadata.tuple;
 import java.util.Iterator;
 
 /**
- *
+ * 从集合中迭代数据
  */
 public class SimpleTupleIterator implements ITupleIterator {
 

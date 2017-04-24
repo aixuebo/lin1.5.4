@@ -37,15 +37,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 读从kylin上取一行一行的数据
  */
 public class OLAPEnumerator implements Enumerator<Object[]> {
 
     private final static Logger logger = LoggerFactory.getLogger(OLAPEnumerator.class);
 
-    private final OLAPContext olapContext;
+    private final OLAPContext olapContext;//上下文对象
     private final DataContext optiqContext;
-    private Object[] current;
-    private ITupleIterator cursor;
+    private Object[] current;//读取的一行数据的返回值
+    private ITupleIterator cursor;//读取的迭代器
 
     public OLAPEnumerator(OLAPContext olapContext, DataContext optiqContext) {
         this.olapContext = olapContext;
@@ -61,14 +62,14 @@ public class OLAPEnumerator implements Enumerator<Object[]> {
     @Override
     public boolean moveNext() {
         if (cursor == null) {
-            cursor = queryStorage();
+            cursor = queryStorage();//查询kylin
         }
 
         if (!cursor.hasNext()) {
             return false;
         }
 
-        ITuple tuple = cursor.next();
+        ITuple tuple = cursor.next();//一行数据
         if (tuple == null) {
             return false;
         }
@@ -76,6 +77,7 @@ public class OLAPEnumerator implements Enumerator<Object[]> {
         return true;
     }
 
+    //设置一行数据
     private Object[] convertCurrentRow(ITuple tuple) {
         // make sure the tuple layout is correct
         //assert tuple.getAllFields().equals(olapContext.returnTupleInfo.getAllFields());
@@ -84,6 +86,7 @@ public class OLAPEnumerator implements Enumerator<Object[]> {
         return current;
     }
 
+    //重新查询
     @Override
     public void reset() {
         close();
@@ -96,22 +99,23 @@ public class OLAPEnumerator implements Enumerator<Object[]> {
             cursor.close();
     }
 
+    //真正的查询kylin
     private ITupleIterator queryStorage() {
         logger.debug("query storage...");
 
         // set connection properties
-        setConnectionProperties();
+        setConnectionProperties();//设置连接属性  与kylin建立连接
 
         // bind dynamic variables
-        bindVariable(olapContext.filter);
+        bindVariable(olapContext.filter);//绑定变量
 
         // cube don't have correct result for simple query without group by, but let's try to return something makes sense
         olapContext.resetSQLDigest();
         SQLDigest sqlDigest = olapContext.getSQLDigest();
 
-        // query storage engine
+        // query storage engine 查询引擎
         IStorageQuery storageEngine = StorageFactory.createQuery(olapContext.realization);
-        ITupleIterator iterator = storageEngine.search(olapContext.storageContext, sqlDigest, olapContext.returnTupleInfo);
+        ITupleIterator iterator = storageEngine.search(olapContext.storageContext, sqlDigest, olapContext.returnTupleInfo);//查询sql--返回迭代器
         if (logger.isDebugEnabled()) {
             logger.debug("return TupleIterator...");
         }
@@ -119,12 +123,13 @@ public class OLAPEnumerator implements Enumerator<Object[]> {
         return iterator;
     }
 
+    //绑定变量
     private void bindVariable(TupleFilter filter) {
         if (filter == null) {
             return;
         }
 
-        for (TupleFilter childFilter : filter.getChildren()) {
+        for (TupleFilter childFilter : filter.getChildren()) {//递归绑定
             bindVariable(childFilter);
         }
 
@@ -145,6 +150,7 @@ public class OLAPEnumerator implements Enumerator<Object[]> {
         }
     }
 
+    //设置连接属性
     private void setConnectionProperties() {
         CalciteConnection conn = (CalciteConnection) optiqContext.getQueryProvider();
         Properties connProps = conn.getProperties();

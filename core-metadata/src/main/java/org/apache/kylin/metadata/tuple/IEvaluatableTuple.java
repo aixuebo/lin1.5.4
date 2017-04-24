@@ -20,7 +20,7 @@ package org.apache.kylin.metadata.tuple;
 
 import org.apache.kylin.metadata.model.TblColRef;
 
-//获取一个列的属性值
+//获取一个列的属性值----实现参加Tuple
 public interface IEvaluatableTuple {
 
     Object getValue(TblColRef col);

@@ -36,13 +36,14 @@ import org.apache.kylin.query.schema.OLAPTable;
 import org.apache.kylin.storage.hybrid.HybridInstance;
 
 /**
+ * 查询lookup表的数据
  */
 public class LookupTableEnumerator implements Enumerator<Object[]> {
 
-    private final Collection<String[]> allRows;
+    private final Collection<String[]> allRows;//lookup所有表数据
     private final List<ColumnDesc> colDescs;
-    private final Object[] current;
-    private Iterator<String[]> iterator;
+    private final Object[] current;//当前行数据内容
+    private Iterator<String[]> iterator;//lookup表的迭代器
 
     public LookupTableEnumerator(OLAPContext olapContext) {
 
@@ -67,8 +68,8 @@ public class LookupTableEnumerator implements Enumerator<Object[]> {
             throw new IllegalStateException("No dimension with derived columns found for lookup table " + lookupTableName + ", cube desc " + cube.getDescriptor());
 
         CubeManager cubeMgr = CubeManager.getInstance(cube.getConfig());
-        LookupStringTable table = cubeMgr.getLookupTable(cube.getLatestReadySegment(), dim);
-        this.allRows = table.getAllRows();
+        LookupStringTable table = cubeMgr.getLookupTable(cube.getLatestReadySegment(), dim);//查找lookup表
+        this.allRows = table.getAllRows();//获取lookup表所有数据
 
         OLAPTable olapTable = (OLAPTable) olapContext.firstTableScan.getOlapTable();
         this.colDescs = olapTable.getExposedColumns();
@@ -81,12 +82,13 @@ public class LookupTableEnumerator implements Enumerator<Object[]> {
     public boolean moveNext() {
         boolean hasNext = iterator.hasNext();
         if (hasNext) {
-            String[] row = iterator.next();
+            String[] row = iterator.next();//获取一行lookup表数据
             for (int i = 0, n = colDescs.size(); i < n; i++) {
                 ColumnDesc colDesc = colDescs.get(i);
-                int colIdx = colDesc.getZeroBasedIndex();
+                int colIdx = colDesc.getZeroBasedIndex();//列对应的索引
                 if (colIdx >= 0) {
-                    current[i] = Tuple.convertOptiqCellValue(row[colIdx], colDesc.getType().getName());
+                    //row[colIdx] 表示获取该列的值
+                    current[i] = Tuple.convertOptiqCellValue(row[colIdx], colDesc.getType().getName());//类型转换
                 } else {
                     current[i] = null; // fake column
                 }

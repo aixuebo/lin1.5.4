@@ -29,6 +29,10 @@ import org.apache.kylin.metadata.tuple.TupleInfo;
  */
 public interface IStorageQuery {
 
+    /**
+     * 查询引擎查询sql,将结果存储在TupleInfo对象内
+     * 返回迭代器
+     */
     ITupleIterator search(StorageContext context, SQLDigest sqlDigest, TupleInfo returnTupleInfo);
 
 }

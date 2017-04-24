@@ -28,6 +28,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
 
 /**
+ * 对一组数据的迭代器进行迭代
  */
 public class CompoundTupleIterator implements ITupleIterator {
     private static final Logger logger = LoggerFactory.getLogger(CompoundTupleIterator.class);

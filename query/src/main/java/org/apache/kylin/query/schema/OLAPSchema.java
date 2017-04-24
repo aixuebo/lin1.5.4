@@ -32,7 +32,8 @@ import org.apache.kylin.metadata.project.ProjectInstance;
 import org.apache.kylin.metadata.project.ProjectManager;
 
 /**
- * 表示一个数据库
+ * 表示一个project下的数据库
+ * 属于calcite项目的接口,获取数据库下表的信息
  */
 public class OLAPSchema extends AbstractSchema {
 
@@ -43,7 +44,7 @@ public class OLAPSchema extends AbstractSchema {
     private String projectName;//项目名称
     private String schemaName;//数据库名称
 
-    private String storageUrl;
+    private String storageUrl;//如何访问hbase
 
     //数据库的登录url  user  密码
     private String starSchemaUrl;
@@ -66,7 +67,7 @@ public class OLAPSchema extends AbstractSchema {
 
     /**
      * It is intended to skip caching, because underlying project/tables might change.
-     *
+     * 为calcite加载表结构
      * @return
      */
     @Override

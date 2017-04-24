@@ -76,12 +76,13 @@ import org.apache.kylin.query.schema.OLAPTable;
 import com.google.common.base.Preconditions;
 
 /**
+ * calcite的接口实现类,如何扫描一个table
  */
 public class OLAPTableScan extends TableScan implements OLAPRel, EnumerableRel {
 
-    private final OLAPTable olapTable;
-    private final String tableName;
-    private final int[] fields;
+    private final OLAPTable olapTable;//calcite对应的表对象
+    private final String tableName;//kylin配置的表名字
+    private final int[] fields;//每一个属性对应一个int
     private ColumnRowType columnRowType;
     private OLAPContext context;
 
@@ -120,6 +121,7 @@ public class OLAPTableScan extends TableScan implements OLAPRel, EnumerableRel {
         return new OLAPTableScan(getCluster(), table, olapTable, fields);
     }
 
+    //日安家查询表的规则
     @Override
     public void register(RelOptPlanner planner) {
         // force clear the query context before traversal relational operators

@@ -405,7 +405,7 @@ public class QueryService extends BasicService {
         try {
             conn = cacheService.getOLAPDataSource(sqlRequest.getProject()).getConnection();
 
-            if (sqlRequest instanceof PrepareSqlRequest) {
+            if (sqlRequest instanceof PrepareSqlRequest) {//预编译sql
                 PreparedStatement preparedState = conn.prepareStatement(sql);
 
                 for (int i = 0; i < ((PrepareSqlRequest) sqlRequest).getParams().length; i++) {//为预编译sql设置值

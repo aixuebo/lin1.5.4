@@ -66,9 +66,10 @@ public class OLAPSchemaFactory implements SchemaFactory {
 
     private final static String SCHEMA_PROJECT = "project";
 
+    //calcite接口,给定一个数据库schemaName,以及参数 获取该数据库的表信息
     @Override
     public Schema create(SchemaPlus parentSchema, String schemaName, Map<String, Object> operand) {
-        String project = (String) operand.get(SCHEMA_PROJECT);//获取project
+        String project = (String) operand.get(SCHEMA_PROJECT);//通过参数 获取project
         Schema newSchema = new OLAPSchema(project, schemaName);
         return newSchema;
     }
@@ -113,9 +114,9 @@ public class OLAPSchemaFactory implements SchemaFactory {
                 out.write("        {\n");
                 out.write("            \"type\": \"custom\",\n");
                 out.write("            \"name\": \"" + schemaName + "\",\n");//定义的数据库
-                out.write("            \"factory\": \"org.apache.kylin.query.schema.OLAPSchemaFactory\",\n");
+                out.write("            \"factory\": \"org.apache.kylin.query.schema.OLAPSchemaFactory\",\n");//如何读取该数据库下的信息
                 out.write("            \"operand\": {\n");
-                out.write("                \"" + SCHEMA_PROJECT + "\": \"" + project + "\"\n");//该数据库所属project
+                out.write("                \"" + SCHEMA_PROJECT + "\": \"" + project + "\"\n");//该数据库所属project---为该数据库设置属性
                 out.write("            },\n");
                 createOLAPSchemaFunctions(out);
                 out.write("        }\n");

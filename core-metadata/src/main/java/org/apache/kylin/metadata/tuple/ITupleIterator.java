@@ -22,10 +22,10 @@ import java.util.Iterator;
 
 /**
  * @author xjiang
- *
+ * 一行一行数据的迭代器
  */
 public interface ITupleIterator extends Iterator<ITuple> {
-    ITupleIterator EMPTY_TUPLE_ITERATOR = new ITupleIterator() {
+    ITupleIterator EMPTY_TUPLE_ITERATOR = new ITupleIterator() {//空记录
         @Override
         public boolean hasNext() {
             return false;

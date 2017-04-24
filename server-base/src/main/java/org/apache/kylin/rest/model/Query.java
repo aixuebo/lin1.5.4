@@ -20,11 +20,12 @@ package org.apache.kylin.rest.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+//表示保存的一个query
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Query {
 
-    private String name;
-    private String project;
+    private String name;//保存的查询sql的名字
+    private String project;//sql所属项目
     private String sql;
     private String description;
 
