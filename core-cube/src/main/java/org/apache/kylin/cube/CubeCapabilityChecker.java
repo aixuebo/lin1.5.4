@@ -57,17 +57,18 @@ public class CubeCapabilityChecker {
         result.capable = false;
 
         // match joins
-        boolean isJoinMatch = JoinChecker.isJoinMatch(digest.joinDescs, cube);
+        boolean isJoinMatch = JoinChecker.isJoinMatch(digest.joinDescs, cube);//true说明校验成功
         if (!isJoinMatch) {
             logger.info("Exclude cube " + cube.getName() + " because unmatched joins");
             return result;
         }
 
         // dimensions & measures
-        Collection<TblColRef> dimensionColumns = getDimensionColumns(digest);
-        Collection<FunctionDesc> aggrFunctions = digest.aggregations;
-        Collection<TblColRef> unmatchedDimensions = unmatchedDimensions(dimensionColumns, cube);
-        Collection<FunctionDesc> unmatchedAggregations = unmatchedAggregations(aggrFunctions, cube);
+        Collection<TblColRef> dimensionColumns = getDimensionColumns(digest);//维度集合,即可能组成rowkey的方式
+        Collection<FunctionDesc> aggrFunctions = digest.aggregations;//sql中的聚合函数
+
+        Collection<TblColRef> unmatchedDimensions = unmatchedDimensions(dimensionColumns, cube);//假设group by和where的字段一共10个,但是cube一共定义的是8个,则返回剩余的2个,即2个维度没有定义
+        Collection<FunctionDesc> unmatchedAggregations = unmatchedAggregations(aggrFunctions, cube);//没有定义的聚合函数
 
         // try custom measure types
         // in RAW query, unmatchedDimensions and unmatchedAggregations will null, so can't chose RAW cube well!
@@ -123,6 +124,7 @@ public class CubeCapabilityChecker {
         return result;
     }
 
+    //维度集合,即可能组成rowkey的方式
     private static Collection<TblColRef> getDimensionColumns(SQLDigest sqlDigest) {
         Collection<TblColRef> groupByColumns = sqlDigest.groupbyColumns;
         Collection<TblColRef> filterColumns = sqlDigest.filterColumns;
@@ -133,13 +135,15 @@ public class CubeCapabilityChecker {
         return dimensionColumns;
     }
 
+    //假设group by和where的字段一共10个,但是cube一共定义的是8个,则返回剩余的2个,即2个维度没有定义
     private static Set<TblColRef> unmatchedDimensions(Collection<TblColRef> dimensionColumns, CubeInstance cube) {
         HashSet<TblColRef> result = Sets.newHashSet(dimensionColumns);
         CubeDesc cubeDesc = cube.getDescriptor();
-        result.removeAll(cubeDesc.listDimensionColumnsIncludingDerived());
+        result.removeAll(cubeDesc.listDimensionColumnsIncludingDerived());//该cube支持的所有列,包括derived列,但是不算度量的列
         return result;
     }
 
+    //没有定义的聚合函数
     private static Set<FunctionDesc> unmatchedAggregations(Collection<FunctionDesc> aggregations, CubeInstance cube) {
         HashSet<FunctionDesc> result = Sets.newHashSet(aggregations);
         CubeDesc cubeDesc = cube.getDescriptor();
@@ -181,7 +185,8 @@ public class CubeCapabilityChecker {
     }
 
     // custom measure types can cover unmatched dimensions or measures
-    private static void tryCustomMeasureTypes(Collection<TblColRef> unmatchedDimensions, Collection<FunctionDesc> unmatchedAggregations, SQLDigest digest, CubeInstance cube, CapabilityResult result) {
+    private static void tryCustomMeasureTypes(Collection<TblColRef> unmatchedDimensions, Collection<FunctionDesc> unmatchedAggregations,
+                                              SQLDigest digest, CubeInstance cube, CapabilityResult result) {
         CubeDesc cubeDesc = cube.getDescriptor();
         List<String> influencingMeasures = Lists.newArrayList();
         for (MeasureDesc measure : cubeDesc.getMeasures()) {

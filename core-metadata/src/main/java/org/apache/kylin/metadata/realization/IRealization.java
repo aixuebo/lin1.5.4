@@ -29,6 +29,7 @@ public interface IRealization extends IStorageAware {
 
     /**
      * Given the features of a query, check how capable the realization is to answer the query.
+     * true表示cube的定义是能够满足sql查询的
      */
     public CapabilityResult isCapable(SQLDigest digest);
 
@@ -47,15 +48,15 @@ public interface IRealization extends IStorageAware {
 
     public List<MeasureDesc> getMeasures();
 
-    public boolean isReady();
+    public boolean isReady();//是否已经准备好了
 
-    public String getName();
+    public String getName();//cube的名字
 
-    public String getCanonicalName();
+    public String getCanonicalName();//type+name
 
-    public long getDateRangeStart();
+    public long getDateRangeStart();//ready中最小的segment对应的开始位置
 
-    public long getDateRangeEnd();
+    public long getDateRangeEnd();//ready中最大的segment对应的结束位置
 
     public boolean supportsLimitPushDown();
 }

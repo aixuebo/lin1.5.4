@@ -39,12 +39,13 @@ public class SQLDigest {
     public TupleFilter filter;
     public Collection<JoinDesc> joinDescs;
     public Collection<TblColRef> allColumns;
-    public Collection<TblColRef> groupbyColumns;
-    public Collection<TblColRef> filterColumns;
+    public Collection<TblColRef> groupbyColumns;//group by需要的维度集合
+    public Collection<TblColRef> filterColumns;//where需要的维度集合
+
     public Collection<TblColRef> metricColumns;
     public Collection<FunctionDesc> aggregations;
     public Collection<MeasureDesc> sortMeasures;
-    public Collection<OrderEnum> sortOrders;
+    public Collection<OrderEnum> sortOrders;//排序方式
     public boolean isRawQuery;
 
     //initialized when org.apache.kylin.query.routing.QueryRouter.selectRealization()

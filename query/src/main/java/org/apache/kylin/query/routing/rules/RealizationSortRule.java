@@ -27,10 +27,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 仅仅对候选人集合进行排序
  */
 public class RealizationSortRule extends RoutingRule {
     private static final Logger logger = LoggerFactory.getLogger(RealizationSortRule.class);
 
+    //对候选人进行排序
     @Override
     public void apply(List<Candidate> candidates) {
         StringBuilder sb = new StringBuilder();

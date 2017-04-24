@@ -27,7 +27,7 @@ import com.google.common.collect.Lists;
 public class CapabilityResult {
 
     /** Is capable or not */
-    public boolean capable;
+    public boolean capable;//true表示该sql是在cube中是可以定义范围内的,即可以在cuboid中找到对应的数据
 
     /** The smaller the cost, the more capable the realization */
     public int cost;

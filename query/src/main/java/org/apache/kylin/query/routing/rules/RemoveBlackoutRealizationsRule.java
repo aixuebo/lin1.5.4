@@ -28,23 +28,27 @@ import org.apache.kylin.query.routing.RoutingRule;
 import com.google.common.collect.Sets;
 
 /**
- * for IT use, exclude some cubes 
+ * for IT use, exclude some cubes
+ * 在黑名单的一定会被删除
+ * 只保留报名单内的数据
+ *
+ * 因此当白和黑名单都有同一个数据的时候,该数据因为在黑名单存在,则一定会被删除
  */
 public class RemoveBlackoutRealizationsRule extends RoutingRule {
-    public static Set<String> blackList = Sets.newHashSet();
-    public static Set<String> whiteList = Sets.newHashSet();
+    public static Set<String> blackList = Sets.newHashSet();//黑名单
+    public static Set<String> whiteList = Sets.newHashSet();//白名单
 
     @Override
     public void apply(List<Candidate> candidates) {
         for (Iterator<Candidate> iterator = candidates.iterator(); iterator.hasNext();) {
             Candidate candidate = iterator.next();
 
-            if (blackList.contains(candidate.getRealization().getCanonicalName())) {
+            if (blackList.contains(candidate.getRealization().getCanonicalName())) {//黑名单的要被删除
                 iterator.remove();
                 continue;
             }
 
-            if (!whiteList.isEmpty() && !whiteList.contains(candidate.getRealization().getCanonicalName())) {
+            if (!whiteList.isEmpty() && !whiteList.contains(candidate.getRealization().getCanonicalName())) {//不在白名单的,都要被删除
                 iterator.remove();
                 continue;
             }

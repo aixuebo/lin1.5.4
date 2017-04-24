@@ -28,9 +28,12 @@ import org.apache.kylin.metadata.realization.SQLDigest;
 
 import com.google.common.collect.Maps;
 
+/**
+ * 候选人对象,支持排序功能
+ */
 public class Candidate implements Comparable<Candidate> {
 
-    static Map<RealizationType, Integer> DEFAULT_PRIORITIES = Maps.newHashMap();
+    static Map<RealizationType, Integer> DEFAULT_PRIORITIES = Maps.newHashMap();//默认的候选人优先级
     static Map<RealizationType, Integer> PRIORITIES = DEFAULT_PRIORITIES;
 
     static {
@@ -82,6 +85,7 @@ public class Candidate implements Comparable<Candidate> {
         this.capability = capability;
     }
 
+    //先比较优先级,在比较价值cost
     @Override
     public int compareTo(Candidate o) {
         int comp = this.priority - o.priority;

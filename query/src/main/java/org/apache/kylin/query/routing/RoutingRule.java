@@ -37,17 +37,19 @@ public abstract class RoutingRule {
     private static final Logger logger = LoggerFactory.getLogger(QueryRouter.class);
     private static List<RoutingRule> rules = Lists.newLinkedList();
 
+    //添加顺序
     static {
         rules.add(new RemoveBlackoutRealizationsRule());
         rules.add(new RemoveUncapableRealizationsRule());
         rules.add(new RealizationSortRule());
     }
 
+    //分别应用每一个规则
     public static void applyRules(List<Candidate> candidates) {
         for (RoutingRule rule : rules) {
-            String before = getPrintableText(candidates);
+            String before = getPrintableText(candidates);//实现前
             rule.apply(candidates);
-            String after = getPrintableText(candidates);
+            String after = getPrintableText(candidates);//实现后
             logger.info("Applying rule: " + rule + ", realizations before: " + before + ", realizations after: " + after);
         }
     }
@@ -71,18 +73,19 @@ public abstract class RoutingRule {
 
     /**
      *
-     * @param rule
-     * @param applyOrder RoutingRule are applied in order, latter rules can override previous rules
+     * @param rule 要插入的规则
+     * @param applyOrder RoutingRule are applied in order, latter rules can override previous rules 该规则是第几个执行
      */
     public static void registerRule(RoutingRule rule, int applyOrder) {
-        if (applyOrder > rules.size()) {
+        if (applyOrder > rules.size()) {//说明执行顺序比现在的规则数量还大,因此直接追加即可
             logger.warn("apply order " + applyOrder + "  is larger than rules size " + rules.size() + ", will put the new rule at the end");
             rules.add(rule);
         }
 
-        rules.add(applyOrder, rule);
+        rules.add(applyOrder, rule);//插入到指定顺序位置上
     }
 
+    //删除参数对应的规则
     public static void removeRule(RoutingRule rule) {
         for (Iterator<RoutingRule> iter = rules.iterator(); iter.hasNext();) {
             RoutingRule r = iter.next();
@@ -92,6 +95,7 @@ public abstract class RoutingRule {
         }
     }
 
+    //找到符合type类型的序号
     protected List<Integer> findRealizationsOf(List<IRealization> realizations, RealizationType type) {
         List<Integer> itemIndexes = Lists.newArrayList();
         for (int i = 0; i < realizations.size(); ++i) {
@@ -107,6 +111,7 @@ public abstract class RoutingRule {
         return this.getClass().toString();
     }
 
+    //在候选人集合上应用该规则
     public abstract void apply(List<Candidate> candidates);
 
 }
