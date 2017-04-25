@@ -66,35 +66,36 @@ public class TopNCounterSerializer extends DataTypeSerializer<TopNCounter<ByteAr
     public void serialize(TopNCounter<ByteArray> value, ByteBuffer out) {
         double[] counters = value.getCounters();
         List<ByteArray> peek = value.peek(1);
-        int keyLength = peek.size() > 0 ? peek.get(0).length() : 0;
-        out.putInt(value.getCapacity());
-        out.putInt(value.size());
-        out.putInt(keyLength);
-        dds.serialize(counters, out);
+        int keyLength = peek.size() > 0 ? peek.get(0).length() : 0;//1说明有元素在队列中
+        out.putInt(value.getCapacity());//容量
+        out.putInt(value.size());//最终队列真实数量
+        out.putInt(keyLength);//是否有元素
+        dds.serialize(counters, out);//序列化增量的count
         Iterator<Counter<ByteArray>> iterator = value.iterator();
         ByteArray item;
         while (iterator.hasNext()) {
             item = iterator.next().getItem();
-            out.put(item.array(), item.offset(), item.length());
+            out.put(item.array(), item.offset(), item.length());//序列化每一个value值
         }
     }
 
+    //反序列化
     @Override
     public TopNCounter<ByteArray> deserialize(ByteBuffer in) {
-        int capacity = in.getInt();
-        int size = in.getInt();
-        int keyLength = in.getInt();
-        double[] counters = dds.deserialize(in);
+        int capacity = in.getInt();//容量
+        int size = in.getInt();//真实大小
+        int keyLength = in.getInt();//是否有数据
+        double[] counters = dds.deserialize(in);//还原每一个增量的count数组
 
-        TopNCounter<ByteArray> counter = new TopNCounter<ByteArray>(capacity);
+        TopNCounter<ByteArray> counter = new TopNCounter<ByteArray>(capacity);//创建对象
         ByteArray byteArray;
-        byte[] keyArray = new byte[size * keyLength];
-        int offset = 0;
+        byte[] keyArray = new byte[size * keyLength];//
+        int offset = 0;//偏移量
         for (int i = 0; i < size; i++) {
-            in.get(keyArray, offset, keyLength);
+            in.get(keyArray, offset, keyLength);//还原value值
             byteArray = new ByteArray(keyArray, offset, keyLength);
             counter.offerToHead(byteArray, counters[i]);
-            offset += keyLength;
+            offset += keyLength;//累加偏移量
         }
 
         return counter;

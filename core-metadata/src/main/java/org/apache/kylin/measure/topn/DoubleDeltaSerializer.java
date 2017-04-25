@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
  * Given an array of double in ascending order, serialize them into very compact bytes.
  * 
  * http://bitcharmer.blogspot.co.uk/2013/12/how-to-serialise-array-of-doubles-with.html
+ * 将一组排序为正序的double集合,转换成残差的集合,进行压缩数据
  */
 public class DoubleDeltaSerializer {
 
@@ -38,8 +39,8 @@ public class DoubleDeltaSerializer {
         }
     }
 
-    final private int precision;
-    final private int multiplier;
+    final private int precision;//小数点多少位
+    final private int multiplier;//小数点前多少位
 
     transient ThreadLocal<long[]> deltasThreadLocal;
 
@@ -58,8 +59,9 @@ public class DoubleDeltaSerializer {
         this.deltasThreadLocal = new ThreadLocal<long[]>();
     }
 
+    //序列化
     public void serialize(double[] values, ByteBuffer buf) {
-        long[] deltas = calculateDeltas(values);
+        long[] deltas = calculateDeltas(values);//增量集合
         int deltaSize = maxDeltaSize(deltas, values.length - 1);
 
         checkFitInBits(deltaSize, DELTA_SIZE_BITS);
@@ -100,6 +102,7 @@ public class DoubleDeltaSerializer {
         }
     }
 
+    //最大增量对应的二进制
     private int maxDeltaSize(long[] deltas, int len) {
         long maxDelta = 0;
         for (int i = 0; i < len; i++) {
@@ -108,12 +111,13 @@ public class DoubleDeltaSerializer {
         return Long.SIZE - Long.numberOfLeadingZeros(maxDelta);
     }
 
+    //返回增量集合
     private long[] calculateDeltas(double[] values) {
         int len = values.length - 1;
         len = Math.max(0, len);
 
-        long[] deltas = deltasThreadLocal.get();
-        if (deltas == null || deltas.length < len) {
+        long[] deltas = deltasThreadLocal.get();//获取本地线程安全缓存的数组
+        if (deltas == null || deltas.length < len) {//如果缓存的数组长度不够,则扩容
             deltas = new long[len];
             deltasThreadLocal.set(deltas);
         }
@@ -121,25 +125,28 @@ public class DoubleDeltaSerializer {
         if (len == 0)
             return deltas;
 
-        long current = roundAndPromote(values[0]);
+        long current = roundAndPromote(values[0]);//先计算当前值转换成long
         for (int i = 0; i < len; i++) {
-            long next = roundAndPromote(values[i + 1]);
-            deltas[i] = next - current;
+            long next = roundAndPromote(values[i + 1]);//每一个值
+            deltas[i] = next - current;//差
             assert deltas[i] >= 0;
             current = next;
         }
         return deltas;
     }
 
+    //转换成long
     private long roundAndPromote(double value) {
         return (long) (value * multiplier + .5d);
     }
 
+    //num一定大于2^bits次方结果
     private void checkFitInBits(int num, int bits) {
         if (num >= (1 << bits))
             throw new IllegalArgumentException();
     }
 
+    //反序列化
     public double[] deserialize(ByteBuffer buf) {
         int meta = buf.getInt();
         int len = meta & ((1 << LENGTH_BITS) - 1);

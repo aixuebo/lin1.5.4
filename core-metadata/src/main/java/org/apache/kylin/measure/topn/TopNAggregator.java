@@ -22,12 +22,12 @@ import org.apache.kylin.common.util.ByteArray;
 import org.apache.kylin.measure.MeasureAggregator;
 
 /**
- * 
+ * 聚合
  */
 @SuppressWarnings("serial")
 public class TopNAggregator extends MeasureAggregator<TopNCounter<ByteArray>> {
 
-    int capacity = 0;
+    int capacity = 0;//容量
     TopNCounter<ByteArray> sum = null;
 
     @Override
@@ -46,7 +46,7 @@ public class TopNAggregator extends MeasureAggregator<TopNCounter<ByteArray>> {
 
     @Override
     public TopNCounter<ByteArray> getState() {
-        sum.retain(capacity);
+        sum.retain(capacity);//直接最终保留capacity个元素
         return sum;
     }
 

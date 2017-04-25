@@ -44,9 +44,9 @@ public class TopNCounter<T> implements Iterable<Counter<T>> {
 
     public static final int EXTRA_SPACE_RATE = 50;
 
-    protected int capacity;
-    private HashMap<T, ListNode2<Counter<T>>> counterMap;
-    protected DoublyLinkedList<Counter<T>> counterList;
+    protected int capacity;//最大容量
+    private HashMap<T, ListNode2<Counter<T>>> counterMap;//每一个value值和对象组成的链表节点
+    protected DoublyLinkedList<Counter<T>> counterList;//每一个元素值和count组成的对象集合,按照顺序已经排序好了,因此获取topN的时候,从header开始获取n个元素即可
 
     /**
      * @param capacity maximum size (larger capacities improve accuracy)
@@ -63,9 +63,9 @@ public class TopNCounter<T> implements Iterable<Counter<T>> {
 
     /**
      * Algorithm: <i>Space-Saving</i>
-     *
+     * 添加一个元素到流中
      * @param item stream element (<i>e</i>)
-     * @return false if item was already in the stream summary, true otherwise
+     * @return false if item was already in the stream summary, true otherwise ,false说明该元素已经在流中存在了
      */
     public boolean offer(T item) {
         return offer(item, 1.0);
@@ -75,7 +75,8 @@ public class TopNCounter<T> implements Iterable<Counter<T>> {
      * Algorithm: <i>Space-Saving</i>
      *
      * @param item stream element (<i>e</i>)
-     * @return false if item was already in the stream summary, true otherwise
+     * @return false if item was already in the stream summary, true otherwise,false说明该元素已经在流中存在了
+     * 返回是否新增成功
      */
     public boolean offer(T item, double incrementCount) {
         return offerReturnAll(item, incrementCount).getFirst();
@@ -84,6 +85,7 @@ public class TopNCounter<T> implements Iterable<Counter<T>> {
     /**
      * @param item stream element (<i>e</i>)
      * @return item dropped from summary if an item was dropped, null otherwise
+     * 返回删除的元素
      */
     public T offerReturnDropped(T item, double incrementCount) {
         return offerReturnAll(item, incrementCount).getSecond();
@@ -92,20 +94,23 @@ public class TopNCounter<T> implements Iterable<Counter<T>> {
     /**
      * @param item stream element (<i>e</i>)
      * @return Pair<isNewItem, itemDropped> where isNewItem is the return value of offer() and itemDropped is null if no item was dropped
+     * 返回值 boolean表示是否是新增加的元素,第二个参数表示丢弃的元素
      */
     public Pair<Boolean, T> offerReturnAll(T item, double incrementCount) {
         ListNode2<Counter<T>> counterNode = counterMap.get(item);
-        boolean isNewItem = (counterNode == null);
+        boolean isNewItem = (counterNode == null);//true说明该元素是新元素
         T droppedItem = null;
         if (isNewItem) {
-
             if (size() < capacity) {
-                counterNode = counterList.enqueue(new Counter<T>(item));
-            } else {
-                counterNode = counterList.tail();
-                Counter<T> counter = counterNode.getValue();
-                droppedItem = counter.item;
-                counterMap.remove(droppedItem);
+                counterNode = counterList.enqueue(new Counter<T>(item));//向后追加一个元素
+            } else {//要删除最小的元素
+                counterNode = counterList.tail();//拿到最小的元素
+                Counter<T> counter = counterNode.getValue();//最小的元素值
+                droppedItem = counter.item;//最小的value
+
+                counterMap.remove(droppedItem);//移除
+
+                //将该值添加到最后一个count位置
                 counter.item = item;
                 counter.count = 0.0;
             }
@@ -117,7 +122,13 @@ public class TopNCounter<T> implements Iterable<Counter<T>> {
         return Pair.newPair(isNewItem, droppedItem);
     }
 
+    /**
+     * 为该元素增加incrementCount次数
+     * 并且进行排序
+     */
     protected void incrementCounter(ListNode2<Counter<T>> counterNode, double incrementCount) {
+
+        //节点增加count
         Counter<T> counter = counterNode.getValue();
         counter.count += incrementCount;
 
@@ -152,9 +163,9 @@ public class TopNCounter<T> implements Iterable<Counter<T>> {
                 counterList.enqueue(counterNode);
             }
         }
-
     }
 
+    //获取topk个元素对象
     public List<T> peek(int k) {
         List<T> topK = new ArrayList<T>(k);
 
@@ -169,6 +180,7 @@ public class TopNCounter<T> implements Iterable<Counter<T>> {
         return topK;
     }
 
+    //以此获取k个元素
     public List<Counter<T>> topK(int k) {
         List<Counter<T>> topK = new ArrayList<Counter<T>>(k);
 
@@ -190,6 +202,7 @@ public class TopNCounter<T> implements Iterable<Counter<T>> {
         return counterMap.size();
     }
 
+    //按照顺序打印每一个元素以及对应的count
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -209,11 +222,12 @@ public class TopNCounter<T> implements Iterable<Counter<T>> {
      * The consumer should call this method with count in ascending way; the item will be directly put to the head of the list, without comparison for best performance;
      * @param item
      * @param count
+     * 初始化一个节点,添加到head上
      */
     public void offerToHead(T item, double count) {
         Counter<T> c = new Counter<T>(item);
         c.count = count;
-        ListNode2<Counter<T>> node = counterList.add(c);
+        ListNode2<Counter<T>> node = counterList.add(c);//直接追加到头上
         counterMap.put(c.item, node);
     }
 
@@ -221,33 +235,35 @@ public class TopNCounter<T> implements Iterable<Counter<T>> {
      * Merge another counter into this counter;
      * @param another
      * @return
+     * 合并
      */
     public TopNCounter<T> merge(TopNCounter<T> another) {
-        double m1 = 0.0, m2 = 0.0;
+        double m1 = 0.0, m2 = 0.0;//队列1的最小值和队列2的最小值
         if (this.size() >= this.capacity) {
-            m1 = this.counterList.tail().getValue().count;
+            m1 = this.counterList.tail().getValue().count;//获取队列1的最小值
         }
 
         if (another.size() >= another.capacity) {
-            m2 = another.counterList.tail().getValue().count;
+            m2 = another.counterList.tail().getValue().count;//获取队列2的最小值
         }
 
-        Set<T> duplicateItems = Sets.newHashSet();
-        List<T> notDuplicateItems = Lists.newArrayList();
+        Set<T> duplicateItems = Sets.newHashSet();//说明两个队列都存在的元素
+        List<T> notDuplicateItems = Lists.newArrayList();//该元素不在参数队列存在
 
-        for (Map.Entry<T, ListNode2<Counter<T>>> entry : this.counterMap.entrySet()) {
+        for (Map.Entry<T, ListNode2<Counter<T>>> entry : this.counterMap.entrySet()) {//循环数据
             T item = entry.getKey();
-            ListNode2<Counter<T>> existing = another.counterMap.get(item);
-            if (existing != null) {
+            ListNode2<Counter<T>> existing = another.counterMap.get(item);//队列2是否存在
+            if (existing != null) {//说明存在
                 duplicateItems.add(item);
-            } else {
+            } else {//说明不存在
                 notDuplicateItems.add(item);
             }
         }
 
-        for (T item : duplicateItems) {
+        for (T item : duplicateItems) {//重复的元素,增加对应的count即可
             this.offer(item, another.counterMap.get(item).getValue().count);
         }
+
 
         for (T item : notDuplicateItems) {
             this.offer(item, m2);
@@ -255,7 +271,7 @@ public class TopNCounter<T> implements Iterable<Counter<T>> {
 
         for (Map.Entry<T, ListNode2<Counter<T>>> entry : another.counterMap.entrySet()) {
             T item = entry.getKey();
-            if (duplicateItems.contains(item) == false) {
+            if (duplicateItems.contains(item) == false) {//说明不包含
                 double counter = entry.getValue().getValue().count;
                 this.offer(item, counter + m1);
             }
@@ -267,25 +283,26 @@ public class TopNCounter<T> implements Iterable<Counter<T>> {
     /**
      * Retain the capacity to the given number; The extra counters will be cut off
      * @param newCapacity
+     * 创建newCapacity大小的队列
      */
     public void retain(int newCapacity) {
         assert newCapacity > 0;
-        this.capacity = newCapacity;
-        if (newCapacity < this.size()) {
-            ListNode2<Counter<T>> tail = counterList.tail();
-            while (tail != null && this.size() > newCapacity) {
+        this.capacity = newCapacity;//新的队列大小
+        if (newCapacity < this.size()) {//说明要取消一部分元素
+            ListNode2<Counter<T>> tail = counterList.tail();//从最小的开始取消
+            while (tail != null && this.size() > newCapacity) {//不断循环,抽取元素进行取消
                 Counter<T> bucket = tail.getValue();
+                //删除元素
                 this.counterMap.remove(bucket.getItem());
                 this.counterList.remove(tail);
                 tail = this.counterList.tail();
             }
         }
-
     }
 
     /**
      * Get the counter values in ascending order
-     * @return
+     * 从小到大的顺序,把所有的count收集成数组
      */
     public double[] getCounters() {
         double[] counters = new double[size()];
@@ -301,6 +318,7 @@ public class TopNCounter<T> implements Iterable<Counter<T>> {
         return counters;
     }
 
+    //循环所有的元素---该元素循环的是有大小顺序的
     @Override
     public Iterator<Counter<T>> iterator() {
         return new TopNCounterIterator();
@@ -308,13 +326,14 @@ public class TopNCounter<T> implements Iterable<Counter<T>> {
 
     /**
      * Iterator from the tail (smallest) to head (biggest);
+     * 从小到大的顺序迭代每一个元素
      */
     private class TopNCounterIterator implements Iterator<Counter<T>> {
 
-        private ListNode2<Counter<T>> currentBNode;
+        private ListNode2<Counter<T>> currentBNode;//每一个节点的迭代器
 
         private TopNCounterIterator() {
-            currentBNode = counterList.tail();
+            currentBNode = counterList.tail();//从小到大的顺序
         }
 
         @Override
@@ -326,7 +345,7 @@ public class TopNCounter<T> implements Iterable<Counter<T>> {
         @Override
         public Counter<T> next() {
             Counter<T> counter = currentBNode.getValue();
-            currentBNode = currentBNode.getNext();
+            currentBNode = currentBNode.getNext();//获取下一个元素
             return counter;
         }
 

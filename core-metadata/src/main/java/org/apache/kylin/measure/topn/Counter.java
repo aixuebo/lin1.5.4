@@ -27,6 +27,7 @@ import java.io.ObjectOutput;
  * Modified from Counter.java in https://github.com/addthis/stream-lib
  * 
  * @param <T>
+ * 描述一个元素 以及 出现的count数量
  */
 public class Counter<T> implements Externalizable {
 

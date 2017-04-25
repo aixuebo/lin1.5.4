@@ -45,6 +45,21 @@ import org.apache.kylin.metadata.tuple.TupleInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ {
+     "name": "R",
+     "function": {
+         "expression": "RAW",
+         "parameter": {
+             "type": "column",
+             "value": "OPEN_TIME",
+             "next_parameter": null
+         },
+        "returntype": "raw"
+     },
+     "dependent_measure_ref": null
+ }
+ */
 public class RawMeasureType extends MeasureType<List<ByteArray>> {
 
     private static final Logger logger = LoggerFactory.getLogger(RawMeasureType.class);
@@ -94,6 +109,7 @@ public class RawMeasureType extends MeasureType<List<ByteArray>> {
 
     }
 
+    //true 因为该操作是耗费内存的操作
     @Override
     public boolean isMemoryHungry() {
         return true;
@@ -103,20 +119,21 @@ public class RawMeasureType extends MeasureType<List<ByteArray>> {
     public MeasureIngester<List<ByteArray>> newIngester() {
         return new MeasureIngester<List<ByteArray>>() {
             //encode measure value to dictionary
+            //产生字节数组集合
             @Override
             public List<ByteArray> valueOf(String[] values, MeasureDesc measureDesc, Map<TblColRef, Dictionary<String>> dictionaryMap) {
                 if (values.length != 1)
                     throw new IllegalArgumentException();
 
                 //source input column value
-                String literal = values[0];
+                String literal = values[0];//具体的值
                 // encode literal using dictionary
-                TblColRef literalCol = getRawColumn(measureDesc.getFunction());
-                Dictionary<String> dictionary = dictionaryMap.get(literalCol);
-                int keyEncodedValue = dictionary.getIdFromValue(literal);
+                TblColRef literalCol = getRawColumn(measureDesc.getFunction());//获取函数对应的第一个参数需要的列
+                Dictionary<String> dictionary = dictionaryMap.get(literalCol);//获取该列对应的字典
 
+                int keyEncodedValue = dictionary.getIdFromValue(literal);//返回字典编码
                 ByteArray key = new ByteArray(dictionary.getSizeOfId());
-                BytesUtil.writeUnsigned(keyEncodedValue, key.array(), key.offset(), dictionary.getSizeOfId());
+                BytesUtil.writeUnsigned(keyEncodedValue, key.array(), key.offset(), dictionary.getSizeOfId());//将keyEncodedValue变成字节数组,存储在key中
 
                 List<ByteArray> valueList = new ArrayList<ByteArray>(1);
                 valueList.add(key);
@@ -124,53 +141,58 @@ public class RawMeasureType extends MeasureType<List<ByteArray>> {
             }
 
             //merge measure dictionary
+            //用于合并merge操作
             @Override
             public List<ByteArray> reEncodeDictionary(List<ByteArray> value, MeasureDesc measureDesc, Map<TblColRef, Dictionary<String>> oldDicts, Map<TblColRef, Dictionary<String>> newDicts) {
-                TblColRef colRef = getRawColumn(measureDesc.getFunction());
-                Dictionary<String> sourceDict = oldDicts.get(colRef);
-                Dictionary<String> mergedDict = newDicts.get(colRef);
+                TblColRef colRef = getRawColumn(measureDesc.getFunction());//该函数使用了哪一列
+                Dictionary<String> sourceDict = oldDicts.get(colRef);//老的编码
+                Dictionary<String> mergedDict = newDicts.get(colRef);//新的编码
 
-                int valueSize = value.size();
-                byte[] newIdBuf = new byte[valueSize * mergedDict.getSizeOfId()];
+                int valueSize = value.size();//要为一组集合进行编码
+                byte[] newIdBuf = new byte[valueSize * mergedDict.getSizeOfId()];//新的字节数组---值的个数*每一个需要新的字典id大小
                 byte[] literal = new byte[sourceDict.getSizeOfValue()];
 
-                int bufOffset = 0;
-                for (ByteArray c : value) {
-                    int oldId = BytesUtil.readUnsigned(c.array(), c.offset(), c.length());
+                int bufOffset = 0;//在newIdBuf字节数组中的偏移量
+                for (ByteArray c : value) {//循环每一个value
+                    int oldId = BytesUtil.readUnsigned(c.array(), c.offset(), c.length());//老的编码ID
                     int newId;
-                    int size = sourceDict.getValueBytesFromId(oldId, literal, 0);
+                    int size = sourceDict.getValueBytesFromId(oldId, literal, 0);//将老的编码id还原成字节数组
                     if (size < 0) {
                         newId = mergedDict.nullId();
                     } else {
-                        newId = mergedDict.getIdFromValueBytes(literal, 0, size);
+                        newId = mergedDict.getIdFromValueBytes(literal, 0, size);//对字节数组重新编码
                     }
-                    BytesUtil.writeUnsigned(newId, newIdBuf, bufOffset, mergedDict.getSizeOfId());
-                    c.set(newIdBuf, bufOffset, mergedDict.getSizeOfId());
-                    bufOffset += mergedDict.getSizeOfId();
+
+                    BytesUtil.writeUnsigned(newId, newIdBuf, bufOffset, mergedDict.getSizeOfId());//将新的id存储到newIdBuf中
+                    c.set(newIdBuf, bufOffset, mergedDict.getSizeOfId());//将新的编码内容存放到c中
+
+                    bufOffset += mergedDict.getSizeOfId();//移动偏移量
                 }
-                return value;
+                return value;//新的值已经变成新的字典编码了
             }
         };
     }
 
+    //如何对数据进行聚类
     @Override
     public MeasureAggregator<List<ByteArray>> newAggregator() {
         return new RawAggregator();
     }
 
+    //获取需要编码的列集合
     @Override
     public List<TblColRef> getColumnsNeedDictionary(FunctionDesc functionDesc) {
-        TblColRef literalCol = functionDesc.getParameter().getColRefs().get(0);
+        TblColRef literalCol = functionDesc.getParameter().getColRefs().get(0);//获取该函数使用到的列
         return Collections.singletonList(literalCol);
     }
 
     public CapabilityResult.CapabilityInfluence influenceCapabilityCheck(Collection<TblColRef> unmatchedDimensions, Collection<FunctionDesc> unmatchedAggregations, SQLDigest digest, MeasureDesc measureDesc) {
         //is raw query
-        if (!digest.isRawQuery)
+        if (!digest.isRawQuery) //必须得是true
             return null;
 
-        TblColRef rawColumn = getRawColumn(measureDesc.getFunction());
-        if (!digest.allColumns.isEmpty() && !digest.allColumns.contains(rawColumn)) {
+        TblColRef rawColumn = getRawColumn(measureDesc.getFunction());//获取该raw需要对应列
+        if (!digest.allColumns.isEmpty() && !digest.allColumns.contains(rawColumn)) {//rawColumn必须存在
             return null;
         }
 
@@ -195,26 +217,31 @@ public class RawMeasureType extends MeasureType<List<ByteArray>> {
         return null;
     }
 
+    //调整sql
     @Override
     public void adjustSqlDigest(List<MeasureDesc> measureDescs, SQLDigest sqlDigest) {
 
-        if (sqlDigest.isRawQuery) {
+        if (sqlDigest.isRawQuery) {//一定是true
             for (MeasureDesc measureDesc : measureDescs) {
-                TblColRef col = this.getRawColumn(measureDesc.getFunction());
+                TblColRef col = this.getRawColumn(measureDesc.getFunction());//度量需要的字段
+
+                //老字段
                 ParameterDesc colParameter = new ParameterDesc();
                 colParameter.setType("column");
                 colParameter.setValue(col.getName());
+
+                //新的字段
                 FunctionDesc rawFunc = new FunctionDesc();
                 rawFunc.setExpression("RAW");
                 rawFunc.setParameter(colParameter);
 
                 if (sqlDigest.allColumns.contains(col)) {
-                    if (measureDesc.getFunction().equals(rawFunc)) {
+                    if (measureDesc.getFunction().equals(rawFunc)) {//找到raw度量函数
                         FunctionDesc sumFunc = new FunctionDesc();
                         sumFunc.setExpression("SUM");
-                        sumFunc.setParameter(colParameter);
-                        sqlDigest.aggregations.remove(sumFunc);
-                        sqlDigest.aggregations.add(rawFunc);
+                        sumFunc.setParameter(colParameter);//对该字段求sum
+                        sqlDigest.aggregations.remove(sumFunc);//删除sum函数
+                        sqlDigest.aggregations.add(rawFunc);//添加raw函数
                         logger.info("Add RAW measure on column " + col);
                     }
                     if (!sqlDigest.metricColumns.contains(col)) {
@@ -225,25 +252,31 @@ public class RawMeasureType extends MeasureType<List<ByteArray>> {
         }
     }
 
+    /**
+     * 是否需要更高级的填充,即一行数据填充到多行中
+     * 即getAdvancedTupleFiller方法是否有实现
+     */
     @Override
     public boolean needAdvancedTupleFilling() {
         return true;
     }
 
+    //简单的填充模式,一行记录填充到一个属性中
     @Override
     public void fillTupleSimply(Tuple tuple, int indexInTuple, Object measureValue) {
         throw new UnsupportedOperationException();
     }
 
+    //高级的填充模式,每一条结果被填充到多行中
     @Override
     public IAdvMeasureFiller getAdvancedTupleFiller(FunctionDesc function, TupleInfo tupleInfo, Map<TblColRef, Dictionary<String>> dictionaryMap) {
-        final TblColRef literalCol = getRawColumn(function);
-        final Dictionary<String> rawColDict = dictionaryMap.get(literalCol);
-        final int literalTupleIdx = tupleInfo.hasColumn(literalCol) ? tupleInfo.getColumnIndex(literalCol) : -1;
+        final TblColRef literalCol = getRawColumn(function);//获取函数对应的第一个参数需要的列
+        final Dictionary<String> rawColDict = dictionaryMap.get(literalCol);//获取该列对应的字典
+        final int literalTupleIdx = tupleInfo.hasColumn(literalCol) ? tupleInfo.getColumnIndex(literalCol) : -1;//该列存在,则返回该列的下标,如果该列不存在,则返回-1
 
         return new IAdvMeasureFiller() {
-            private List<ByteArray> rawList;
-            private Iterator<ByteArray> rawIterator;
+            private List<ByteArray> rawList;//全部数据
+            private Iterator<ByteArray> rawIterator;//数据迭代器
             private int expectRow = 0;
 
             @SuppressWarnings("unchecked")
@@ -254,24 +287,27 @@ public class RawMeasureType extends MeasureType<List<ByteArray>> {
                 this.expectRow = 0;
             }
 
+            //有多少行数据
             @Override
             public int getNumOfRows() {
                 return rawList.size();
             }
 
+            //将第row行的数据填充到tuple中
             @Override
             public void fillTuple(Tuple tuple, int row) {
                 if (expectRow++ != row)
                     throw new IllegalStateException();
 
                 ByteArray raw = rawIterator.next();
-                int key = BytesUtil.readUnsigned(raw.array(), raw.offset(), raw.length());
-                String colValue = rawColDict.getValueFromId(key);
-                tuple.setDimensionValue(literalTupleIdx, colValue);
+                int key = BytesUtil.readUnsigned(raw.array(), raw.offset(), raw.length());//字典key
+                String colValue = rawColDict.getValueFromId(key);//还原字典对应的具体的内容
+                tuple.setDimensionValue(literalTupleIdx, colValue);//为该下标填充值
             }
         };
     }
 
+    //获取函数对应的第一个参数需要的列
     private TblColRef getRawColumn(FunctionDesc functionDesc) {
         return functionDesc.getParameter().getColRefs().get(0);
     }

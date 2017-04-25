@@ -106,6 +106,7 @@ public class TopNMeasureType extends MeasureType<TopNCounter<ByteArray>> {
             throw new IllegalArgumentException();
     }
 
+    //占用内存
     @Override
     public boolean isMemoryHungry() {
         return true;
@@ -205,6 +206,7 @@ public class TopNMeasureType extends MeasureType<TopNCounter<ByteArray>> {
         };
     }
 
+    //聚合函数
     @Override
     public MeasureAggregator<TopNCounter<ByteArray>> newAggregator() {
         return new TopNAggregator();
@@ -294,7 +296,7 @@ public class TopNMeasureType extends MeasureType<TopNCounter<ByteArray>> {
 
     @Override
     public void adjustSqlDigest(List<MeasureDesc> measureDescs, SQLDigest sqlDigest) {
-        for (MeasureDesc measureDesc : measureDescs) {
+        for (MeasureDesc measureDesc : measureDescs) {//循环度量对象
             FunctionDesc topnFunc = measureDesc.getFunction();
             List<TblColRef> topnLiteralCol = getTopNLiteralColumn(topnFunc);
 
@@ -413,6 +415,7 @@ public class TopNMeasureType extends MeasureType<TopNCounter<ByteArray>> {
         return allColumns.subList(1, allColumns.size());
     }
 
+    //true表示确定是topN方法
     private boolean isTopN(FunctionDesc functionDesc) {
         return FUNC_TOP_N.equalsIgnoreCase(functionDesc.getExpression());
     }

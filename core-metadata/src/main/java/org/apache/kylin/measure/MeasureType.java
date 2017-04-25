@@ -55,7 +55,7 @@ abstract public class MeasureType<T> {
      * some advanced aggregation like HyperLogLog or TopN can consume more than 10 KB for 
      * each object, which requires special care on memory allocation.
      * 虽然大多数聚合对象都是仅仅8个字节就可以完成,比如long或者double
-     * 但是一些高级的聚合,比如HyperLogLog or TopN 能够消耗多余10k的内存,
+     * 但是一些高级的聚合,比如HyperLogLog or TopN 或者raw 能够消耗多余10k的内存,
      * 因此这种函数要内存的方面要小心,因此要返回true
      **/
     public boolean isMemoryHungry() {
@@ -74,7 +74,7 @@ abstract public class MeasureType<T> {
      * ---------------------------------------------------------------------------- */
 
     /** Return a MeasureIngester which knows how to init aggregation object from raw records.
-     * 如何初始化该字段的数据
+     * 如何对值进行处理,比如编码
      **/
     abstract public MeasureIngester<T> newIngester();
 
@@ -98,10 +98,12 @@ abstract public class MeasureType<T> {
      * Some special measures hold columns which are usually treated as dimensions (or vice-versa). 
      * This is where they override to influence cube capability check.
      * 
-     * A SQLDigest contains dimensions and measures extracted from a query. After comparing to
-     * cube definition, the matched dimensions and measures are crossed out, and what's left is
+     * A SQLDigest contains dimensions and measures extracted from a query.
+     * SQLDigest从query中抽取出维度和度量
+     * After comparing to cube definition, the matched dimensions and measures are crossed out, and what's left is
      * the <code>unmatchedDimensions</code> and <code>unmatchedAggregations</code>.
-     * 
+     * 比较cube的定义之后,可以将一些维度和度量取消掉,扔到另外两个集合中 、
+     *
      * Each measure type on the cube is then called on this method to check if any of the unmatched
      * can be fulfilled. If a measure type cannot fulfill any of the unmatched, it simply return null.
      * Or otherwise, <code>unmatchedDimensions</code> and <code>unmatchedAggregations</code> must
@@ -139,34 +141,49 @@ abstract public class MeasureType<T> {
      * Some special measures hold columns which are usually treated as dimensions (or vice-versa). 
      * They need to adjust dimensions and measures in <code>sqlDigest</code> before scanning,
      * such that correct cuboid and measures can be selected by storage.
+     * 对sql的调整
      */
     public void adjustSqlDigest(List<MeasureDesc> measureDescs, SQLDigest sqlDigest) {
     }
 
-    /** Return true if one storage record maps to multiple tuples, or false otherwise. */
+    /** Return true if one storage record maps to multiple tuples, or false otherwise.
+     * 是否需要更高级的填充,即一行数据填充到多行中
+     * 即getAdvancedTupleFiller方法是否有实现
+     **/
     public boolean needAdvancedTupleFilling() {
         return false;
     }
 
-    /** The simple filling mode, one tuple per storage record. */
+    /** The simple filling mode, one tuple per storage record.
+     * 简单的填充模式,一行记录填充到一个属性中
+     **/
     public void fillTupleSimply(Tuple tuple, int indexInTuple, Object measureValue) {
+        //为tuple的indexInTuple个属性填充对应的值
         tuple.setMeasureValue(indexInTuple, measureValue);
     }
 
-    /** The advanced filling mode, multiple tuples per storage record. */
+    /** The advanced filling mode, multiple tuples per storage record.
+     * 高级的填充模式,每一条结果被填充到多行中
+     **/
     public IAdvMeasureFiller getAdvancedTupleFiller(FunctionDesc function, TupleInfo returnTupleInfo, Map<TblColRef, Dictionary<String>> dictionaryMap) {
         throw new UnsupportedOperationException();
     }
 
     public static interface IAdvMeasureFiller {
 
-        /** Reload a value from storage and get ready to fill multiple tuples with it. */
+        /** Reload a value from storage and get ready to fill multiple tuples with it.
+         * 加载参数数据成一个数据集合
+         **/
         void reload(Object measureValue);
 
-        /** Returns how many rows contained in last loaded value. */
+        /** Returns how many rows contained in last loaded value.
+         * 加载的数据是有多少行数据
+         **/
         int getNumOfRows();
 
-        /** Fill in specified row into tuple. */
+        /** Fill in specified row into tuple.
+         * 将第row行的数据填充到tuple中
+         **/
         void fillTuple(Tuple tuple, int row);
     }
 }

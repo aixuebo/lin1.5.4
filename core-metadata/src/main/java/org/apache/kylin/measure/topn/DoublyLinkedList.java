@@ -22,6 +22,7 @@ package org.apache.kylin.measure.topn;
  * Modified from DoublyLinkedList.java in https://github.com/addthis/stream-lib
  * 
  * @param <T>
+ * double组成的链表
  */
 public class DoublyLinkedList<T> {
 
@@ -31,16 +32,18 @@ public class DoublyLinkedList<T> {
 
     /**
      * Append to head of list
+     * 向头部添加一个节点
      */
     public ListNode2<T> add(T value) {
-        ListNode2<T> node = new ListNode2<T>(value);
-        add(node);
+        ListNode2<T> node = new ListNode2<T>(value);//添加一个节点,值是value
+        add(node);//添加头尾映射
 
         return node;
     }
 
     /**
      * Prepend to tail of list
+     * 添加到后面追加元素
      */
     public ListNode2<T> enqueue(T value) {
         ListNode2<T> node = new ListNode2<T>(value);
@@ -48,6 +51,7 @@ public class DoublyLinkedList<T> {
         return enqueue(node);
     }
 
+    //追加到后面元素
     public ListNode2<T> enqueue(ListNode2<T> node) {
         if (size++ == 0) {
             head = node;
@@ -61,8 +65,9 @@ public class DoublyLinkedList<T> {
         return node;
     }
 
+    //将node作为head
     public void add(ListNode2<T> node) {
-        node.prev = head;
+        node.prev = head;//因此node的前一个是head
         node.next = null;
 
         if (size++ == 0) {
@@ -71,7 +76,7 @@ public class DoublyLinkedList<T> {
             head.next = node;
         }
 
-        head = node;
+        head = node;//node做为header
     }
 
     public ListNode2<T> addAfter(ListNode2<T> node, T value) {
@@ -80,6 +85,7 @@ public class DoublyLinkedList<T> {
         return newNode;
     }
 
+    //node节点后添加newNode
     public void addAfter(ListNode2<T> node, ListNode2<T> newNode) {
         newNode.next = node.next;
         newNode.prev = node;
@@ -92,6 +98,7 @@ public class DoublyLinkedList<T> {
         size++;
     }
 
+    //node节点前添加newNode
     public void addBefore(ListNode2<T> node, ListNode2<T> newNode) {
         newNode.prev = node.prev;
         newNode.next = node;
@@ -104,6 +111,7 @@ public class DoublyLinkedList<T> {
         size++;
     }
 
+    //移除一个节点
     public void remove(ListNode2<T> node) {
         if (node == tail) {
             tail = node.next;

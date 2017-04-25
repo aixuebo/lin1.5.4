@@ -25,6 +25,9 @@ import org.apache.kylin.common.util.Dictionary;
 import org.apache.kylin.metadata.model.MeasureDesc;
 import org.apache.kylin.metadata.model.TblColRef;
 
+/**
+ * 如何对字典的内容进行编码
+ */
 abstract public class MeasureIngester<V> {
 
     public static MeasureIngester<?> create(MeasureDesc measure) {
@@ -48,6 +51,14 @@ abstract public class MeasureIngester<V> {
      */
     abstract public V valueOf(String[] values, MeasureDesc measureDesc, Map<TblColRef, Dictionary<String>> dictionaryMap);
 
+    /**
+     * 用于合并merge操作
+     * @param value 具体的一个值
+     * @param measureDesc 执行的函数
+     * @param oldDicts 老的字典
+     * @param newDicts 新的字典
+     * @return
+     */
     public V reEncodeDictionary(V value, MeasureDesc measureDesc, Map<TblColRef, Dictionary<String>> oldDicts, Map<TblColRef, Dictionary<String>> newDicts) {
         throw new UnsupportedOperationException();
     }
