@@ -33,12 +33,13 @@ public class BitmapAggregator extends MeasureAggregator<BitmapCounter> {
         sum = null;
     }
 
+    //两个bitmap合并
     @Override
     public void aggregate(BitmapCounter value) {
         if (sum == null) {
             sum = new BitmapCounter(value);
         } else {
-            sum.merge(value);
+            sum.merge(value);//两个
         }
     }
 

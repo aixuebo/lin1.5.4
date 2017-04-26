@@ -116,9 +116,9 @@ public class TopNMeasureType extends MeasureType<TopNCounter<ByteArray>> {
     public MeasureIngester<TopNCounter<ByteArray>> newIngester() {
         return new MeasureIngester<TopNCounter<ByteArray>>() {
 
-            private DimensionEncoding[] dimensionEncodings = null;
-            private List<TblColRef> literalCols = null;
-            private int keyLength = 0;
+            private DimensionEncoding[] dimensionEncodings = null;//函数用到的每一个字段对应的字典映射数组
+            private List<TblColRef> literalCols = null;//处理第一个字段以外,所有的字段集合
+            private int keyLength = 0;//字典需要的字节和
 
             private DimensionEncoding[] newDimensionEncodings = null;
             private int newKeyLength = 0;
@@ -129,8 +129,8 @@ public class TopNMeasureType extends MeasureType<TopNCounter<ByteArray>> {
                 double counter = values[0] == null ? 0 : Double.parseDouble(values[0]);
 
                 if (dimensionEncodings == null) {
-                    literalCols = getTopNLiteralColumn(measureDesc.getFunction());
-                    dimensionEncodings = getDimensionEncodings(measureDesc.getFunction(), literalCols, dictionaryMap);
+                    literalCols = getTopNLiteralColumn(measureDesc.getFunction());//处理第一个字段以外,所有的字段集合
+                    dimensionEncodings = getDimensionEncodings(measureDesc.getFunction(), literalCols, dictionaryMap);//函数用到的每一个字段对应的字典映射数组
                     for (DimensionEncoding encoding : dimensionEncodings) {
                         keyLength += encoding.getLengthOfEncoding();
                     }
@@ -140,16 +140,16 @@ public class TopNMeasureType extends MeasureType<TopNCounter<ByteArray>> {
                     }
                 }
 
-                final ByteArray key = new ByteArray(keyLength);
+                final ByteArray key = new ByteArray(keyLength);//存储编码后的key
                 int offset = 0;
                 for (int i = 0; i < dimensionEncodings.length; i++) {
-                    byte[] valueBytes = Bytes.toBytes(values[i + 1]);
-                    dimensionEncodings[i].encode(valueBytes, valueBytes.length, key.array(), offset);
+                    byte[] valueBytes = Bytes.toBytes(values[i + 1]);//获取value的值
+                    dimensionEncodings[i].encode(valueBytes, valueBytes.length, key.array(), offset);//将value值进行编码
                     offset += dimensionEncodings[i].getLengthOfEncoding();
                 }
 
                 TopNCounter<ByteArray> topNCounter = new TopNCounter<ByteArray>(dataType.getPrecision() * TopNCounter.EXTRA_SPACE_RATE);
-                topNCounter.offer(key, counter);
+                topNCounter.offer(key, counter);//key就是编码后的集合,value是该count对象
                 return topNCounter;
             }
 
@@ -212,10 +212,11 @@ public class TopNMeasureType extends MeasureType<TopNCounter<ByteArray>> {
         return new TopNAggregator();
     }
 
+    //获取需要编码的列
     @Override
     public List<TblColRef> getColumnsNeedDictionary(FunctionDesc functionDesc) {
         List<TblColRef> columnsNeedDict = Lists.newArrayList();
-        List<TblColRef> allCols = functionDesc.getParameter().getColRefs();
+        List<TblColRef> allCols = functionDesc.getParameter().getColRefs();//参数需要的列集合
         int start = (functionDesc.getParameter().isColumnType() == true) ? 1 : 0;
         for (int i = start; i < allCols.size(); i++) {
             TblColRef tblColRef = allCols.get(i);
@@ -265,10 +266,10 @@ public class TopNMeasureType extends MeasureType<TopNCounter<ByteArray>> {
         if (!isTopN(topN))
             return false;
 
-        TblColRef topnNumCol = getTopNNumericColumn(topN);
+        TblColRef topnNumCol = getTopNNumericColumn(topN);//第一个字段
 
         if (topnNumCol == null) {
-            if (sum.isCount())
+            if (sum.isCount())//COUNT函数
                 return true;
 
             return false;
@@ -298,7 +299,7 @@ public class TopNMeasureType extends MeasureType<TopNCounter<ByteArray>> {
     public void adjustSqlDigest(List<MeasureDesc> measureDescs, SQLDigest sqlDigest) {
         for (MeasureDesc measureDesc : measureDescs) {//循环度量对象
             FunctionDesc topnFunc = measureDesc.getFunction();
-            List<TblColRef> topnLiteralCol = getTopNLiteralColumn(topnFunc);
+            List<TblColRef> topnLiteralCol = getTopNLiteralColumn(topnFunc);//处理第一个字段以外,所有的字段集合
 
             if (sqlDigest.groupbyColumns.containsAll(topnLiteralCol) == false)
                 return;
@@ -333,25 +334,29 @@ public class TopNMeasureType extends MeasureType<TopNCounter<ByteArray>> {
 
     @Override
     public IAdvMeasureFiller getAdvancedTupleFiller(FunctionDesc function, TupleInfo tupleInfo, Map<TblColRef, Dictionary<String>> dictionaryMap) {
-        final List<TblColRef> literalCols = getTopNLiteralColumn(function);
-        final TblColRef numericCol = getTopNNumericColumn(function);
+        final List<TblColRef> literalCols = getTopNLiteralColumn(function);//函数除了第一个字段外的所有字段
+        final TblColRef numericCol = getTopNNumericColumn(function);//函数的第一个字段
+
+        final DimensionEncoding[] dimensionEncodings = getDimensionEncodings(function, literalCols, dictionaryMap);//每一个字段的编码方式
+
+        //存储每一个字段的索引位置
         final int[] literalTupleIdx = new int[literalCols.size()];
-        final DimensionEncoding[] dimensionEncodings = getDimensionEncodings(function, literalCols, dictionaryMap);
         for (int i = 0; i < literalCols.size(); i++) {
             TblColRef colRef = literalCols.get(i);
             literalTupleIdx[i] = tupleInfo.hasColumn(colRef) ? tupleInfo.getColumnIndex(colRef) : -1;
         }
 
         // for TopN, the aggr must be SUM, so the number fill into the column position (without rewrite)
-        final int numericTupleIdx;
+        final int numericTupleIdx;//第一个字段的索引位置
         if (numericCol != null) {
             numericTupleIdx = tupleInfo.hasColumn(numericCol) ? tupleInfo.getColumnIndex(numericCol) : -1;
         } else {
             numericTupleIdx = tupleInfo.getFieldIndex("COUNT__");
         }
+
         return new IAdvMeasureFiller() {
-            private TopNCounter<ByteArray> topNCounter;
-            private Iterator<Counter<ByteArray>> topNCounterIterator;
+            private TopNCounter<ByteArray> topNCounter;//元素集合
+            private Iterator<Counter<ByteArray>> topNCounterIterator;//每个元素
             private int expectRow = 0;
 
             @SuppressWarnings("unchecked")
@@ -362,6 +367,7 @@ public class TopNMeasureType extends MeasureType<TopNCounter<ByteArray>> {
                 this.expectRow = 0;
             }
 
+            //总记录数
             @Override
             public int getNumOfRows() {
                 return topNCounter.size();
@@ -372,24 +378,25 @@ public class TopNMeasureType extends MeasureType<TopNCounter<ByteArray>> {
                 if (expectRow++ != row)
                     throw new IllegalStateException();
 
-                Counter<ByteArray> counter = topNCounterIterator.next();
+                Counter<ByteArray> counter = topNCounterIterator.next();//元素
                 int offset = counter.getItem().offset();
-                for (int i = 0; i < dimensionEncodings.length; i++) {
-                    String colValue = dimensionEncodings[i].decode(counter.getItem().array(), offset, dimensionEncodings[i].getLengthOfEncoding());
-                    tuple.setDimensionValue(literalTupleIdx[i], colValue);
-                    offset += dimensionEncodings[i].getLengthOfEncoding();
+                for (int i = 0; i < dimensionEncodings.length; i++) {//循环每一个编码维度
+                    String colValue = dimensionEncodings[i].decode(counter.getItem().array(), offset, dimensionEncodings[i].getLengthOfEncoding());//还原每一个维度对应的值
+                    tuple.setDimensionValue(literalTupleIdx[i], colValue);//设置该列的值
+                    offset += dimensionEncodings[i].getLengthOfEncoding();//移动偏移量
                 }
-                tuple.setMeasureValue(numericTupleIdx, counter.getCount());
+                tuple.setMeasureValue(numericTupleIdx, counter.getCount());//设置度量值
             }
         };
     }
 
+    //函数用到的每一个字段对应的字典映射数组
     private static DimensionEncoding[] getDimensionEncodings(FunctionDesc function, List<TblColRef> literalCols, Map<TblColRef, Dictionary<String>> dictionaryMap) {
-        final DimensionEncoding[] dimensionEncodings = new DimensionEncoding[literalCols.size()];
-        for (int i = 0; i < literalCols.size(); i++) {
+        final DimensionEncoding[] dimensionEncodings = new DimensionEncoding[literalCols.size()];//表示每一个字段的编码方式
+        for (int i = 0; i < literalCols.size(); i++) {//循环每一个字段
             TblColRef colRef = literalCols.get(i);
-            String encoding = function.getConfiguration().get(TopNMeasureType.CONFIG_ENCODING_PREFIX + colRef.getName());
-            if (StringUtils.isEmpty(encoding) || DictionaryDimEnc.ENCODING_NAME.equals(encoding)) {
+            String encoding = function.getConfiguration().get(TopNMeasureType.CONFIG_ENCODING_PREFIX + colRef.getName());//获取该字段的编码方式
+            if (StringUtils.isEmpty(encoding) || DictionaryDimEnc.ENCODING_NAME.equals(encoding)) {//如果编码方式是dict
                 dimensionEncodings[i] = new DictionaryDimEnc(dictionaryMap.get(colRef));
             } else {
                 Object[] encodingConf = DimensionEncoding.parseEncodingConf(encoding);
@@ -400,6 +407,7 @@ public class TopNMeasureType extends MeasureType<TopNCounter<ByteArray>> {
         return dimensionEncodings;
     }
 
+    //第一个字段
     private TblColRef getTopNNumericColumn(FunctionDesc functionDesc) {
         if (functionDesc.getParameter().isColumnType() == true) {
             return functionDesc.getParameter().getColRefs().get(0);
@@ -407,6 +415,9 @@ public class TopNMeasureType extends MeasureType<TopNCounter<ByteArray>> {
         return null;
     }
 
+    /**
+     * 处理第一个字段以外,所有的字段集合
+     */
     private List<TblColRef> getTopNLiteralColumn(FunctionDesc functionDesc) {
         List<TblColRef> allColumns = functionDesc.getParameter().getColRefs();
         if (functionDesc.getParameter().isColumnType() == false) {

@@ -36,6 +36,7 @@ import org.apache.kylin.metadata.model.TblColRef;
 
 /**
  * Created by sunyerui on 15/12/10.
+ * 如何计算count_distinct
  */
 public class BitmapMeasureType extends MeasureType<BitmapCounter> {
     public static final String FUNC_COUNT_DISTINCT = "COUNT_DISTINCT";
@@ -93,11 +94,11 @@ public class BitmapMeasureType extends MeasureType<BitmapCounter> {
             public BitmapCounter valueOf(String[] values, MeasureDesc measureDesc, Map<TblColRef, Dictionary<String>> dictionaryMap) {
                 BitmapCounter bitmap = current;
                 bitmap.clear();
-                if (needDictionaryColumn(measureDesc.getFunction())) {
-                    TblColRef literalCol = measureDesc.getFunction().getParameter().getColRefs().get(0);
-                    Dictionary<String> dictionary = dictionaryMap.get(literalCol);
+                if (needDictionaryColumn(measureDesc.getFunction())) {//需要字典
+                    TblColRef literalCol = measureDesc.getFunction().getParameter().getColRefs().get(0);//函数需要的列
+                    Dictionary<String> dictionary = dictionaryMap.get(literalCol);//对应的字典
                     if (values != null && values.length > 0 && values[0] != null) {
-                        int id = dictionary.getIdFromValue(values[0]);
+                        int id = dictionary.getIdFromValue(values[0]);//获取该字段对应的值的字典ID
                         bitmap.add(id);
                     }
                 } else {
@@ -110,26 +111,26 @@ public class BitmapMeasureType extends MeasureType<BitmapCounter> {
 
             @Override
             public BitmapCounter reEncodeDictionary(BitmapCounter value, MeasureDesc measureDesc, Map<TblColRef, Dictionary<String>> oldDicts, Map<TblColRef, Dictionary<String>> newDicts) {
-                if (!needDictionaryColumn(measureDesc.getFunction())) {
+                if (!needDictionaryColumn(measureDesc.getFunction())) {//不需要字典,因此该值就是原始值
                     return value;
                 }
-                TblColRef colRef = measureDesc.getFunction().getParameter().getColRefs().get(0);
-                Dictionary<String> sourceDict = oldDicts.get(colRef);
-                Dictionary<String> mergedDict = newDicts.get(colRef);
+                TblColRef colRef = measureDesc.getFunction().getParameter().getColRefs().get(0);//获取列
+                Dictionary<String> sourceDict = oldDicts.get(colRef);//获取该列的编码
+                Dictionary<String> mergedDict = newDicts.get(colRef);//获取merge合并的编码
 
                 BitmapCounter retValue = new BitmapCounter();
                 byte[] literal = new byte[sourceDict.getSizeOfValue()];
                 Iterator<Integer> iterator = value.iterator();
-                while (iterator.hasNext()) {
+                while (iterator.hasNext()) {//不断读取老数据的值
                     int id = iterator.next();
                     int newId;
-                    int size = sourceDict.getValueBytesFromId(id, literal, 0);
+                    int size = sourceDict.getValueBytesFromId(id, literal, 0);//字典还原成具体的老数据值
                     if (size < 0) {
-                        newId = mergedDict.nullId();
+                        newId = mergedDict.nullId();//设置为null
                     } else {
-                        newId = mergedDict.getIdFromValueBytes(literal, 0, size);
+                        newId = mergedDict.getIdFromValueBytes(literal, 0, size);//新字典编码成ID
                     }
-                    retValue.add(newId);
+                    retValue.add(newId);//添加新的ID
                 }
                 return retValue;
             }
@@ -143,7 +144,7 @@ public class BitmapMeasureType extends MeasureType<BitmapCounter> {
 
     @Override
     public List<TblColRef> getColumnsNeedDictionary(FunctionDesc functionDesc) {
-        if (needDictionaryColumn(functionDesc)) {
+        if (needDictionaryColumn(functionDesc)) {//需要字典
             return Collections.singletonList(functionDesc.getParameter().getColRefs().get(0));
         } else {
             return Collections.emptyList();
@@ -161,6 +162,7 @@ public class BitmapMeasureType extends MeasureType<BitmapCounter> {
     }
 
     // In order to keep compatibility with old version, tinyint/smallint/int column use value directly, without dictionary
+    //该列是否需要字典
     private boolean needDictionaryColumn(FunctionDesc functionDesc) {
         DataType dataType = functionDesc.getParameter().getColRefs().get(0).getType();
         if (dataType.isIntegerFamily() && !dataType.isBigInt()) {

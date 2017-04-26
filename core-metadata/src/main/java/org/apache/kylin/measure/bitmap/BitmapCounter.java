@@ -38,6 +38,7 @@ public class BitmapCounter implements Comparable<BitmapCounter> {
     public BitmapCounter() {
     }
 
+    //合并操作
     public BitmapCounter(BitmapCounter another) {
         merge(another);
     }
@@ -54,6 +55,7 @@ public class BitmapCounter implements Comparable<BitmapCounter> {
         add(value, 0, value.length);
     }
 
+    //字节数组必须是int类型的值
     public void add(byte[] value, int offset, int length) {
         if (value == null || length == 0) {
             return;
@@ -62,6 +64,7 @@ public class BitmapCounter implements Comparable<BitmapCounter> {
         add(new String(value, offset, length));
     }
 
+    //String必须是int类型的
     public void add(String value) {
         if (value == null || value.isEmpty()) {
             return;
@@ -69,18 +72,22 @@ public class BitmapCounter implements Comparable<BitmapCounter> {
         add(Integer.parseInt(value));
     }
 
+    //两个bitmap合并
     public void merge(BitmapCounter another) {
         this.bitmap.or(another.bitmap);
     }
 
+    //已经真实的添加了多少个值
     public long getCount() {
         return this.bitmap.getCardinality();
     }
 
+    //需要多少内存空间
     public int getMemBytes() {
         return this.bitmap.getSizeInBytes();
     }
 
+    //循环每一个添加的int值
     public Iterator<Integer> iterator() {
         return bitmap.iterator();
     }
@@ -137,8 +144,9 @@ public class BitmapCounter implements Comparable<BitmapCounter> {
             return -1;
     }
 
+    //返回下一个MutableRoaringBitmap有多少个字节
     public int peekLength(ByteBuffer in) {
-        int mark = in.position();
+        int mark = in.position();//开始位置
         int len;
 
         DataInputByteBuffer input = new DataInputByteBuffer();
@@ -150,8 +158,8 @@ public class BitmapCounter implements Comparable<BitmapCounter> {
             throw new IllegalStateException(e);
         }
 
-        len = in.position() - mark;
-        in.position(mark);
+        len = in.position() - mark;//一共多少个字节
+        in.position(mark);//重新返回原来位置
         return len;
     }
 

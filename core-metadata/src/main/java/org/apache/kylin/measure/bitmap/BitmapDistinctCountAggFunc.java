@@ -32,6 +32,7 @@ public class BitmapDistinctCountAggFunc {
         return null;
     }
 
+    //merge合并操作
     public static BitmapCounter add(BitmapCounter counter, Object v) {
         BitmapCounter c = (BitmapCounter) v;
         if (counter == null) {
@@ -46,6 +47,7 @@ public class BitmapDistinctCountAggFunc {
         return add(counter0, counter1);
     }
 
+    //有多少个元素
     public static long result(BitmapCounter counter) {
         return counter == null ? 0L : counter.getCount();
     }

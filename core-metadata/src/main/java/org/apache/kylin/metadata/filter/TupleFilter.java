@@ -139,6 +139,7 @@ public abstract class TupleFilter {
      * filter, since the flattened filter will be too "fat" to evaluate
      * 
      * @return
+     * 让条件扁平化起来
      */
     public TupleFilter flatFilter() {
         return flattenInternal(this);
@@ -146,22 +147,23 @@ public abstract class TupleFilter {
 
     private TupleFilter flattenInternal(TupleFilter filter) {
         TupleFilter flatFilter = null;
-        if (!(filter instanceof LogicalTupleFilter)) {
+        if (!(filter instanceof LogicalTupleFilter)) {//将一个单一的filter  转换成 and filter对象
             flatFilter = new LogicalTupleFilter(FilterOperatorEnum.AND);
             flatFilter.addChild(filter);
             return flatFilter;
         }
 
         // post-order recursive travel
-        FilterOperatorEnum op = filter.getOperator();
+        FilterOperatorEnum op = filter.getOperator();//本身操作
         List<TupleFilter> andChildren = new LinkedList<TupleFilter>();
         List<TupleFilter> orChildren = new LinkedList<TupleFilter>();
+
         for (TupleFilter child : filter.getChildren()) {
-            TupleFilter flatChild = flattenInternal(child);
+            TupleFilter flatChild = flattenInternal(child);//属于递归操作
             FilterOperatorEnum childOp = flatChild.getOperator();
-            if (childOp == FilterOperatorEnum.AND) {
+            if (childOp == FilterOperatorEnum.AND) {//属于and操作
                 andChildren.add(flatChild);
-            } else if (childOp == FilterOperatorEnum.OR) {
+            } else if (childOp == FilterOperatorEnum.OR) {//属于or操作
                 orChildren.add(flatChild);
             } else {
                 throw new IllegalStateException("Filter is " + filter + " and child is " + flatChild);
@@ -170,16 +172,16 @@ public abstract class TupleFilter {
 
         // boolean algebra flatten
         if (op == FilterOperatorEnum.AND) {
-            flatFilter = new LogicalTupleFilter(FilterOperatorEnum.AND);
-            for (TupleFilter andChild : andChildren) {
+            flatFilter = new LogicalTupleFilter(FilterOperatorEnum.AND);//组建新的and filter
+            for (TupleFilter andChild : andChildren) {//添加and 子节点
                 flatFilter.addChildren(andChild.getChildren());
             }
-            if (!orChildren.isEmpty()) {
+            if (!orChildren.isEmpty()) {//or不是空
                 List<TupleFilter> fullAndFilters = cartesianProduct(orChildren, flatFilter);
                 flatFilter = new LogicalTupleFilter(FilterOperatorEnum.OR);
                 flatFilter.addChildren(fullAndFilters);
             }
-        } else if (op == FilterOperatorEnum.OR) {
+        } else if (op == FilterOperatorEnum.OR) {//组建新的or filter
             flatFilter = new LogicalTupleFilter(FilterOperatorEnum.OR);
             for (TupleFilter orChild : orChildren) {
                 flatFilter.addChildren(orChild.getChildren());
@@ -196,9 +198,11 @@ public abstract class TupleFilter {
     }
 
     private List<TupleFilter> cartesianProduct(List<TupleFilter> leftOrFilters, TupleFilter partialAndFilter) {
+        //and
         List<TupleFilter> oldProductFilters = new LinkedList<TupleFilter>();
         oldProductFilters.add(partialAndFilter);
-        for (TupleFilter orFilter : leftOrFilters) {
+
+        for (TupleFilter orFilter : leftOrFilters) {//循环所有的的or条件
             List<TupleFilter> newProductFilters = new LinkedList<TupleFilter>();
             for (TupleFilter orChildFilter : orFilter.getChildren()) {
                 for (TupleFilter productFilter : oldProductFilters) {

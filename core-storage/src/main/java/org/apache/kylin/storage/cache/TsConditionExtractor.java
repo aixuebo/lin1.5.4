@@ -41,7 +41,7 @@ public class TsConditionExtractor {
 
     private static Range<Long> extractTsConditionInternal(TupleFilter filter, TblColRef colRef) {
         if (filter == null) {
-            return Range.all();
+            return Range.all();//返回所有的数据
         }
 
         if (filter instanceof LogicalTupleFilter) {

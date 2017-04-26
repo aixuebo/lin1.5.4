@@ -54,6 +54,7 @@ public abstract class DimensionEncoding implements Externalizable {
         return true;
     }
 
+    //解析编码的配置
     public static Object[] parseEncodingConf(String encoding) {
         String[] parts = encoding.split("\\s*[(),:]\\s*");
         if (parts == null || parts.length == 0 || parts[0].isEmpty())
