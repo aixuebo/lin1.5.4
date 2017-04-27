@@ -162,12 +162,12 @@ public class CubeHBaseScanRPC extends CubeHBaseRPC {
     private IGTScanner getGTScannerInternal(final GTScanRequest scanRequest) throws IOException {
 
         // primary key (also the 0th column block) is always selected
-        final ImmutableBitSet selectedColBlocks = scanRequest.getSelectedColBlocks().set(0);
-        // globally shared connection, does not require close
-        HConnection hbaseConn = HBaseConnection.get(cubeSeg.getCubeInstance().getConfig().getStorageUrl());
-        final HTableInterface hbaseTable = hbaseConn.getTable(cubeSeg.getStorageLocationIdentifier());
+        final ImmutableBitSet selectedColBlocks = scanRequest.getSelectedColBlocks().set(0);//第0个位置一定总是为true,因此设置为true
+        // globally shared connection, does not require close 不要求关闭该连接,全局分享该连接
+        HConnection hbaseConn = HBaseConnection.get(cubeSeg.getCubeInstance().getConfig().getStorageUrl());//读取hbase连接
+        final HTableInterface hbaseTable = hbaseConn.getTable(cubeSeg.getStorageLocationIdentifier());//获取该segment在hbase对应的表名
 
-        List<RawScan> rawScans = preparedHBaseScans(scanRequest.getGTScanRanges(), selectedColBlocks);
+        List<RawScan> rawScans = preparedHBaseScans(scanRequest.getGTScanRanges(), selectedColBlocks);//转换成一组扫描对象
         List<List<Integer>> hbaseColumnsToGT = getHBaseColumnsGTMapping(selectedColBlocks);
 
         final List<ResultScanner> scanners = Lists.newArrayList();

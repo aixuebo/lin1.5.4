@@ -30,14 +30,14 @@ import com.google.common.collect.Lists;
 /**
  * 
  * @author xjiang
- * 
+ * 存储一个常数值
  */
 public class ConstantTupleFilter extends TupleFilter {
 
     public static final ConstantTupleFilter FALSE = new ConstantTupleFilter();
     public static final ConstantTupleFilter TRUE = new ConstantTupleFilter((Object) null); // not sure of underlying code system, null is the only value that applies to all types
 
-    private Collection<Object> constantValues;
+    private Collection<Object> constantValues;//因为是常数,但是类型不确定,因此是Object
 
     public ConstantTupleFilter() {
         super(Collections.<TupleFilter> emptyList(), FilterOperatorEnum.CONSTANT);

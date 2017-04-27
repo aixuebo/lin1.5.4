@@ -79,6 +79,7 @@ public class CubeSegmentScanner implements IGTScanner {
         scanner = new ScannerWorker(cubeSeg, cuboid, scanRequest, gtStorage);
     }
 
+    //读取一行一行的数据
     @Override
     public Iterator<GTRecord> iterator() {
         return scanner.iterator();

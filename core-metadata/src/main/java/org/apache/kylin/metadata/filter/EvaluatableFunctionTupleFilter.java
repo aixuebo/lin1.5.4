@@ -53,8 +53,8 @@ public class EvaluatableFunctionTupleFilter extends BuiltInFunctionTupleFilter {
         Object tupleValue = null;
         for (TupleFilter filter : this.children) {
             if (!isConstant(filter)) {
-                filter.evaluate(tuple, cs);
-                tupleValue = filter.getValues().iterator().next();
+                filter.evaluate(tuple, cs);//执行函数
+                tupleValue = filter.getValues().iterator().next();//返回执行结果
             }
         }
 

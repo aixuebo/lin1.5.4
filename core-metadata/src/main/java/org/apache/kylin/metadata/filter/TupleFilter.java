@@ -216,9 +216,10 @@ public abstract class TupleFilter {
         return oldProductFilters;
     }
 
+    //该函数是否能够执行,true表示可以执行
     public abstract boolean isEvaluable();
 
-    //执行,true表示执行成功
+    //具体执行过滤函数,true表示执行成功
     public abstract boolean evaluate(IEvaluatableTuple tuple, IFilterCodeSystem<?> cs);
 
     //执行结果

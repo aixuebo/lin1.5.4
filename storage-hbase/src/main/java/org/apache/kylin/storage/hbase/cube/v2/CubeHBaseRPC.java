@@ -132,6 +132,7 @@ public abstract class CubeHBaseRPC implements IGTStorage {
         return new RawScan(start, end, selectedColumns, hbaseFuzzyKeys, hbaseCaching, hbaseMaxResultSize);
     }
 
+    //转换成一组扫描对象
     protected List<RawScan> preparedHBaseScans(List<GTScanRange> ranges, ImmutableBitSet selectedColBlocks) {
         List<RawScan> allRawScans = Lists.newArrayList();
         for (GTScanRange range : ranges) {

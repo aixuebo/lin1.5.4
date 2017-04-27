@@ -31,7 +31,7 @@ import com.google.common.collect.Range;
 public class TsConditionExtractor {
 
     /**
-     *
+     * 获取该列对应于条件下的交集集合
      * @return null if the ts range conflicts with each other
      *         Ranges.all() if no ts condition is defined(in surfaced ANDs)
      */
@@ -46,12 +46,12 @@ public class TsConditionExtractor {
 
         if (filter instanceof LogicalTupleFilter) {
             if (filter.getOperator() == TupleFilter.FilterOperatorEnum.AND) {
-                Range<Long> ret = Range.all();
+                Range<Long> ret = Range.all();//全部数据
                 for (TupleFilter child : filter.getChildren()) {
                     Range childRange = extractTsConditionInternal(child, colRef);
                     if (childRange != null) {
                         if (ret.isConnected(childRange) && !ret.intersection(childRange).isEmpty()) {
-                            ret = ret.intersection(childRange);
+                            ret = ret.intersection(childRange);//交集
                         } else {
                             return null;
                         }
@@ -78,20 +78,20 @@ public class TsConditionExtractor {
                 switch (compareTupleFilter.getOperator()) {
                 case EQ:
                     t = DateFormat.stringToMillis((String) firstValue);
-                    return Range.closed(t, t);
+                    return Range.closed(t, t);//[t‥t]
                 case LT:
                     t = DateFormat.stringToMillis((String) firstValue);
-                    return Range.lessThan(t);
+                    return Range.lessThan(t);//(-∞‥r)
                 case LTE:
                     t = DateFormat.stringToMillis((String) firstValue);
-                    return Range.atMost(t);
+                    return Range.atMost(t);//(-∞‥t]
                 case GT:
                     t = DateFormat.stringToMillis((String) firstValue);
-                    return Range.greaterThan(t);
+                    return Range.greaterThan(t);//(t‥+∞)
                 case GTE:
                     t = DateFormat.stringToMillis((String) firstValue);
-                    return Range.atLeast(t);
-                case NEQ:
+                    return Range.atLeast(t);//[t‥+∞)
+                case NEQ://!=和in是不支持的
                 case IN://not handled for now
                     break;
                 default:

@@ -33,19 +33,19 @@ import org.apache.kylin.metadata.tuple.IEvaluatableTuple;
 /**
  * 
  * @author xjiang
- * 
+ * 获取该列对应的数据(在一行中)
  */
 public class ColumnTupleFilter extends TupleFilter {
 
-    private TblColRef columnRef;
+    private TblColRef columnRef;//列名字
     private Object tupleValue;
-    private List<Object> values;
+    private List<Object> values;//第0个表示该列具体的值
 
     public ColumnTupleFilter(TblColRef column) {
         super(Collections.<TupleFilter> emptyList(), FilterOperatorEnum.COLUMN);
         this.columnRef = column;
         this.values = new ArrayList<Object>(1);
-        this.values.add(null);
+        this.values.add(null);//先设置为null,占用一个位置,最终用于存储该列最终的值
     }
 
     public TblColRef getColumn() {
@@ -66,6 +66,10 @@ public class ColumnTupleFilter extends TupleFilter {
         return "" + columnRef;
     }
 
+    /**
+     * 获取该行数据中该列对应的值
+     * @param tuple 一行数据内容
+     */
     @Override
     public boolean evaluate(IEvaluatableTuple tuple, IFilterCodeSystem<?> cs) {
         this.tupleValue = tuple.getValue(columnRef);
@@ -77,6 +81,7 @@ public class ColumnTupleFilter extends TupleFilter {
         return true;
     }
 
+    //获取最终的值
     @Override
     public Collection<?> getValues() {
         this.values.set(0, this.tupleValue);
@@ -85,16 +90,16 @@ public class ColumnTupleFilter extends TupleFilter {
 
     @Override
     public void serialize(IFilterCodeSystem<?> cs, ByteBuffer buffer) {
-        String table = columnRef.getTable();
+        String table = columnRef.getTable();//该列所在table
         BytesUtil.writeUTFString(table, buffer);
 
-        String columnId = columnRef.getColumnDesc().getId();
+        String columnId = columnRef.getColumnDesc().getId();//该列ID
         BytesUtil.writeUTFString(columnId, buffer);
 
-        String columnName = columnRef.getName();
+        String columnName = columnRef.getName();//该列名字
         BytesUtil.writeUTFString(columnName, buffer);
 
-        String dataType = columnRef.getDatatype();
+        String dataType = columnRef.getDatatype();//该列数据类型
         BytesUtil.writeUTFString(dataType, buffer);
     }
 

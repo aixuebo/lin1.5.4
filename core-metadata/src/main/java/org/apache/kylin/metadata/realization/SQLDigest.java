@@ -42,11 +42,11 @@ public class SQLDigest {
     public Collection<TblColRef> groupbyColumns;//group by需要的维度集合
     public Collection<TblColRef> filterColumns;//where需要的维度集合
 
-    public Collection<TblColRef> metricColumns;
+    public Collection<TblColRef> metricColumns;//度量的列
     public Collection<FunctionDesc> aggregations;
     public Collection<MeasureDesc> sortMeasures;
     public Collection<OrderEnum> sortOrders;//排序方式
-    public boolean isRawQuery;
+    public boolean isRawQuery;//true表示没有group by 也没有聚合函数出现
 
     //initialized when org.apache.kylin.query.routing.QueryRouter.selectRealization()
     public SQLDigest(String factTable, TupleFilter filter, Collection<JoinDesc> joinDescs, Collection<TblColRef> allColumns, //

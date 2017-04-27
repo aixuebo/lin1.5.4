@@ -301,24 +301,26 @@ public class TopNMeasureType extends MeasureType<TopNCounter<ByteArray>> {
             FunctionDesc topnFunc = measureDesc.getFunction();
             List<TblColRef> topnLiteralCol = getTopNLiteralColumn(topnFunc);//处理第一个字段以外,所有的字段集合
 
-            if (sqlDigest.groupbyColumns.containsAll(topnLiteralCol) == false)
-                return;
+            if (sqlDigest.groupbyColumns.containsAll(topnLiteralCol) == false) //如果group by 已经全包含了,则返回true,不是全包含才返回false
+                return;//因为没有全包含,所以没有优化方式,因此返回即可
 
-            if (sqlDigest.aggregations.size() > 1) {
+            //代码执行到这里,说明group by 包含所有的top需要的字段
+
+            if (sqlDigest.aggregations.size() > 1) {//当查询topN的时候,只能允许有一个度量聚合函数
                 throw new IllegalStateException("When query with topN, only one metrics is allowed.");
             }
 
-            if (sqlDigest.aggregations.size() > 0) {
-                FunctionDesc origFunc = sqlDigest.aggregations.iterator().next();
-                if (origFunc.isSum() == false && origFunc.isCount() == false) {
-                    throw new IllegalStateException("When query with topN, only SUM function is allowed.");
+            if (sqlDigest.aggregations.size() > 0) {//说明有聚合函数
+                FunctionDesc origFunc = sqlDigest.aggregations.iterator().next();//获取这一个聚合函数
+                if (origFunc.isSum() == false && origFunc.isCount() == false) {//说明该函数不是sum,也不是count,是不允许的
+                    throw new IllegalStateException("When query with topN, only SUM function is allowed.");//topN的时候,只能允许是sum或者count函数
                 }
                 logger.info("Rewrite function " + origFunc + " to " + topnFunc);
             }
 
-            sqlDigest.aggregations = Lists.newArrayList(topnFunc);
-            sqlDigest.groupbyColumns.removeAll(topnLiteralCol);
-            sqlDigest.metricColumns.addAll(topnLiteralCol);
+            sqlDigest.aggregations = Lists.newArrayList(topnFunc);//设置聚合函数只能有topN这一个函数
+            sqlDigest.groupbyColumns.removeAll(topnLiteralCol);//不需要group by参数,都移除掉
+            sqlDigest.metricColumns.addAll(topnLiteralCol);//添加度量维度
         }
     }
 

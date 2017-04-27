@@ -240,11 +240,11 @@ public class RawMeasureType extends MeasureType<List<ByteArray>> {
                         FunctionDesc sumFunc = new FunctionDesc();
                         sumFunc.setExpression("SUM");
                         sumFunc.setParameter(colParameter);//对该字段求sum
-                        sqlDigest.aggregations.remove(sumFunc);//删除sum函数
+                        sqlDigest.aggregations.remove(sumFunc);//删除sum函数---即不需要对该字段进行sum处理,因为可以进行raw处理
                         sqlDigest.aggregations.add(rawFunc);//添加raw函数
                         logger.info("Add RAW measure on column " + col);
                     }
-                    if (!sqlDigest.metricColumns.contains(col)) {
+                    if (!sqlDigest.metricColumns.contains(col)) {//添加该字段为度量字段
                         sqlDigest.metricColumns.add(col);
                     }
                 }

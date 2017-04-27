@@ -142,6 +142,7 @@ abstract public class MeasureType<T> {
      * They need to adjust dimensions and measures in <code>sqlDigest</code> before scanning,
      * such that correct cuboid and measures can be selected by storage.
      * 对sql的调整
+     * 参数measureDescs 说明该度量函数会产生哪些度量
      */
     public void adjustSqlDigest(List<MeasureDesc> measureDescs, SQLDigest sqlDigest) {
     }

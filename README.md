@@ -25,3 +25,7 @@ Please refer to [LICENSE](https://github.com/apache/kylin/blob/master/LICENSE) f
 
 kylin1.5.4.1
 
+org.apache.kylin.query.enumerator.OLAPEnumerator 调用search方法
+    ITupleIterator iterator = storageEngine.search(olapContext.storageContext, sqlDigest, olapContext.returnTupleInfo);//查询sql--返回迭代器
+org.apache.kylin.storage.gtrecord.GTCubeStorageQueryBase如何查询sql
+org.apache.kylin.storage.hbase.cube.v2.CubeHBaseScanRPC执行hbase的查询

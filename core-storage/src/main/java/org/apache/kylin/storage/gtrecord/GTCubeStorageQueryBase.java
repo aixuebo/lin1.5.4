@@ -74,7 +74,7 @@ public abstract class GTCubeStorageQueryBase implements IStorageQuery {
     @Override
     public ITupleIterator search(StorageContext context, SQLDigest sqlDigest, TupleInfo returnTupleInfo) {
 
-        //cope with queries with no aggregations
+        //cope with queries with no aggregations 针对没有group by 或者聚合函数的sql进行处理
         RawQueryLastHacker.hackNoAggregations(sqlDigest, cubeDesc);
 
         // Customized measure taking effect: e.g. allow custom measures to help raw queries
@@ -443,6 +443,7 @@ public abstract class GTCubeStorageQueryBase implements IStorageQuery {
         }
     }
 
+    //调用每一个度量方式中的adjustSqlDigest方法
     private void notifyBeforeStorageQuery(SQLDigest sqlDigest) {
         //key是MeasureType的class实现类,value是该实现类对应了哪些度量对象
         Map<String, List<MeasureDesc>> map = Maps.newHashMap();
