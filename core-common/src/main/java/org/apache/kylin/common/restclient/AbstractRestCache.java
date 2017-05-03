@@ -38,14 +38,20 @@ public abstract class AbstractRestCache<K, V> {
         return Broadcaster.getInstance(config);
     }
 
+    //存储本地节点,并且也分发给其他节点
     public abstract void put(K key, V value);
 
+    //只是存储在本地节点上,不去分发
+    //本地方法是用于接收到远端发过来的同步请求时候使用,因为是接收同步信息,因此如果再分发,则会形成无限循环了
     public abstract void putLocal(K key, V value);
 
+    //删除该key,并且分发到其他节点去做同步删除
     public abstract void remove(K key);
 
+    //只是在本地节点删除该key
     public abstract void removeLocal(K key);
 
+    //清空内部缓存
     public abstract void clear();
 
     public abstract int size();

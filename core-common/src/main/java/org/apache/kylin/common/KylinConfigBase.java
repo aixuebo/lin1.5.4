@@ -54,7 +54,7 @@ abstract public class KylinConfigBase implements Serializable {
      */
 
     public static String getKylinHome() {
-        String kylinHome = System.getenv("KYLIN_HOME");
+        String kylinHome = System.getenv("KYLIN_HOME");//必须配置环境变量
         if (StringUtils.isEmpty(kylinHome)) {
             logger.warn("KYLIN_HOME was not set");
         }
@@ -79,7 +79,7 @@ abstract public class KylinConfigBase implements Serializable {
 
     //先从system查询,再从Properties中查询,因此System优先级>Properties
     protected String getOptional(String prop, String dft) {
-        final String property = System.getProperty(prop);
+        final String property = System.getProperty(prop);//从java的-D参数中优先读取
         return property != null ? property : properties.getProperty(prop, dft);
     }
 
@@ -137,6 +137,7 @@ abstract public class KylinConfigBase implements Serializable {
         properties.setProperty(key, value);
     }
 
+    //以参数为准,参数覆盖掉以后的配置
     final protected void reloadKylinConfig(Properties properties) {
         this.properties = properties;
     }

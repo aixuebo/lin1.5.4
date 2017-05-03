@@ -50,7 +50,7 @@ public class KylinVersion {
         if (index == -1) {
             splits = version.split("\\.");
             isSnapshot = false;
-        } else {
+        } else {//取消-SNAPSHOT快照部分
             splits = version.substring(0, index).split("\\.");
             isSnapshot = true;
         }
@@ -153,7 +153,7 @@ public class KylinVersion {
             List<String> lines = FileUtils.readLines(commitFile, Charset.defaultCharset());
             StringBuilder sb = new StringBuilder();
             for (String line : lines) {
-                if (!line.startsWith("#")) {
+                if (!line.startsWith("#")) {//过滤掉注释内容
                     sb.append(line).append(";");
                 }
             }

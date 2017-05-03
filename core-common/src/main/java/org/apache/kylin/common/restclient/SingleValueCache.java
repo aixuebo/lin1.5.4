@@ -49,8 +49,8 @@ public abstract class SingleValueCache<K, V> extends AbstractRestCache<K, V> {
 
         innerCache.put(key, value);
 
-        if (!exists) {
-            getBroadcaster().queue(syncType.getType(), Broadcaster.EVENT.CREATE.getType(), key.toString());
+        if (!exists) {//判断是否是创建还是更新
+            getBroadcaster().queue(syncType.getType(), Broadcaster.EVENT.CREATE.getType(), key.toString());//加入队列去分发到其他节点
         } else {
             getBroadcaster().queue(syncType.getType(), Broadcaster.EVENT.UPDATE.getType(), key.toString());
         }
@@ -66,11 +66,12 @@ public abstract class SingleValueCache<K, V> extends AbstractRestCache<K, V> {
 
         innerCache.remove(key);
 
-        if (exists) {
+        if (exists) {//分发到其他节点去做同步删除
             getBroadcaster().queue(syncType.getType(), Broadcaster.EVENT.DROP.getType(), key.toString());
         }
     }
 
+    //只是在本地节点删除
     public void removeLocal(K key) {
         innerCache.remove(key);
     }

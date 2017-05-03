@@ -24,9 +24,11 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.kylin.common.util.Pair;
 
 /**
+ * 设置后门参数与对应的值
  */
 public class BackdoorToggles {
 
+    //一个线程持有一个map
     private static final ThreadLocal<Map<String, String>> _backdoorToggles = new ThreadLocal<Map<String, String>>();
 
     public static void setToggles(Map<String, String> toggles) {
@@ -75,6 +77,7 @@ public class BackdoorToggles {
         }
     }
 
+    //从map中读取key对应的value
     private static String getString(String key) {
         Map<String, String> toggles = _backdoorToggles.get();
         if (toggles == null) {

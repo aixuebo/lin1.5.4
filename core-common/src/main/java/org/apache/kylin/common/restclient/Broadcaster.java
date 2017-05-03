@@ -139,6 +139,7 @@ public class Broadcaster {
         }
     }
 
+    //设置count为0
     public long getCounterAndClear() {
         return counter.getAndSet(0);
     }
@@ -210,7 +211,7 @@ public class Broadcaster {
     public static class BroadcastEvent {
         private String type;
         private String action;
-        private String name;
+        private String name;//比如action是project的时候,该name对应的是project的具体name
 
         public BroadcastEvent(String type, String action, String name) {
             super();

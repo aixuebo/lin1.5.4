@@ -174,7 +174,7 @@ public class CacheService extends BasicService {
         try {
             switch (cacheType) {
             case CUBE:
-                rebuildCubeCache(cacheKey);
+                rebuildCubeCache(cacheKey);//cacheKey是cubeName
                 break;
             case STREAMING:
                 getStreamingManager().reloadStreamingConfigLocal(cacheKey);

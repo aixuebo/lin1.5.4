@@ -888,7 +888,7 @@ public class CubeManager implements IRealizationProvider {
                 throw new IllegalStateException("CubeInstance desc not found '" + cubeInstance.getDescName() + "', at " + path);
 
             final String cubeName = cubeInstance.getName();
-            cubeMap.putLocal(cubeName, cubeInstance);
+            cubeMap.putLocal(cubeName, cubeInstance);//更新本节点信息
 
             for (CubeSegment segment : cubeInstance.getSegments()) {
                 usedStorageLocation.put(cubeName.toUpperCase(), segment.getStorageLocationIdentifier());

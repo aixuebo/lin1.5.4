@@ -206,7 +206,7 @@ public class KylinConfig extends KylinConfigBase {
      * 其次读取$KYLIN_HOME/conf/kylin.properties对应的配置文件
      */
     static File getKylinPropertiesFile() {
-        String kylinConfHome = System.getProperty(KYLIN_CONF);
+        String kylinConfHome = System.getProperty(KYLIN_CONF);//-D中获取KYLIN_CONF=存储配置文件的父路径
         if (!StringUtils.isEmpty(kylinConfHome)) {
             logger.info("Use KYLIN_CONF=" + kylinConfHome);
             return getKylinPropertiesFile(kylinConfHome);

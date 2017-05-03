@@ -29,6 +29,7 @@ public class CustomizedWebappClassloader extends WebappClassLoader {
     /**
      * Set of package names which are not allowed to be loaded from a webapp
      * class loader without delegating first.
+     * 这个数组里面的包是会被过滤掉的
      */
     private static final String[] packageTriggers = { "org.slf4j" };
 
@@ -44,6 +45,7 @@ public class CustomizedWebappClassloader extends WebappClassLoader {
      *
      * @param name class name
      * @return true if the class should be filtered
+     * true 说明该class应该被过滤掉
      */
     protected boolean filter(String name) {
 
