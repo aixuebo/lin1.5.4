@@ -148,7 +148,7 @@ abstract public class KylinConfigBase implements Serializable {
         return "DEV".equals(getOptional("deploy.env", "DEV"));
     }
 
-    //使用hbase的table@hbase连接串
+    //使用hbase的table@hbase连接串,也可能是一个本地路径目录,用于表示元数据存储在本地节点上,参考org.apache.kylin.common.persistence.FileResourceStore
     public String getMetadataUrl() {
         return getOptional("kylin.metadata.url");
     }
