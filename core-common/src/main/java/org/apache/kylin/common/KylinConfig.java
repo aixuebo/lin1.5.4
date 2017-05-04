@@ -55,7 +55,7 @@ public class KylinConfig extends KylinConfigBase {
     /** Kylin properties file name */
     public static final String KYLIN_CONF_PROPERTIES_FILE = "kylin.properties";//读取在home/conf下的配置文件名称
     public static final String KYLIN_ACCOUNT_CONF_PROPERTIES_FILE = "kylin_account.properties";
-    public static final String KYLIN_CONF = "KYLIN_CONF";//kylin的home对应的key
+    public static final String KYLIN_CONF = "KYLIN_CONF";//kylin的conf对应的key
 
     // static cached instances
     private static KylinConfig ENV_INSTANCE = null;//单例模式
