@@ -74,13 +74,13 @@ public class ProjectInstance extends RootPersistentEntity {
     private String description;
 
     @JsonProperty("tables")
-    private Set<String> tables = new TreeSet<String>();
+    private Set<String> tables = new TreeSet<String>();//该project下有哪些hive的table
 
     @JsonProperty("realizations")
-    private List<RealizationEntry> realizationEntries;
+    private List<RealizationEntry> realizationEntries;//表示该project下有哪些CubeInstance对象或者HybridInstance对象
 
     @JsonProperty("models")
-    private List<String> models;
+    private List<String> models;//该project下有哪些model
 
     @JsonProperty("ext_filters")
     private Set<String> extFilters = new TreeSet<String>();
@@ -163,6 +163,7 @@ public class ProjectInstance extends RootPersistentEntity {
         this.name = name;
     }
 
+    //true表示确实是包含该type和realization匹配的实现
     public boolean containsRealization(final RealizationType type, final String realization) {
         return Iterables.any(this.realizationEntries, new Predicate<RealizationEntry>() {
             @Override

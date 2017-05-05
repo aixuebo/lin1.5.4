@@ -48,7 +48,7 @@ import com.google.common.collect.Sets;
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
 public class DataModelDesc extends RootPersistentEntity {
     private static final Logger logger = LoggerFactory.getLogger(DataModelDesc.class);
-    public static enum RealizationCapacity {
+    public static enum RealizationCapacity {//表示该数据源的文件大小
         SMALL, MEDIUM, LARGE
     }
     
@@ -79,6 +79,16 @@ public class DataModelDesc extends RootPersistentEntity {
     private List<ModelDimensionDesc> dimensions;
 
     //第四个页面 选择度量的列集合
+    /**
+     比如
+     "metrics": [
+     "CITY",
+     "OPEN_TIME",
+     "INVT_1TIME",
+     "INVT_1AMOUNT"
+     ],
+     该字段内容没有table,只有表,因此是不允许在不同表中有重名的字段的原因
+     */
     @JsonProperty("metrics")
     private String[] metrics;//表示页面添加的Measures属性集合,即哪些列是可以作为维度值进行统计分析的
 
@@ -90,6 +100,7 @@ public class DataModelDesc extends RootPersistentEntity {
     @JsonProperty("partition_desc")
     PartitionDesc partitionDesc;
 
+    //表示该数据源的文件大小
     @JsonProperty("capacity")
     private RealizationCapacity capacity = RealizationCapacity.MEDIUM;
 

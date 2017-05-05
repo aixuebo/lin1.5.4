@@ -99,6 +99,7 @@ public class ProjectManager {
         l2Cache.clear();
     }
 
+    //加载所有的project
     private void reloadAllProjects() throws IOException {
         ResourceStore store = getStore();
         List<String> paths = store.collectResourceRecursively(ResourceStore.PROJECT_RESOURCE_ROOT, ".json");
@@ -111,10 +112,12 @@ public class ProjectManager {
         logger.debug("Loaded " + projectMap.size() + " Project(s)");
     }
 
+    //通过name加载一个project
     public ProjectInstance reloadProjectLocal(String project) throws IOException {
         return reloadProjectLocalAt(ProjectInstance.concatResourcePath(project));
     }
 
+    //加载某一个project
     private ProjectInstance reloadProjectLocalAt(String path) throws IOException {
 
         ProjectInstance projectInstance = getStore().getResource(path, ProjectInstance.class, PROJECT_SERIALIZER);
@@ -125,7 +128,7 @@ public class ProjectManager {
 
         projectInstance.init();
 
-        projectMap.putLocal(projectInstance.getName(), projectInstance);
+        projectMap.putLocal(projectInstance.getName(), projectInstance);//只是本地加载,不需要分发给其他节点
         clearL2Cache();
 
         return projectInstance;
@@ -223,7 +226,7 @@ public class ProjectManager {
     private void updateProject(ProjectInstance prj) throws IOException {
         synchronized (prj) {
             getStore().putResource(prj.getResourcePath(), prj, PROJECT_SERIALIZER);
-            projectMap.put(norm(prj.getName()), prj); // triggers update broadcast
+            projectMap.put(norm(prj.getName()), prj); // triggers update broadcast 通知其他节点
             clearL2Cache();
         }
     }

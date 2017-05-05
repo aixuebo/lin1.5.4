@@ -92,19 +92,19 @@ public class FunctionDesc {
     @JsonProperty("parameter")
     private ParameterDesc parameter;
     @JsonProperty("returntype")
-    private String returnType;//返回值
+    private String returnType;//返回值类型字符串形式,比如decimal
+    private DataType returnDataType; //返回值对应的类型
 
     @JsonProperty("configuration")
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    private HashMap<String, String> configuration = new LinkedHashMap<String, String>();//页面上有时候增加的配置信息
+    private HashMap<String, String> configuration = new LinkedHashMap<String, String>();//页面上有时候增加的配置信息--用于特殊的函数,比如TopN
 
-    private DataType returnDataType; //返回值对应的类型
     private MeasureType<?> measureType;
     private boolean isDimensionAsMetric = false;
 
     public void init(TableDesc factTable, List<TableDesc> lookupTables) {
         expression = expression.toUpperCase();
-        returnDataType = DataType.getType(returnType);
+        returnDataType = DataType.getType(returnType);//将返回值类型转换成对象
 
         //循环每一个参数
         for (ParameterDesc p = parameter; p != null; p = p.getNextParameter()) {
@@ -247,7 +247,7 @@ public class FunctionDesc {
         this.parameter = parameter;
     }
 
-    //参数个数
+    //参数个数----为什么不从parameter的colRefs中获取size呢,原因是colRefs中存储的是列集合,而常量是没算在内的,因此要重新计算count
     public int getParameterCount() {
         int count = 0;
         for (ParameterDesc p = parameter; p != null; p = p.getNextParameter()) {

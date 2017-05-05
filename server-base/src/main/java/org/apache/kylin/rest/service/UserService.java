@@ -52,6 +52,26 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 
 /**
+ 00003a15-ced4-4c33-ad3c-0d6a013bcee0                 column=i:i, timestamp=1491789607694, value=\xFF
+ 00003a15-ced4-4c33-ad3c-0d6a013bcee0                 column=i:o, timestamp=1491789607694, value={"sid":"ADMIN","principal":true}
+ 00003a15-ced4-4c33-ad3c-0d6a013bcee0                 column=i:p, timestamp=1491789607701, value={"id":"39c6ffc5-a8ef-4d16-8bce-d7eef092626b","type":"org.apache.kylin.cube.CubeInstance"}
+ 00003a15-ced4-4c33-ad3c-0d6a013bcee0                 column=i:t, timestamp=1491789607694, value=org.apache.kylin.job.JobInstance
+ 001a38f1-aca1-4e52-8fdb-682403f9e447                 column=i:i, timestamp=1493952126046, value=\xFF
+ 001a38f1-aca1-4e52-8fdb-682403f9e447                 column=i:o, timestamp=1493952126046, value={"sid":"ADMIN","principal":true}
+ 001a38f1-aca1-4e52-8fdb-682403f9e447                 column=i:p, timestamp=1493952126055, value={"id":"0ce1aa37-abc8-4029-9ff6-600919964b31","type":"org.apache.kylin.cube.CubeInstance"}
+ 001a38f1-aca1-4e52-8fdb-682403f9e447                 column=i:t, timestamp=1493952126046, value=org.apache.kylin.job.JobInstance
+ 00e5a4e7-f750-4bea-8792-691d04fdf21a                 column=i:i, timestamp=1486690204093, value=\xFF
+ 00e5a4e7-f750-4bea-8792-691d04fdf21a                 column=i:o, timestamp=1486690204093, value={"sid":"ADMIN","principal":true}
+ 00e5a4e7-f750-4bea-8792-691d04fdf21a                 column=i:p, timestamp=1486690204100, value={"id":"f40d613f-b3f5-40d7-a9b9-8262a75a1df8","type":"org.apache.kylin.cube.CubeInstance"}
+ 00e5a4e7-f750-4bea-8792-691d04fdf21a                 column=i:t, timestamp=1486690204093, value=org.apache.kylin.job.JobInstance
+ 0120a519-c200-4249-bd51-67ed05453658                 column=i:i, timestamp=1493952094822, value=\xFF
+ 0120a519-c200-4249-bd51-67ed05453658                 column=i:o, timestamp=1493952094822, value={"sid":"ADMIN","principal":true}
+ 0120a519-c200-4249-bd51-67ed05453658                 column=i:p, timestamp=1493952094832, value={"id":"39c6ffc5-a8ef-4d16-8bce-d7eef092626b","type":"org.apache.kylin.cube.CubeInstance"}
+ 0120a519-c200-4249-bd51-67ed05453658                 column=i:t, timestamp=1493952094822, value=org.apache.kylin.job.JobInstance
+ 02359ba9-fef7-461c-b2e1-1e1d1db54e5e                 column=i:i, timestamp=1490751147397, value=\xFF
+ 02359ba9-fef7-461c-b2e1-1e1d1db54e5e                 column=i:o, timestamp=1490751147397, value={"sid":"ADMIN","principal":true}
+ 02359ba9-fef7-461c-b2e1-1e1d1db54e5e                 column=i:p, timestamp=1490751147405, value={"id":"1e850529-2fc8-401f-8576-bfabe8e82277","type":"org.apache.kylin.cube.CubeInstance"}
+ 02359ba9-fef7-461c-b2e1-1e1d1db54e5e                 column=i:t, timestamp=1490751147397, value=org.apache.kylin.job.JobInstance
  */
 @Component("userService")
 public class UserService implements UserDetailsManager {
@@ -76,7 +96,7 @@ public class UserService implements UserDetailsManager {
         try {
             htable = aclHBaseStorage.getTable(userTableName);
 
-            Get get = new Get(Bytes.toBytes(username));
+            Get get = new Get(Bytes.toBytes(username));//username为rowkey
             get.addFamily(Bytes.toBytes(AclHBaseStorage.USER_AUTHORITY_FAMILY));
             Result result = htable.get(get);
 
@@ -92,13 +112,14 @@ public class UserService implements UserDetailsManager {
         }
     }
 
+    //将结果转换成user对象
     private User hbaseRowToUser(Result result) throws JsonParseException, JsonMappingException, IOException {
         if (null == result || result.isEmpty())
             return null;
 
         String username = Bytes.toString(result.getRow());
 
-        byte[] valueBytes = result.getValue(Bytes.toBytes(AclHBaseStorage.USER_AUTHORITY_FAMILY), Bytes.toBytes(AclHBaseStorage.USER_AUTHORITY_COLUMN));
+        byte[] valueBytes = result.getValue(Bytes.toBytes(AclHBaseStorage.USER_AUTHORITY_FAMILY), Bytes.toBytes(AclHBaseStorage.USER_AUTHORITY_COLUMN));//获取密码以及其他权限内容
         UserGrantedAuthority[] deserialized = ugaSerializer.deserialize(valueBytes);
 
         String password = "";
@@ -127,7 +148,7 @@ public class UserService implements UserDetailsManager {
         UserGrantedAuthority[] serializing = new UserGrantedAuthority[authorities.size() + 1];
 
         // password is stored as the [0] authority
-        serializing[0] = new UserGrantedAuthority(PWD_PREFIX + user.getPassword());
+        serializing[0] = new UserGrantedAuthority(PWD_PREFIX + user.getPassword());//第一个存储密码
         int i = 1;
         for (GrantedAuthority a : authorities) {
             serializing[i++] = new UserGrantedAuthority(a.getAuthority());

@@ -23,7 +23,7 @@ import java.util.Properties;
 
 /**
  * Extends a KylinConfig with additional overrides.
- * 扩展配置,使用附加的属性覆盖
+ * 扩展配置,使用附加的属性覆盖---被用于使用在cube创建过程中,有一些属性cube要覆盖掉
  */
 @SuppressWarnings("serial")
 public class KylinConfigExt extends KylinConfig {

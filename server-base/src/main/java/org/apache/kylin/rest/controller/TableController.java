@@ -126,7 +126,7 @@ public class TableController extends BasicController {
 
     /**
      * Get available table list of the input database
-     *
+     * 获取该hive表对应的元数据
      * @return Table metadata array
      * @throws IOException
      */

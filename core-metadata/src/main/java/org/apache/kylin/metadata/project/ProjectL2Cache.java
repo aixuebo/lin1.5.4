@@ -45,7 +45,7 @@ import com.google.common.collect.Sets;
  * including Realization, TableDesc, ColumnDesc etc, to speed up query time metadata lookup.
  * <p/>
  * On any object update, the L2 cache simply gets wiped out because it's cheap to rebuild.
- * 二级缓存功能
+ * 二级缓存功能---用于查询属于project的table、RealizationEntry、model、extFilters,因为这些并不是必须每次都要加载的,因此需要耗费些性能,因此设计了一个二级缓存
  */
 class ProjectL2Cache {
 

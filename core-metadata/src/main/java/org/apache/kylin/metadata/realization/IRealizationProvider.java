@@ -18,6 +18,7 @@
 
 package org.apache.kylin.metadata.realization;
 
+//实现类"org.apache.kylin.cube.CubeManager", "org.apache.kylin.storage.hybrid.HybridManager"
 public interface IRealizationProvider {
 
     RealizationType getRealizationType();

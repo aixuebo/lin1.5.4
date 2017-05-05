@@ -202,6 +202,7 @@ abstract public class KylinConfigBase implements Serializable {
         return getOptional("hive.password", "");
     }
 
+    //当hbase存储的内容太大的时候,会存储到hdfs上,这个是hdfs的根目录
     public String getHdfsWorkingDirectory() {
         String root = getRequired("kylin.hdfs.working.dir");
         if (!root.endsWith("/")) {
@@ -597,8 +598,9 @@ abstract public class KylinConfigBase implements Serializable {
         return getOptionalIntArray("kylin.query.metrics.percentiles.intervals", dft);
     }
 
+    //hbase的key-value存储的最大字节,超过该字节则会存储到HDFS上
     public int getHBaseKeyValueSize() {
-        return Integer.parseInt(this.getOptional("kylin.hbase.client.keyvalue.maxsize", "10485760"));
+        return Integer.parseInt(this.getOptional("kylin.hbase.client.keyvalue.maxsize", "10485760"));//默认是1024*1024,即1M
     }
 
     public String getDefaultIGTStorage() {

@@ -20,7 +20,6 @@ package org.apache.kylin.metadata.realization;
 
 /**
  */
-
 //TODO: change to String for plugin
 public enum RealizationType {
     CUBE,

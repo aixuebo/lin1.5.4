@@ -55,6 +55,8 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Lists;
 
 //使用hbase 存储元数据
+//rowkey是元数据存储的path,比如 rowkey是/cube/olap_basic_v2_cube_test.json
+//scan "kylin_metadata",{LIMIT=>5}  count "kylin_metadata",{LIMIT=>5}
 public class HBaseResourceStore extends ResourceStore {
 
     private static final Logger logger = LoggerFactory.getLogger(HBaseResourceStore.class);
@@ -333,6 +335,7 @@ public class HBaseResourceStore extends ResourceStore {
         }
     }
 
+    //关于资源存储的可以被人读的描述
     @Override
     protected String getReadableResourcePathImpl(String resPath) {
         return getAllInOneTableName() + "(key='" + resPath + "')@" + kylinConfig.getMetadataUrl();
@@ -361,7 +364,7 @@ public class HBaseResourceStore extends ResourceStore {
         Get get = new Get(rowkey);
 
         if (!fetchContent && !fetchTimestamp) {
-            get.setCheckExistenceOnly(true);
+            get.setCheckExistenceOnly(true);//仅仅校验是否存在该rowkey
         } else {
             if (fetchContent)
                 get.addColumn(B_FAMILY, B_COLUMN);
@@ -372,34 +375,6 @@ public class HBaseResourceStore extends ResourceStore {
         Result result = table.get(get);
         boolean exists = result != null && (!result.isEmpty() || (result.getExists() != null && result.getExists()));
         return exists ? result : null;
-    }
-
-    //将二进制字节数组写入到HDFS上,此时写入到文件是因为字节数组太大了
-    private Path writeLargeCellToHdfs(String resPath, byte[] largeColumn, HTableInterface table) throws IOException {
-        Path redirectPath = bigCellHDFSPath(resPath);
-        Configuration hconf = HBaseConnection.getCurrentHBaseConfiguration();
-        FileSystem fileSystem = FileSystem.get(hconf);
-
-        if (fileSystem.exists(redirectPath)) {
-            fileSystem.delete(redirectPath, true);
-        }
-
-        FSDataOutputStream out = fileSystem.create(redirectPath);
-
-        try {
-            out.write(largeColumn);
-        } finally {
-            IOUtils.closeQuietly(out);
-        }
-
-        return redirectPath;
-    }
-
-    //大的列值对应存储到hdfs的目录
-    public Path bigCellHDFSPath(String resPath) {
-        String hdfsWorkingDirectory = this.kylinConfig.getHdfsWorkingDirectory();
-        Path redirectPath = new Path(hdfsWorkingDirectory, "resources" + resPath);
-        return redirectPath;
     }
 
     /**
@@ -414,7 +389,7 @@ public class HBaseResourceStore extends ResourceStore {
      */
     private Put buildPut(String resPath, long ts, byte[] row, byte[] content, HTableInterface table) throws IOException {
         int kvSizeLimit = this.kylinConfig.getHBaseKeyValueSize();
-        if (content.length > kvSizeLimit) {
+        if (content.length > kvSizeLimit) {//要存储到磁盘上
             writeLargeCellToHdfs(resPath, content, table);//将二进制字节数组写入到HDFS上,此时写入到文件是因为字节数组太大了
             content = BytesUtil.EMPTY_BYTE_ARRAY;//空的字节数组
         }
@@ -424,5 +399,33 @@ public class HBaseResourceStore extends ResourceStore {
         put.add(B_FAMILY, B_COLUMN_TS, Bytes.toBytes(ts));
 
         return put;
+    }
+
+    //大的列值对应存储到hdfs的目录
+    public Path bigCellHDFSPath(String resPath) {
+        String hdfsWorkingDirectory = this.kylinConfig.getHdfsWorkingDirectory();
+        Path redirectPath = new Path(hdfsWorkingDirectory, "resources" + resPath);
+        return redirectPath;
+    }
+
+    //将二进制字节数组写入到HDFS上,此时写入到文件是因为字节数组太大了
+    private Path writeLargeCellToHdfs(String resPath, byte[] largeColumn, HTableInterface table) throws IOException {
+        Path redirectPath = bigCellHDFSPath(resPath);
+        Configuration hconf = HBaseConnection.getCurrentHBaseConfiguration();
+        FileSystem fileSystem = FileSystem.get(hconf);
+
+        if (fileSystem.exists(redirectPath)) {//删除已经存在的文件
+            fileSystem.delete(redirectPath, true);
+        }
+
+        FSDataOutputStream out = fileSystem.create(redirectPath);
+
+        try {
+            out.write(largeColumn);
+        } finally {
+            IOUtils.closeQuietly(out);
+        }
+
+        return redirectPath;
     }
 }

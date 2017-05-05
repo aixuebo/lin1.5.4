@@ -32,7 +32,7 @@ public class RealizationEntry {
     private RealizationType type;//输入参数
 
     @JsonProperty("realization")
-    private String realization;//输入参数
+    private String realization;//输入参数,比如type为cube的时候,该值为cube的name
 
     public RealizationType getType() {
         return type;

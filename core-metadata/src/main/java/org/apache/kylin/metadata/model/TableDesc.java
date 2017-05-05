@@ -44,7 +44,7 @@ public class TableDesc extends RootPersistentEntity implements ISourceAware {
     @JsonProperty("name")
     private String name;//table名字,仅仅是table名字,不包含数据库名字
     @JsonProperty("columns")
-    private ColumnDesc[] columns; //设置该表的所有列信息
+    private ColumnDesc[] columns; //设置该表的所有列信息--包括partition的列
     @JsonProperty("source_type")
     private int sourceType = ISourceAware.ID_HIVE;//数据来源于哪里
     @JsonProperty("table_type")

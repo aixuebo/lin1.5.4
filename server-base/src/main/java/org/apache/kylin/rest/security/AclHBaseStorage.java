@@ -25,7 +25,7 @@ import org.apache.hadoop.hbase.client.HTableInterface;
 /**
  */
 public interface AclHBaseStorage {
-    String DEFAULT_TABLE_PREFIX = "kylin_metadata";
+    String DEFAULT_TABLE_PREFIX = "kylin_metadata";//kylin_metadata_acl表用于存储权限数据
 
     String ACL_INFO_FAMILY = "i";
     String ACL_ACES_FAMILY = "a";
@@ -33,7 +33,7 @@ public interface AclHBaseStorage {
 
     String USER_AUTHORITY_FAMILY = "a";
     String USER_TABLE_NAME = "_user";
-    String USER_AUTHORITY_COLUMN = "c";
+    String USER_AUTHORITY_COLUMN = "c";//存储密码以及其他权限内容
 
     String prepareHBaseTable(Class<?> clazz) throws IOException;
 

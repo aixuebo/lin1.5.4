@@ -35,7 +35,7 @@ public class MeasureDesc {
     @JsonProperty("function")
     private FunctionDesc function;//真正的度量信息,包含函数 参数(字段,常数) 返回值等信息
     @JsonProperty("dependent_measure_ref")
-    private String dependentMeasureRef;
+    private String dependentMeasureRef;//该度量依赖哪一个度量,即依赖的度量完成后,才能执行本类的度量
 
     public String getName() {
         return name;

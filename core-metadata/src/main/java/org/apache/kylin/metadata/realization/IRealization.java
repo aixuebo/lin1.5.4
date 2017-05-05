@@ -25,6 +25,7 @@ import org.apache.kylin.metadata.model.IStorageAware;
 import org.apache.kylin.metadata.model.MeasureDesc;
 import org.apache.kylin.metadata.model.TblColRef;
 
+//实现类是CubeInstance和HybridInstance
 public interface IRealization extends IStorageAware {
 
     /**
@@ -36,11 +37,11 @@ public interface IRealization extends IStorageAware {
     /**
      * Get whether this specific realization is a cube or InvertedIndex
      */
-    public RealizationType getType();
+    public RealizationType getType();//返回类型,比如CUBE
 
-    public DataModelDesc getDataModelDesc();
+    public DataModelDesc getDataModelDesc();//获取该cube对应的model对象
 
-    public String getFactTable();
+    public String getFactTable();//获取该cube对应的fact表
 
     public List<TblColRef> getAllColumns();
 
@@ -48,11 +49,11 @@ public interface IRealization extends IStorageAware {
 
     public List<MeasureDesc> getMeasures();
 
-    public boolean isReady();//是否已经准备好了
+    public boolean isReady();//是否已经ready状态
 
     public String getName();//cube的名字
 
-    public String getCanonicalName();//type+name
+    public String getCanonicalName();//type+name,即可以容易读的名字
 
     public long getDateRangeStart();//ready中最小的segment对应的开始位置
 

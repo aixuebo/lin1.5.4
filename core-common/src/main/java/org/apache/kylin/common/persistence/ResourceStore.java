@@ -80,7 +80,7 @@ abstract public class ResourceStore {
         return knownImpl;
     }
 
-    //获取第一个能获取的存储资源
+    //获取第一个能获取的存储资源---因为虽然是两个实现,但是构造函数可能会抛异常,因此只是会返回第一个成功的构造函数
     private static ResourceStore createResourceStore(KylinConfig kylinConfig) {
         List<Throwable> es = new ArrayList<Throwable>();
         logger.info("Using metadata url " + kylinConfig.getMetadataUrl() + " for resource store");
@@ -276,6 +276,7 @@ abstract public class ResourceStore {
 
     /**
      * get a readable string of a resource path
+     * 关于资源存储的可以被人读的描述
      */
     final public String getReadableResourcePath(String resPath) {
         return getReadableResourcePathImpl(norm(resPath));
