@@ -19,6 +19,11 @@
 package org.apache.kylin.metadata.model;
 
 //数据源类型
+
+/**
+ * 主要解释了数据源是什么,使用什么引擎进行builder,如何存储最终结果
+ * 该类主要解决的是数据源的问题
+ */
 public interface ISourceAware {
 
     public static final int ID_HIVE = 0;//来源于hive

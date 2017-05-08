@@ -250,10 +250,12 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
     private LinkedHashSet<TblColRef> dimensionColumns = new LinkedHashSet<TblColRef>();
 
     //该映射中的key说明是dervie相关的字段
+    //表示未知的字段,可以从已知的字段中推导出来
     private Map<TblColRef, DeriveInfo> derivedToHostMap = Maps.newHashMap();//表示每一个derived字段 与 主要字段之间的关系
+    //表示已知的字段  推导 未知的字段
     private Map<Array<TblColRef>, List<DeriveInfo>> hostToDerivedMap = Maps.newHashMap();//表示每一组主要字段中 持有哪些derived关系
 
-    //用于扩展字段
+    //用于扩展字段---说明扩展字段对应哪些字段相关联
     private Map<TblColRef, DeriveInfo> extendedColumnToHosts = Maps.newHashMap();
 
     //默认是false,因为未来版本将会扩展可以shard的存储设备
@@ -881,6 +883,9 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
             JoinDesc join = dim.getJoin();
 
             // init dimension columns
+            /**
+             * 该元素数量为1的时候,说明该字段是fact表或者lookup表的一个字段;该元素数量>1的时候,说明该字段内容是on条件语句的字段集合
+             */
             ArrayList<TblColRef> dimCols = Lists.newArrayList();//属于该列需要的列集合
             String colStrs = dim.getColumn();//列属性名称
 
@@ -909,7 +914,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
             TblColRef[] dimColArray = dimCols.toArray(new TblColRef[dimCols.size()]);
             dim.setColumnRefs(dimColArray);//设置该维度表中所有相关联的column集合
 
-            // init derived columns
+            // init derived columns 说明此时该维度是derived
             if (dim.isDerived()) {
                 String[] derived = dim.getDerived();//衍生维度集合
                 String[][] split = splitDerivedColumnAndExtra(derived);//将derived列的内容按照:拆分成两个集合
@@ -971,7 +976,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
 
     /**
      *
-     * @param hostCols DimensionDesc表中的columnRefs集合
+     * @param hostCols DimensionDesc表中的columnRefs集合    该元素数量为1的时候,说明该字段是fact表或者lookup表的一个字段;该元素数量>1的时候,说明该字段内容是on条件语句的字段集合
      * @param type derived属性来自于什么表
      * @param dimension 当前是哪个维度
      * @param derivedCols lookup表中derived设置的属性集合
@@ -985,7 +990,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
         // Although FK derives PK automatically, user unaware of this can declare PK as derived dimension explicitly.
         // In that case, derivedCols[] will contain a FK which is transformed from the PK by initDimensionColRef().
         // Must drop FK from derivedCols[] before continue.
-        //删除fact表中的外键
+        //删除共同的字段,如果共同字段存在,说明derived的字段是on条件的一个字段,因为已经在维度里面存在了,所以不会关注该字段了,所以删除掉
         for (int i = 0; i < derivedCols.length; i++) {
             if (ArrayUtils.contains(hostCols, derivedCols[i])) {//说明该衍生字段已经有对应的字段了,因此删除掉
                 derivedCols = (TblColRef[]) ArrayUtils.remove(derivedCols, i);
@@ -1077,8 +1082,8 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
             if (ExtendedColumnMeasureType.FUNC_RAW.equalsIgnoreCase(m.getFunction().getExpression())) {//处理扩展字段
                 FunctionDesc functionDesc = m.getFunction();
 
-                List<TblColRef> hosts = ExtendedColumnMeasureType.getExtendedColumnHosts(functionDesc);
-                TblColRef extendedColumn = ExtendedColumnMeasureType.getExtendedColumn(functionDesc);
+                List<TblColRef> hosts = ExtendedColumnMeasureType.getExtendedColumnHosts(functionDesc);//必须需要的字段
+                TblColRef extendedColumn = ExtendedColumnMeasureType.getExtendedColumn(functionDesc);//真正的扩展字段
                 initExtendedColumnMap(hosts.toArray(new TblColRef[hosts.size()]), extendedColumn);
             }
         }

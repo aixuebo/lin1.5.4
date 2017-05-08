@@ -18,6 +18,10 @@
 
 package org.apache.kylin.metadata.model;
 
+/**
+ * 主要解释了数据源是什么,使用什么引擎进行builder,如何存储最终结果
+ * 该类主要解决的是什么引擎builder问题
+ */
 public interface IEngineAware {
     /**
      r.put(0, "org.apache.kylin.engine.mr.MRBatchCubingEngine");

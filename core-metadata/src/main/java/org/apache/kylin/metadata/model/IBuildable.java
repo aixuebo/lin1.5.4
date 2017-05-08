@@ -18,6 +18,9 @@
 
 package org.apache.kylin.metadata.model;
 
+/**
+ * 主要解释了数据源是什么,使用什么引擎进行builder,如何存储最终结果
+ */
 public interface IBuildable extends ISourceAware, IEngineAware, IStorageAware {
 
 }

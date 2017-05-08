@@ -18,6 +18,7 @@
 
 package org.apache.kylin.measure.raw;
 
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +36,7 @@ public class RawSerializer extends DataTypeSerializer<List<ByteArray>> {
 
     //one dictionary id value need 1~4 bytes,length need 1~4 bytes, this buffer can contain 1024/(2 to 8) * 1024 values
     //FIXME to config this and RowConstants.ROWVALUE_BUFFER_SIZE in properties file
-    public static final int RAW_BUFFER_SIZE = 1024 * 1024;//1M
+    public static final int RAW_BUFFER_SIZE = 10 * 1024 * 1024;//10M  原来是1M,后来我改成的10M
 
     //线程持有的字节数组集合
     private ThreadLocal<List<ByteArray>> current = new ThreadLocal<>();
@@ -91,7 +92,8 @@ public class RawSerializer extends DataTypeSerializer<List<ByteArray>> {
             BytesUtil.writeVInt(values.size(), out);//写入size
             for (ByteArray array : values) {
                 if (!out.hasRemaining() || out.remaining() < array.length()) {//必须空间能容纳该array
-                    throw new RuntimeException("BufferOverflow! Please use one higher cardinality column for dimension column when build RAW cube!");
+                    //throw new RuntimeException("BufferOverflow! Please use one higher cardinality column for dimension column when build RAW cube!");
+                    throw new BufferOverflowException();
                 }
                 BytesUtil.writeByteArray(BytesUtil.subarray(array.array(), array.offset(), array.offset() + array.length()), out);//截取一段字节数组,从开始位置,到结束位置,将其写入到out中
             }

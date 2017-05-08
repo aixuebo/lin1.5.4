@@ -82,6 +82,7 @@ public class ExtendedColumnMeasureType extends MeasureType<ByteArray> {
         this.dataType = dataType;
     }
 
+    //前面的参数是必须需要的字段
     public static List<TblColRef> getExtendedColumnHosts(FunctionDesc functionDesc) {
         List<TblColRef> ret = Lists.newArrayList();
         List<TblColRef> params = functionDesc.getParameter().getColRefs();
@@ -91,6 +92,7 @@ public class ExtendedColumnMeasureType extends MeasureType<ByteArray> {
         return ret;
     }
 
+    //最后一个参数是扩展字段
     public static TblColRef getExtendedColumn(FunctionDesc functionDesc) {
         List<TblColRef> params = functionDesc.getParameter().getColRefs();
         return params.get(params.size() - 1);
