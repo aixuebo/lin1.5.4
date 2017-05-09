@@ -98,9 +98,10 @@ public class RowKeyDesc {
         setCubeDesc(cubeDesc);
 
         //刨除derived的列,以及额外的列,返回剩余列的集合
+        //即参与builder的维度集合,因为维度中derived和extends额外的列都不需要参与builder,因此要将其删除掉
         Map<String, TblColRef> colNameAbbr = cubeDesc.buildColumnNameAbbreviation();
 
-        buildRowKey(colNameAbbr);
+        buildRowKey(colNameAbbr);//对维度集合进行builder
 
         int[] tmp = new int[100];//存储需要index索引的字段序号
         int x = 0;//有多少个满足条件的字段
@@ -155,7 +156,6 @@ public class RowKeyDesc {
 
     public int[] getColumnsNeedIndex() {
         return columnsNeedIndex;
-
     }
 
 }

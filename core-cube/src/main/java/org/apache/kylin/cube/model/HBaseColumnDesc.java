@@ -93,6 +93,7 @@ public class HBaseColumnDesc {
         return -1;
     }
 
+    //参数是表达式,表示该列上是否存在该表达式
     public boolean containsMeasure(String refName) {
         for (String ref : measureRefs) {
             if (ref.equals(refName))

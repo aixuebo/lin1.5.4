@@ -73,6 +73,7 @@ public class HBaseMappingDesc {
     // point to the cube instance which contain this HBaseMappingDesc instance.
     private CubeDesc cubeRef;//所属cube
 
+    //返回定义该参数函数对应的列族
     public Collection<HBaseColumnDesc> findHBaseColumnByFunction(FunctionDesc function) {
         Collection<HBaseColumnDesc> result = new LinkedList<HBaseColumnDesc>();
         HBaseMappingDesc hbaseMapping = cubeRef.getHbaseMapping();

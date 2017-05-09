@@ -84,7 +84,7 @@ abstract public class MeasureType<T> {
     abstract public MeasureAggregator<T> newAggregator();
 
     /** Some special measures need dictionary to encode column values for optimal storage. TopN is an example.
-     * 获取度量中需要编码的列集合
+     * 获取度量中需要编码的列集合---因为度量的列存储值的时候也是希望存储编码后的值
      **/
     public List<TblColRef> getColumnsNeedDictionary(FunctionDesc functionDesc) {
         return Collections.emptyList();

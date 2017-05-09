@@ -58,6 +58,7 @@ public class HBaseColumnFamilyDesc {
         return "HBaseColumnFamilyDesc [name=" + name + ", columns=" + Arrays.toString(columns) + "]";
     }
 
+    //该聚合函数中是否有耗费内存的函数,true表示存在消耗内存的函数
     public boolean isMemoryHungry() {
         for (HBaseColumnDesc hBaseColumnDesc : columns) {
             for (MeasureDesc measureDesc : hBaseColumnDesc.getMeasures()) {

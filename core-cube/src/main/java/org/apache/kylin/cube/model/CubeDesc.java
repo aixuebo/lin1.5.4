@@ -97,6 +97,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
         EXTENDED_COLUMN //扩展属性
     }
 
+    //该对象表示推测对象,比如lookup表中若个字段组成的推测,因此columns字段就是推测的字段集合
     public static class DeriveInfo {
         public DeriveType type;//derve属性集合的来源
         public DimensionDesc dimension;//derve属性属于哪个维度对象
@@ -180,12 +181,28 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
     @JsonProperty("aggregation_groups")
     private List<AggregationGroup> aggregationGroups;
 
+    /**
+     *  * 用于对度量进行编码
+     "dictionaries": [
+     {
+     "column": "SEX",
+     "reuse": "AGE",
+     "builderClass":"org.apache.kylin.dict.GlobalDictionaryBuilder"
+     }
+     ],
+     该字段可以设置的column只能是设置的维度,该维度包含normal以及derived,即所有的维度都可以进行字典编码.
+     扩展extends是不需要编码的,因为他们是从内存中加载过来的,因此不需要设置编码
+
+     注意:疑问:维度都可以进行编码,维度也包含了rowke,由于rowkey设置了编码方式,那么rowkey中的字段在字典中也设置了编码,是以谁为准呢
+     答案:因为getAllColumnsHaveDictionary类中是先加载rowkey,再加载字典,因此应该字典会覆盖掉rowkey,但是只是怀疑。
+     维度不仅仅包含rowkey,还包含derived,因此这些字段都没有在rowkey中配置字典,因此字典中需要更加进一步的配置这些字段的字典
+     */
     //设置字典
     @JsonProperty("dictionaries")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private List<DictionaryDesc> dictionaries;
 
-    //设置rowkey关于字段的顺序
+    //设置rowkey关于字段的顺序---该字段就是设计维度的时候,表示为normal的维度,derived维度是不允许在rowkey中存在的,因为derived是推测出来的
     @JsonProperty("rowkey")
     private RowKeyDesc rowkey;
 
@@ -232,7 +249,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
      },
      */
     @JsonProperty("hbase_mapping")
-    private HBaseMappingDesc hbaseMapping;
+    private HBaseMappingDesc hbaseMapping;//表示度量函数如何定义到hbase的列族中
 
     @JsonProperty("signature")
     private String signature;//MD5的签名
@@ -246,16 +263,16 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
     //缓存allColumns属性,只不过allColumns是所有需要到的列集合,而该map表示每一个表 使用了哪些集合----该集合包含derived列、度量列、两个表join中的on属性、字典需要使用的列
     private Map<String, Map<String, TblColRef>> columnMap = new HashMap<String, Map<String, TblColRef>>();
     private LinkedHashSet<TblColRef> allColumns = new LinkedHashSet<TblColRef>();
-    //该cube的所有的维度列集合  该cube支持的所有列,包括derived列,但是不算度量的列
+    //该cube的所有的维度列集合  即该cube设置的所有维度列,以及derived列中参与on的lookup表列
     private LinkedHashSet<TblColRef> dimensionColumns = new LinkedHashSet<TblColRef>();
 
     //该映射中的key说明是dervie相关的字段
     //表示未知的字段,可以从已知的字段中推导出来
     private Map<TblColRef, DeriveInfo> derivedToHostMap = Maps.newHashMap();//表示每一个derived字段 与 主要字段之间的关系
-    //表示已知的字段  推导 未知的字段
+    //表示已知的字段  推导 未知的字段 ,key是已知的字段,因为fact和lookup表关联可能有多个字段参与on,因此已知字段就是fact表的字段数组
     private Map<Array<TblColRef>, List<DeriveInfo>> hostToDerivedMap = Maps.newHashMap();//表示每一组主要字段中 持有哪些derived关系
 
-    //用于扩展字段---说明扩展字段对应哪些字段相关联
+    //用于扩展字段---该扩展字段可以由哪些字段推测出来
     private Map<TblColRef, DeriveInfo> extendedColumnToHosts = Maps.newHashMap();
 
     //默认是false,因为未来版本将会扩展可以shard的存储设备
@@ -284,16 +301,16 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
 
     /**
      * @return dimension columns including derived, BUT NOT measures
-     * 该cube支持的所有列,包括derived列,但是不算度量的列
+     * 该cube支持的所有列,包括derived列,因为derived也是维度啊,但是不算度量的列
      */
     public Set<TblColRef> listDimensionColumnsIncludingDerived() {
         return dimensionColumns;
     }
 
     /**
-     * @param alsoExcludeExtendedCol  true表示也要包含扩展属性被刨除
+     * @param alsoExcludeExtendedCol  true表示也要包含扩展属性被刨除,因为维度中derived和extends额外的列都不需要参与builder,因此要将其删除掉,所以此时是true,用于删除extends列
      * @return dimension columns excluding derived
-     * 刨除derived的列,并且参数为true的时候表示也要刨除扩展的列
+     * 刨除derived的列,因为推测列不应该参与builder,并且参数为true的时候表示也要刨除扩展的列
      */
     public List<TblColRef> listDimensionColumnsExcludingDerived(boolean alsoExcludeExtendedCol) {
         List<TblColRef> result = new ArrayList<TblColRef>();
@@ -341,21 +358,22 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
         return null;
     }
 
+    //true表示该参数字段是可以被其他字段推测出来的,也就是说该字段属于derived或者extend的字段
     public boolean hasHostColumn(TblColRef col) {
         return isDerived(col) || isExtendedColumn(col);
     }
 
-    //true表是是dervied字段
+    //true表是是dervied字段,即该参数字段是可以被其他字段推测出来的
     public boolean isDerived(TblColRef col) {
         return derivedToHostMap.containsKey(col);
     }
 
-    //true表示是扩展字段
+    //true表示是扩展字段,即该参数字段是可以被其他字段推测出来的
     public boolean isExtendedColumn(TblColRef col) {
         return extendedColumnToHosts.containsKey(col);
     }
 
-    //通过推测列,找到存储的列
+    //因为参数字段是可以被其他字段推测出来的,因此返回哪个推测对象可以推测出来参数
     public DeriveInfo getHostInfo(TblColRef derived) {
         if (isDerived(derived)) {
             return derivedToHostMap.get(derived);
@@ -633,6 +651,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
     }
 
     //刨除derived的列,以及额外的列,返回剩余列的集合
+    //即参与builder的维度集合,因为维度中derived和extends额外的列都不需要参与builder,因此要将其删除掉
     public Map<String, TblColRef> buildColumnNameAbbreviation() {
         Map<String, TblColRef> r = new CaseInsensitiveStringMap<TblColRef>();
         for (TblColRef col : listDimensionColumnsExcludingDerived(true)) {
@@ -928,7 +947,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
             }
 
             // PK-FK derive the other side
-            if (join != null) {
+            if (join != null) {//说明可能不是dervied,也可能是dervied,但是该字段一定是lookup表中字段
                 TblColRef[] fk = join.getForeignKeyColumns();//事实表关联键
                 TblColRef[] pk = join.getPrimaryKeyColumns();//维度表关联键
 
@@ -938,7 +957,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
                 for (int i = 0; i < fk.length; i++) {//循环fact表的主键
                     int find = ArrayUtils.indexOf(dimColArray, fk[i]);
                     if (find >= 0) {
-                        TblColRef derivedCol = initDimensionColRef(pk[i]);//fact表主键 加入到集合中
+                        TblColRef derivedCol = initDimensionColRef(pk[i]);//lookup表主键 加入到集合中
                         //fact_table的主键 与 lookup表外键相关联
                         initDerivedMap(new TblColRef[] { dimColArray[find] }, DeriveType.PK_FK, dim, new TblColRef[] { derivedCol }, null);
                     }
@@ -991,6 +1010,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
         // In that case, derivedCols[] will contain a FK which is transformed from the PK by initDimensionColRef().
         // Must drop FK from derivedCols[] before continue.
         //删除共同的字段,如果共同字段存在,说明derived的字段是on条件的一个字段,因为已经在维度里面存在了,所以不会关注该字段了,所以删除掉
+        //之所以删除,是因为on的key 和推测的字段相同时候,不需要推测,因此将其删除掉
         for (int i = 0; i < derivedCols.length; i++) {
             if (ArrayUtils.contains(hostCols, derivedCols[i])) {//说明该衍生字段已经有对应的字段了,因此删除掉
                 derivedCols = (TblColRef[]) ArrayUtils.remove(derivedCols, i);
@@ -1112,9 +1132,9 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
 
         for (HBaseColumnFamilyDesc cf : getHbaseMapping().getColumnFamily()) {//循环每一个列族
             for (HBaseColumnDesc c : cf.getColumns()) {//循环每一个列族下的每一个列
-                String[] colMeasureRefs = c.getMeasureRefs();//该hbase的列中存放哪些度量值
-                MeasureDesc[] measureDescs = new MeasureDesc[colMeasureRefs.length];
-                int[] measureIndex = new int[colMeasureRefs.length];
+                String[] colMeasureRefs = c.getMeasureRefs();//该hbase的列中存放哪些度量name
+                MeasureDesc[] measureDescs = new MeasureDesc[colMeasureRefs.length];//度量name对应的度量function函数
+                int[] measureIndex = new int[colMeasureRefs.length];//每一个度量对应的序号
                 for (int i = 0; i < colMeasureRefs.length; i++) {
                     measureDescs[i] = measureLookup.get(colMeasureRefs[i]);
                     measureIndex[i] = measureIndexLookup.get(colMeasureRefs[i]);
@@ -1246,7 +1266,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
     }
 
     /** Get columns that have dictionary
-     * 获取所有字典列
+     * 获取所有需要编程字典列集合
      **/
     public Set<TblColRef> getAllColumnsHaveDictionary() {
         Set<TblColRef> result = Sets.newLinkedHashSet();
@@ -1262,11 +1282,11 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
         // dictionaries in measures 查找度量
         for (MeasureDesc measure : measures) {
             MeasureType<?> aggrType = measure.getFunction().getMeasureType();
-            result.addAll(aggrType.getColumnsNeedDictionary(measure.getFunction()));
+            result.addAll(aggrType.getColumnsNeedDictionary(measure.getFunction()));//因为度量的列存储值的时候也是希望存储编码后的值
         }
 
-        // any additional dictionaries 设置字典集合
-        if (dictionaries != null) {
+        // any additional dictionaries 设置字典集合----对处理rowkey之外的字段如果也有字典的话,要进行编码
+        if (dictionaries != null) {//因为存储的是set,因此对于重复在rowkey中定义的字典也可以过滤掉
             for (DictionaryDesc dictDesc : dictionaries) {
                 TblColRef col = dictDesc.getColumnRef();
                 result.add(col);
@@ -1277,8 +1297,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
     }
 
     /** Get columns that need dictionary built on it. Note a column could reuse dictionary of another column.
-     * 过滤掉使用其他列的字典的列
-     * 即获取需要构建字典的列的集合
+     * 有一些列虽然需要加入字典,但是不需要构建一个新的字典,因为该列与其他列共同使用一个字典,因此将其删除掉
      **/
     public Set<TblColRef> getAllColumnsNeedDictionaryBuilt() {
         Set<TblColRef> result = getAllColumnsHaveDictionary();//获取所有字典列
@@ -1298,6 +1317,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
 
     /** A column may reuse dictionary of another column, find the dict column, return same col if there's no reuse column
      * 获取该字段 引用了哪个字典列
+     * 主要是让该列查找对应的字典列,去方便查找该字典信息,即参数列有时候可能没有字典,而是依赖别的列的字典,因此要先找到别的列
      **/
     public TblColRef getDictionaryReuseColumn(TblColRef col) {
         if (dictionaries == null) {
@@ -1323,6 +1343,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
 
     //返回参数列对应的bilderClass
     //因为参数列没有设置编码class,但是设置了引用哪个列的编码了
+    //注意该方法只是返回字典中的列,不返回rowkey中定义的字典字段
     public String getDictionaryBuilderClass(TblColRef col) {
         if (dictionaries == null)
             return null;

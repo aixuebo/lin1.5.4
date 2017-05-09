@@ -46,15 +46,15 @@ public class RowKeyColDesc {
     @JsonProperty("column")
     private String column;//列名称
     @JsonProperty("encoding")
-    private String encoding;//编码
+    private String encoding;//编码名字以及参数
     @JsonProperty("isShardBy")
     private boolean isShardBy;//usually it is ultra high cardinality column, shard by such column can reduce the agg cache for each shard 是否设置了Shard By,用于hbase的切片
     @JsonProperty("index")
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private String index;//是否需要索引
+    private String index;//是否需要索引---true或者false
 
     // computed
-    //
+    //解析encoding后产生的编码名字以及参数集合
     private String encodingName;
     private String[] encodingArgs;
 
@@ -69,6 +69,7 @@ public class RowKeyColDesc {
             throw new IllegalArgumentException("Cannot find rowkey column " + column + " in cube " + cubeDesc);
         }
 
+        //解析编码名字以及参数集合
         Preconditions.checkState(StringUtils.isNotEmpty(this.encoding));
         Object[] encodingConf = DimensionEncoding.parseEncodingConf(this.encoding);
         encodingName = (String) encodingConf[0];

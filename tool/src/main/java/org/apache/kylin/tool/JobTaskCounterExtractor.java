@@ -65,6 +65,7 @@ public class JobTaskCounterExtractor extends AbstractInfoExtractor {
             logger.info("kylin.job.yarn.app.rest.check.status.url" + " is not set read from hadoop configuration");
         }
         Configuration conf = HadoopUtil.getCurrentConfiguration();
+        //yarn.resourcemanager.webapp.address   0.0.0.0:8088
         String rmWebHost = HAUtil.getConfValueForRMInstance(YarnConfiguration.RM_WEBAPP_ADDRESS, YarnConfiguration.DEFAULT_RM_WEBAPP_ADDRESS, conf);
         if (HAUtil.isHAEnabled(conf)) {
             YarnConfiguration yarnConf = new YarnConfiguration(conf);
@@ -94,7 +95,8 @@ public class JobTaskCounterExtractor extends AbstractInfoExtractor {
                 client.executeMethod(get);
                 response = get.getResponseBodyAsString();
             } catch (Exception e) {
-                logger.warn("Failed to fetch http response" + e);
+                logger.warn("url11111:"+url+":Failed to fetch http response");
+                logger.warn("url:"+url+":Failed to fetch http response" + e);
             } finally {
                 get.releaseConnection();
             }

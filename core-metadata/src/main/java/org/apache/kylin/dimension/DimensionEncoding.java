@@ -54,7 +54,7 @@ public abstract class DimensionEncoding implements Externalizable {
         return true;
     }
 
-    //解析编码的配置
+    //解析编码的配置--该参数是页面设置rowkey等信息时候传入的编码名字以及参数
     public static Object[] parseEncodingConf(String encoding) {
         String[] parts = encoding.split("\\s*[(),:]\\s*");
         if (parts == null || parts.length == 0 || parts[0].isEmpty())

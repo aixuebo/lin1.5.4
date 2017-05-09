@@ -28,6 +28,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * 用于对度量进行编码
+"dictionaries": [
+ {
+ "column": "SEX",
+ "reuse": "AGE"
+ }
+ ],
  */
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
 public class DictionaryDesc {
@@ -37,7 +43,7 @@ public class DictionaryDesc {
 
     @JsonProperty("reuse")
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private String reuseColumn;
+    private String reuseColumn; //该字典列与哪一个列使用相同的字典
 
     @JsonProperty("builder")
     @JsonInclude(JsonInclude.Include.NON_NULL) //比如org.apache.kylin.dict.GlobalDictionaryBuilder
@@ -45,7 +51,7 @@ public class DictionaryDesc {
 
     // computed content
     private TblColRef colRef;//column对应的列对象
-    private TblColRef reuseColRef;//reuseColumn对应的列对象
+    private TblColRef reuseColRef;//reuseColumn对应的列对象,即该类使用的字典与reuseColRef对应的字段对应的字典相同
 
     void init(CubeDesc cubeDesc) {
         DataModelDesc model = cubeDesc.getModel();

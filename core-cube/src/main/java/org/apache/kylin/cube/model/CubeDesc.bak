@@ -22,7 +22,18 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
         return result;
     }
 
-
+    /**
+     * 循环每一个aggregationGroup的getBuildLevel方法,返回最大的一个,即最大有多少个独立字段
+     */
+    public int getBuildLevel() {
+        return Collections.max(Collections2.transform(aggregationGroups, new Function<AggregationGroup, Integer>() {
+            @Nullable
+            @Override
+            public Integer apply(AggregationGroup input) {
+                return input.getBuildLevel();
+            }
+        }));
+    }
 
     public boolean isEnableSharding() {
         //in the future may extend to other storage that is shard-able
@@ -33,14 +44,5 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
         return getStorageType() != IStorageAware.ID_HBASE && getStorageType() != IStorageAware.ID_HYBRID;
     }
 
-    /** Get a column which can be used in distributing the source table */
-    public TblColRef getDistributedByColumn() {
-        Set<TblColRef> shardBy = getShardByColumns();
-        if (shardBy != null && shardBy.size() > 0) {
-            return shardBy.iterator().next();
-        }
-
-        return null;
-    }
 
 }
