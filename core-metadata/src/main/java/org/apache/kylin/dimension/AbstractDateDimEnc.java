@@ -43,7 +43,7 @@ public class AbstractDateDimEnc extends DimensionEncoding {
     }
 
     // ============================================================================
-    private int fixedLen;
+    private int fixedLen;//具体使用多少字节存储时间相关的数据
     private IMillisCodec codec;//对时间戳如何编码
 
     protected AbstractDateDimEnc(int fixedLen, IMillisCodec codec) {
@@ -56,7 +56,7 @@ public class AbstractDateDimEnc extends DimensionEncoding {
         return fixedLen;
     }
 
-    //编码
+    //编码---value是一个日期类型的字节数组,比如2017-05-05 23:45:43
     @Override
     public void encode(byte[] value, int valueLen, byte[] output, int outputOffset) {
         if (value == null) {

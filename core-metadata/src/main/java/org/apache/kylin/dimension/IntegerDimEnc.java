@@ -32,15 +32,49 @@ import org.slf4j.LoggerFactory;
 
 /**
  * replacement for IntegerDimEnc, the diff is VLongDimEnc supports negative values
+ * 对一个long类型的整数进行编码,支持负数
+ *
+ * 该编码方式是对int使用vlong方式进行编码,节省空间,但是其实不如bitSet方式好
  */
 public class IntegerDimEnc extends DimensionEncoding {
     private static final long serialVersionUID = 1L;
 
     private static Logger logger = LoggerFactory.getLogger(IntegerDimEnc.class);
 
+    /**
+     0,7个1，15个1，23个1,31个1,39个1,47个1,55个1,63个1
+     因为是long,因此最多8个字节
+
+     具体的值表示0,127,32767,8388607,2147483647,549755813887,140737488355327,36028797018963967,9223372036854775807
+     */
     private static final long[] CAP = { 0, 0x7fL, 0x7fffL, 0x7fffffL, 0x7fffffffL, 0x7fffffffffL, 0x7fffffffffffL, 0x7fffffffffffffL, 0x7fffffffffffffffL };
+    /**
+     0,8个1,16个1,24个1,32个1,40个1,48个1,56个1,66个1
+
+     具体的值表示0,255,65535,16777215,4294967295,1099511627775,281474976710655,72057594037927935,-1
+     */
     private static final long[] MASK = { 0, 0xffL, 0xffffL, 0xffffffL, 0xffffffffL, 0xffffffffffL, 0xffffffffffffL, 0xffffffffffffffL, 0xffffffffffffffffL };
+    /**
+     0,8个0,16个0,24个0,32个0,40个0,48个0,56个0,66个0
+
+     具体的值表示0,128,32768,8388608,2147483648,549755813888,140737488355328,36028797018963968,-9223372036854775808
+     */
     private static final long[] TAIL = { 0, 0x80L, 0x8000L, 0x800000L, 0x80000000L, 0x8000000000L, 0x800000000000L, 0x80000000000000L, 0x8000000000000000L };
+
+    /**
+     0
+     1111111111111111111111111111111111111111111111111111111110000000
+     1111111111111111111111111111111111111111111111111000000000000000
+     1111111111111111111111111111111111111111100000000000000000000000
+     1111111111111111111111111111111110000000000000000000000000000000
+     1111111111111111111111111000000000000000000000000000000000000000
+     1111111111111111100000000000000000000000000000000000000000000000
+     1111111110000000000000000000000000000000000000000000000000000000
+     1000000000000000000000000000000000000000000000000000000000000000
+     初始化之后TAIL都变成64位的,只是值二进制后是以上内容
+
+     具体的值表示0,-128,-32768,-8388608,-2147483648,-549755813888,-140737488355328,-36028797018963968,-9223372036854775808
+     */
     static {
         for (int i = 1; i < TAIL.length; ++i) {
             long head = ~MASK[i];
@@ -73,6 +107,7 @@ public class IntegerDimEnc extends DimensionEncoding {
     public IntegerDimEnc() {
     }
 
+    //表示int的范围最多不会超过几个字节
     public IntegerDimEnc(int len) {
         if (len <= 0 || len >= CAP.length)
             throw new IllegalArgumentException();
@@ -80,6 +115,7 @@ public class IntegerDimEnc extends DimensionEncoding {
         this.fixedLen = len;
     }
 
+    //返回固定存储该int对应的字节
     @Override
     public int getLengthOfEncoding() {
         return fixedLen;
@@ -102,8 +138,8 @@ public class IntegerDimEnc extends DimensionEncoding {
             return;
         }
 
-        long integer = Long.parseLong(valueStr);
-        if (integer > CAP[fixedLen] || integer < TAIL[fixedLen]) {
+        long integer = Long.parseLong(valueStr);//将value字符串转换成整数
+        if (integer > CAP[fixedLen] || integer < TAIL[fixedLen]) {//如果fixedLen为4,说明4个字节存储的long的范围,即[-xxx,+xxxx]
             if (avoidVerbose++ % 10000 == 0) {
                 logger.warn("Expect at most " + fixedLen + " bytes, but got " + valueStr + ", will truncate, hit times:" + avoidVerbose);
             }

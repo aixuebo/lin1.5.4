@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 /**
  * deprecated use IntegerDimEnc instead
  * @deprecated
- * 整数编码
+ * 整数编码---查看IntegerDimEnc类实现,即存储value为long的值
  */
 public class IntDimEnc extends DimensionEncoding {
     private static final long serialVersionUID = 1L;

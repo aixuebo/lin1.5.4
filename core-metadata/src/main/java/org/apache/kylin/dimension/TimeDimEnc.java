@@ -38,6 +38,7 @@ public class TimeDimEnc extends AbstractDateDimEnc {
         }
     };
 
+    //将long类型的转换成4个字节长度
     public TimeDimEnc() {
         super(4, new IMillisCodec() {
             private static final long serialVersionUID = 1L;

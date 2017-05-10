@@ -459,7 +459,7 @@ abstract public class KylinConfigBase implements Serializable {
     }
 
     public boolean getCubeAggrGroupIsMandatoryOnlyValid() {
-        return Boolean.parseBoolean(getOptional("kylin.cube.aggrgroup.isMandatoryOnlyValid", "false"));//true表示都是必须相关的列也是允许的
+        return Boolean.parseBoolean(getOptional("kylin.cube.aggrgroup.isMandatoryOnlyValid", "false"));//true表示都是必须的列也是允许的,默认是不允许的
     }
 
     //自定义编码集合,存储class的全路径集合

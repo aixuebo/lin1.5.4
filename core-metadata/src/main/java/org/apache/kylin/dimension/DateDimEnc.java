@@ -40,7 +40,7 @@ public class DateDimEnc extends AbstractDateDimEnc {
         }
     };
 
-    //天维度
+    //天维度--将long类型的使用3个字节存储
     public DateDimEnc() {
         super(3, new IMillisCodec() {
             private static final long serialVersionUID = 1L;

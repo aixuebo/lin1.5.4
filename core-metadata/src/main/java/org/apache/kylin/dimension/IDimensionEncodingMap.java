@@ -31,6 +31,8 @@ import org.apache.kylin.metadata.model.TblColRef;
  * bytes can be very long while dictionary ID is 4 bytes at most. This means it is 
  * hard to enumerate all values of a encoding, thus TupleFilterDictionaryTranslater 
  * cannot work on DimensionEncoding.
+ *
+ * 获取一个列对应的编码方式,将该列的值进行编码,然后将编码的结果存储到字典里面
  */
 public interface IDimensionEncodingMap {
 

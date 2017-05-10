@@ -56,10 +56,10 @@ public class AggregationGroup {
     //computed 计算编码----在hbase的rowkey的位置
     //比如rowkey有8个字段,因此是111111110
     //如果iclude值有3个字段,并且相对位置也知道,因此该值为100000110
-    private long partialCubeFullMask;//includes中字段
-    private long mandatoryColumnMask;//mandatory中字段
-    private List<HierarchyMask> hierarchyMasks;
-    private List<Long> joints;//each long is a group,joint中字段
+    private long partialCubeFullMask;//includes中字段,即全部维度组合
+    private long mandatoryColumnMask;//mandatory中字段,即必须存在的维度组合
+    private List<HierarchyMask> hierarchyMasks;//每一个继承关系都维护了一个HierarchyMask对象
+    private List<Long> joints;//each long is a group,joint中字段,要么同时存在,要么同时不存在的维度组合集合
 
 
     private long jointDimsMask;//所有参与joint的字段集合,该参数的字段位置是1
@@ -68,12 +68,12 @@ public class AggregationGroup {
     private List<Long> normalDims;//each long is a single dim  将每一个normal的字段的位置 转换成整数,即该集合内的元素,每一个元素都只有一个位置是1,所有的元素都表示为normal的字段
 
     private CubeDesc cubeDesc;//该聚合组所属的cube对象
-    private boolean isMandatoryOnlyValid;//false表示如果cuboid与mandatoryColumnMask相同,则校验不合格
+    private boolean isMandatoryOnlyValid;//false表示如果cuboid与mandatoryColumnMask相同,则校验不合格,即默认是不允许includes中字段都是mandatory_dims维度
 
     public void init(CubeDesc cubeDesc, RowKeyDesc rowKeyDesc) {
         this.cubeDesc = cubeDesc;
         this.isMandatoryOnlyValid = cubeDesc.getConfig().getCubeAggrGroupIsMandatoryOnlyValid();
-        Map<String, TblColRef> colNameAbbr = cubeDesc.buildColumnNameAbbreviation();//刨除derived的列,以及额外的列,返回剩余列的集合
+        Map<String, TblColRef> colNameAbbr = cubeDesc.buildColumnNameAbbreviation();//刨除derived的列,以及额外的列,返回剩余列的集合,即参与builder的维度集合
 
         if (this.includes == null || this.includes.length == 0 || this.selectRule == null) {
             throw new IllegalStateException("AggregationGroup incomplete");
@@ -84,9 +84,11 @@ public class AggregationGroup {
         buildMandatoryColumnMask(colNameAbbr, rowKeyDesc);
         buildHierarchyMasks(colNameAbbr, rowKeyDesc);
         buildJointColumnMask(colNameAbbr, rowKeyDesc);
+
+        //设置所有参与joint的字段   所有参与继承相关的字段  所有什么都没参与优化的字段
         buildJointDimsMask();
-        buildNormalDimsMask();
         buildHierarchyDimsMask();
+        buildNormalDimsMask();
 
     }
 
@@ -199,6 +201,14 @@ public class AggregationGroup {
         this.jointDimsMask = ret;
     }
 
+    private void buildHierarchyDimsMask() {
+        long ret = 0;
+        for (HierarchyMask mask : hierarchyMasks) {
+            ret |= mask.fullMask;
+        }
+        this.hierarchyDimsMask = ret;
+    }
+
     private void buildNormalDimsMask() {
         //no joint, no hierarchy, no mandatory
         /**
@@ -216,15 +226,6 @@ public class AggregationGroup {
         this.normalDimsMask = leftover;
         this.normalDims = bits(leftover);
     }
-
-    private void buildHierarchyDimsMask() {
-        long ret = 0;
-        for (HierarchyMask mask : hierarchyMasks) {
-            ret |= mask.fullMask;
-        }
-        this.hierarchyDimsMask = ret;
-    }
-
     //-------------------------
 
     //将每一个normal的字段的位置 转换成整数,即该集合内的元素,每一个元素都只有一个位置是1,所有的元素都表示为normal的字段
@@ -248,9 +249,78 @@ public class AggregationGroup {
     }
 
     //返回的结果就是有多少个字段
+
+    /**
+     比如json---includes有18个字段,其中参与hierarchy_dims的字段一共4个,参与mandatory_dims必须存在的字段1个,参与joint_dims的字段一共11个
+计算规则:normal的字段为18-4-1-11= 2个
+因为joint_dims每一个组相当一个字段,因此4个组,相当于4个字段
+hierarchy_dims的字段需要各种组合中过滤,但是最终还是需要每一个字段的,因此是字段的所有个数,即4
+
+因此人工口算原来需要2^18的组合,现在因为有一个必须字段,因此变成2^17次方,又因为有4组joint_dims,而4组joint_dims一个使用11个字段,因此剩余字段为17-11=6个字段,+4组joint_dims,因此是2^10次方
+
+程序算法规则,normal + joint_dims.length + 剩余的继承相关的字段数量,返回值就是结果需要2的多少次方
+     "aggregation_groups": [
+     {
+     "includes": [
+     "CREATE_YEAR",
+     "CREATE_MONTH",
+     "CREATE_DAY",
+     "PROVINCE",
+     "CHANNEL",
+     "RFM",
+     "MEAN_PREMIUM",
+     "UTILITY",
+     "FREQUENCY",
+     "ACT_INVITE",
+     "ACT_TERM",
+     "ACT_DEMAND",
+     "INVITE_QUALITY",
+     "INVITE_QUANTITY",
+     "PLATFORM",
+     "CITY",
+     "AGE",
+     "SEX"
+     ],
+     "select_rule": {
+         "hierarchy_dims": [
+             [
+             "CREATE_MONTH",
+             "CREATE_DAY"
+             ],
+             [
+             "PROVINCE",
+             "CITY"
+             ]
+         ],
+         "mandatory_dims": [
+            "CREATE_YEAR"
+         ],
+         "joint_dims": [
+             [
+             "SEX",
+             "AGE",
+             "PLATFORM"
+             ],
+             [
+             "ACT_TERM",
+             "ACT_DEMAND"
+             ],
+             [
+             "INVITE_QUANTITY",
+             "INVITE_QUALITY",
+             "ACT_INVITE"
+             ],
+             [
+             "MEAN_PREMIUM",
+             "UTILITY",
+             "FREQUENCY"
+             ]
+        ]
+     }
+     */
     public int getBuildLevel() {
-        int ret = 1;//base cuboid => partial cube root
-        if (this.getPartialCubeFullMask() == Cuboid.getBaseCuboidId(cubeDesc)) {//不考虑base级别的
+        int ret = 1;//base cuboid => partial cube root 因为不论怎么优化,都要把rowkey所有的字段跑一次,因此默认是1
+        if (this.getPartialCubeFullMask() == Cuboid.getBaseCuboidId(cubeDesc)) {//不考虑base级别的---即如果该分组内所有字段就是rowkey的字段集合,即返回1-1=0,也就是说本来该group就包含了basecuboid,因此就不用提前+1了
             ret -= 1;//if partial cube's root is base cuboid, then one round less agg
         }
 

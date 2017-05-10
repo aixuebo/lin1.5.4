@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 存储的是字典表映射的ID
+ * 存储的是字典表映射的ID进行编码
  */
 public class DictionaryDimEnc extends DimensionEncoding {
     private static final long serialVersionUID = 1L;

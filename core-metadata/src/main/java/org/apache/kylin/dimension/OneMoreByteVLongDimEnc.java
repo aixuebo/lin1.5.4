@@ -33,12 +33,15 @@ import org.slf4j.LoggerFactory;
 /**
  * not being used yet, prepared for future
  * 尚未被使用,准备未来使用
+ *
+ * 使用比需求更多一个字节去存储vlong
  */
 public class OneMoreByteVLongDimEnc extends DimensionEncoding {
     private static final long serialVersionUID = 1L;
 
     private static Logger logger = LoggerFactory.getLogger(OneMoreByteVLongDimEnc.class);
 
+    //具体值的内容参见IntegerDimEnc类注释
     private static final long[] CAP = { 0, 0x7fL, 0x7fffL, 0x7fffffL, 0x7fffffffL, 0x7fffffffffL, 0x7fffffffffffL, 0x7fffffffffffffL, 0x7fffffffffffffffL };
     private static final long[] MASK = { 0, 0xffL, 0xffffL, 0xffffffL, 0xffffffffL, 0xffffffffffL, 0xffffffffffffL, 0xffffffffffffffL, 0xffffffffffffffffL };
     private static final long[] TAIL = { 0, 0x80L, 0x8000L, 0x800000L, 0x80000000L, 0x8000000000L, 0x800000000000L, 0x80000000000000L, 0x8000000000000000L };
@@ -78,7 +81,7 @@ public class OneMoreByteVLongDimEnc extends DimensionEncoding {
             throw new IllegalArgumentException();
 
         this.fixedLen = len;
-        this.byteLen = fixedLen + 1;//one additional byte to indicate null
+        this.byteLen = fixedLen + 1;//one additional byte to indicate null 最终编码是比fixedLen多一个字节
     }
 
     @Override
@@ -86,6 +89,7 @@ public class OneMoreByteVLongDimEnc extends DimensionEncoding {
         return byteLen;
     }
 
+    //存储的value一定是long类型的
     @Override
     public void encode(byte[] value, int valueLen, byte[] output, int outputOffset) {
         if (value == null) {

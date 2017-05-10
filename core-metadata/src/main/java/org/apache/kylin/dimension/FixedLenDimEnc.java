@@ -30,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 使用固定字节数进行编码
+ * 使用固定字节数进行编码---即不需要编码,只是将value只是获取固定字符长度,即对大的value进行截断处理就算编码了
  * 超过该固定字节数的要进行截断,并且打印日志
  * 少于固定字节数的要进行用9字节进行占位补充
  */
@@ -66,6 +66,9 @@ public class FixedLenDimEnc extends DimensionEncoding {
     public FixedLenDimEnc() {
     }
 
+    /**
+     * 参数是value值的大小,即创建字典的时候提供value的长度大小即可,可以推断出需要字典编码大小
+     */
     public FixedLenDimEnc(int len) {
         this.fixedLen = len;
     }
@@ -124,7 +127,7 @@ public class FixedLenDimEnc extends DimensionEncoding {
     //解码
     @Override
     public String decode(byte[] bytes, int offset, int len) {
-        if (isNull(bytes, offset, len)) {
+        if (isNull(bytes, offset, len)) {//是null
             return null;
         }
 

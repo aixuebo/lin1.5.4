@@ -42,13 +42,13 @@ public abstract class DimensionEncodingFactory {
         if (factoryMap == null)
             initFactoryMap();
 
-        DimensionEncodingFactory factory = factoryMap.get(encodingName);
+        DimensionEncodingFactory factory = factoryMap.get(encodingName);//通过名字找到对应的工厂
         if (factory == null) {
             throw new IllegalArgumentException("Unknown dimension encoding name " + encodingName //
                     + " (note '" + DictionaryDimEnc.ENCODING_NAME + "' is not handled by factory)");
         }
 
-        return factory.createDimensionEncoding(encodingName, args);
+        return factory.createDimensionEncoding(encodingName, args);//通过工厂创建对应的编码类
     }
 
     //所有有效的编码name集合

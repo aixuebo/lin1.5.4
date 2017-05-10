@@ -68,7 +68,7 @@ public abstract class DimensionEncoding implements Externalizable {
     }
 
     /** return the fixed length of encoded bytes
-     * 返回编码的固定长度
+     * 返回编码后的固定长度
      **/
     abstract public int getLengthOfEncoding();
 
@@ -83,7 +83,7 @@ public abstract class DimensionEncoding implements Externalizable {
     abstract public String decode(byte[] bytes, int offset, int len);
 
     /** return a DataTypeSerializer that does the same encoding/decoding on ByteBuffer
-     * 如何序列化和反序列化
+     * 如何序列化和反序列化,因为该接口实现了Externalizable方法,需要序列化与反序列化
      **/
     abstract public DataTypeSerializer<Object> asDataTypeSerializer();
 
