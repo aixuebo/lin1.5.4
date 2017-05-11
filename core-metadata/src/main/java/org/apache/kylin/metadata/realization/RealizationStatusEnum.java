@@ -21,6 +21,8 @@ package org.apache.kylin.metadata.realization;
 //比如一个cube就是一个Realization,因此该对cube就有以下几个状态
 public enum RealizationStatusEnum {
 
-    DISABLED, BUILDING, READY, DESCBROKEN
+    DISABLED,//禁用 开始默认值就是该状态
+    UILDING, READY,
+    DESCBROKEN
 
 }

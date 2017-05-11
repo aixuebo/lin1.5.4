@@ -20,7 +20,7 @@ package org.apache.kylin.cube.model.validation;
 
 /**
  * @author jianliu
- * 
+ * 校验规则
  */
 public interface IValidatorRule<T> {
     public void validate(T element, ValidateContext context);

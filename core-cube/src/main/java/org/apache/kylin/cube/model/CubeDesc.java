@@ -293,7 +293,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
 
     /**
      * @return all columns this cube can support, including derived
-     * 该cube支持的所有列,包括derived列
+     * 该cube使用到的所有列,包括derived列
      */
     public Set<TblColRef> listAllColumns() {
         return allColumns;
@@ -301,7 +301,7 @@ public class CubeDesc extends RootPersistentEntity implements IEngineAware {
 
     /**
      * @return dimension columns including derived, BUT NOT measures
-     * 该cube支持的所有列,包括derived列,因为derived也是维度啊,但是不算度量的列
+     * 该cube的所有维度列,包括derived列,因为derived也是维度啊,但是不算度量的列
      */
     public Set<TblColRef> listDimensionColumnsIncludingDerived() {
         return dimensionColumns;

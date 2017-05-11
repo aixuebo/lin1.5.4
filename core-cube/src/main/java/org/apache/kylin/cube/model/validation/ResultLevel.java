@@ -22,7 +22,7 @@ package org.apache.kylin.cube.model.validation;
  * Validation result level
  * 
  * @author jianliu
- * 
+ * 错误级别,错误还是警告
  */
 public enum ResultLevel {
     ERROR("ERROR"), WARN("WARN");

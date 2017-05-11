@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Manager class for CubeDesc; extracted from #CubeManager
  * @author shaoshi
- * 管理cube的描述信息
+ * 管理cube的描述信息--即web页面描述的内容
  */
 public class CubeDescManager {
 
@@ -85,7 +85,7 @@ public class CubeDescManager {
 
     private KylinConfig config;
     // name ==> CubeDesc name和cube的内存映射
-    private CaseInsensitiveStringCache<CubeDesc> cubeDescMap;
+    private CaseInsensitiveStringCache<CubeDesc> cubeDescMap;//缓存cube描述的信息
 
     private CubeDescManager(KylinConfig config) throws IOException {
         logger.info("Initializing CubeDescManager with config " + config);
@@ -119,7 +119,7 @@ public class CubeDescManager {
         CubeDesc ndesc = loadCubeDesc(path);
 
         // Here replace the old one
-        cubeDescMap.putLocal(ndesc.getName(), ndesc);
+        cubeDescMap.putLocal(ndesc.getName(), ndesc);//在本地节点加载即可,不需要通知其他节点
         Cuboid.reloadCache(name);
         return ndesc;
     }

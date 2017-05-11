@@ -47,7 +47,8 @@ import com.google.common.collect.Lists;
  * constant, the value only can be numberic
  * <p/>
  * the return type only can be int/bigint/long/double/decimal
- *
+ * 对函数进行校验
+ * 1.校验函数的参数值是常数时候必须是int,是字段的时候,必须是fact表字段
  */
 public class FunctionRule implements IValidatorRule<CubeDesc> {
 
@@ -62,7 +63,7 @@ public class FunctionRule implements IValidatorRule<CubeDesc> {
     public void validate(CubeDesc cube, ValidateContext context) {
         List<MeasureDesc> measures = cube.getMeasures();
 
-        if (validateMeasureNamesDuplicated(measures, context)) {
+        if (validateMeasureNamesDuplicated(measures, context)) {//校验度量name不允许重复
             return;
         }
 
@@ -73,11 +74,12 @@ public class FunctionRule implements IValidatorRule<CubeDesc> {
             MeasureDesc measure = it.next();
             FunctionDesc func = measure.getFunction();
             ParameterDesc parameter = func.getParameter();
-            if (parameter == null) {
+            if (parameter == null) {//参数必须存在
                 context.addResult(ResultLevel.ERROR, "Must define parameter for function " + func.getExpression() + " in " + measure.getName());
                 return;
             }
 
+            //参数必须有类型以及值 还有返回值
             String type = func.getParameter().getType();
             String value = func.getParameter().getValue();
             if (StringUtils.isEmpty(type)) {
@@ -93,14 +95,14 @@ public class FunctionRule implements IValidatorRule<CubeDesc> {
                 return;
             }
 
-            if (StringUtils.equalsIgnoreCase(FunctionDesc.PARAMETER_TYPE_COLUMN, type)) {
-                validateColumnParameter(context, cube, value);
-            } else if (StringUtils.equals(FunctionDesc.PARAMETER_TYPE_CONSTANT, type)) {
-                validateCostantParameter(context, cube, value);
+            if (StringUtils.equalsIgnoreCase(FunctionDesc.PARAMETER_TYPE_COLUMN, type)) {//column
+                validateColumnParameter(context, cube, value);//列必须是fact表中的列
+            } else if (StringUtils.equals(FunctionDesc.PARAMETER_TYPE_CONSTANT, type)) {//constant
+                validateCostantParameter(context, cube, value);//常数必须是整数
             }
 
             try {
-                func.getMeasureType().validate(func);
+                func.getMeasureType().validate(func);//校验该函数表达式是否合法
             } catch (IllegalArgumentException ex) {
                 context.addResult(ResultLevel.ERROR, ex.getMessage());
             }
@@ -108,14 +110,14 @@ public class FunctionRule implements IValidatorRule<CubeDesc> {
             if (func.isCount())
                 countFuncs.add(func);
 
-            if (TopNMeasureType.FUNC_TOP_N.equalsIgnoreCase(func.getExpression())) {
+            if (TopNMeasureType.FUNC_TOP_N.equalsIgnoreCase(func.getExpression())) {//TOP_N函数
                 if (parameter.getNextParameter() == null) {
                     context.addResult(ResultLevel.ERROR, "Must define at least 2 parameters for function " + func.getExpression() + " in " + measure.getName());
                     return;
                 }
 
                 ParameterDesc groupByCol = parameter.getNextParameter();
-                List<String> duplicatedCol = Lists.newArrayList();
+                List<String> duplicatedCol = Lists.newArrayList();//参与group by的维度列集合
                 while (groupByCol != null) {
                     String embeded_groupby = groupByCol.getValue();
                     for (DimensionDesc dimensionDesc : cube.getDimensions()) {
@@ -135,12 +137,13 @@ public class FunctionRule implements IValidatorRule<CubeDesc> {
             }
         }
 
-        if (countFuncs.size() != 1) {
+        if (countFuncs.size() != 1) {//必须有一个count函数
             context.addResult(ResultLevel.ERROR, "Must define one and only one count(1) function, but there are " + countFuncs.size() + " -- " + countFuncs);
         }
     }
 
     /**
+     * 校验参数值必须是数字
      * @param context
      * @param cube
      * @param value
@@ -156,22 +159,23 @@ public class FunctionRule implements IValidatorRule<CubeDesc> {
     /**
      * @param context
      * @param cube
-     * @param value
+     * @param value 列集合,用逗号拆分,该列都是来自于fact表
+     * 校验value中列必须来自于fact表,否则会添加错误日志
      */
     private void validateColumnParameter(ValidateContext context, CubeDesc cube, String value) {
         String factTable = cube.getFactTable();
-        if (StringUtils.isEmpty(factTable)) {
+        if (StringUtils.isEmpty(factTable)) {//必须有fact表
             context.addResult(ResultLevel.ERROR, "Fact table can not be null.");
             return;
         }
-        TableDesc table = MetadataManager.getInstance(cube.getConfig()).getTableDesc(factTable);
-        if (table == null) {
+        TableDesc table = MetadataManager.getInstance(cube.getConfig()).getTableDesc(factTable);//fact表对象
+        if (table == null) {//fact表必须存在
             context.addResult(ResultLevel.ERROR, "Fact table can not be found: " + cube);
             return;
         }
         // Prepare column set
         Set<String> set = new HashSet<String>();
-        ColumnDesc[] cdesc = table.getColumns();
+        ColumnDesc[] cdesc = table.getColumns();//fact表的列集合
         for (int i = 0; i < cdesc.length; i++) {
             ColumnDesc columnDesc = cdesc[i];
             set.add(columnDesc.getName());
@@ -192,6 +196,8 @@ public class FunctionRule implements IValidatorRule<CubeDesc> {
 
     /**
      * @param measures
+     * 校验度量的名字是有重复的
+     * true表示有重复名字存在
      */
     private boolean validateMeasureNamesDuplicated(List<MeasureDesc> measures, ValidateContext context) {
         Set<String> nameSet = new HashSet<>();

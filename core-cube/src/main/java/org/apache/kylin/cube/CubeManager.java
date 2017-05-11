@@ -121,11 +121,12 @@ public class CubeManager implements IRealizationProvider {
 
     private KylinConfig config;
     // cube name ==> CubeInstance
-    private CaseInsensitiveStringCache<CubeInstance> cubeMap;
+    private CaseInsensitiveStringCache<CubeInstance> cubeMap;//内存中存储的CubeInstance对象
     // "table/column" ==> lookup table
     //    private SingleValueCache<String, LookupStringTable> lookupTables = new SingleValueCache<String, LookupStringTable>(Broadcaster.TYPE.METADATA);
 
     // for generation hbase table name of a new segment
+    //key是cube的name,value是一个集合,是存储该cube的所有segment的hbase数据库表名字
     private Multimap<String, String> usedStorageLocation = HashMultimap.create();
 
     private CubeManager(KylinConfig config) throws IOException {
@@ -187,7 +188,7 @@ public class CubeManager implements IRealizationProvider {
     public DictionaryInfo buildDictionary(CubeSegment cubeSeg, TblColRef col, DistinctColumnValuesProvider factTableValueProvider) throws IOException {
         CubeDesc cubeDesc = cubeSeg.getCubeDesc();
         //该列必须是字典列
-        if (!cubeDesc.getAllColumnsNeedDictionaryBuilt().contains(col))
+        if (!cubeDesc.getAllColumnsNeedDictionaryBuilt().contains(col))//false表示col不是该cube需要的字典的列,因此直接返回
             return null;
 
         DictionaryManager dictMgr = getDictionaryManager();
@@ -253,6 +254,7 @@ public class CubeManager implements IRealizationProvider {
         return snapshot;
     }
 
+    //删除该CubeInstance,deleteDesc是true,表示要删除CubeDesc
     // sync on update
     public CubeInstance dropCube(String cubeName, boolean deleteDesc) throws IOException {
         logger.info("Dropping cube '" + cubeName + "'");
@@ -262,11 +264,11 @@ public class CubeManager implements IRealizationProvider {
         CubeInstance cube = getCube(cubeName);
 
         if (deleteDesc && cube.getDescriptor() != null) {
-            CubeDescManager.getInstance(config).removeCubeDesc(cube.getDescriptor());
+            CubeDescManager.getInstance(config).removeCubeDesc(cube.getDescriptor());//删除一个cube描述对象,即删除CubeDesc
         }
 
         // remove cube and update cache
-        getStore().deleteResource(cube.getResourcePath());
+        getStore().deleteResource(cube.getResourcePath());//删除CubeInstance
         cubeMap.remove(cube.getName());
 
         // delete cube from project
@@ -278,6 +280,7 @@ public class CubeManager implements IRealizationProvider {
         return cube;
     }
 
+    //创建一个CubeInstance对象
     // sync on update
     public CubeInstance createCube(String cubeName, String projectName, CubeDesc desc, String owner) throws IOException {
         logger.info("Creating cube '" + projectName + "-->" + cubeName + "' from desc '" + desc.getName() + "'");
@@ -286,7 +289,7 @@ public class CubeManager implements IRealizationProvider {
         CubeInstance cube = CubeInstance.create(cubeName, desc);
         cube.setOwner(owner);
 
-        updateCubeWithRetry(new CubeUpdate(cube), 0);
+        updateCubeWithRetry(new CubeUpdate(cube), 0);//更新该cube
         ProjectManager.getInstance(config).moveRealizationToProject(RealizationType.CUBE, cubeName, projectName, owner);
 
         if (listener != null)
@@ -295,6 +298,7 @@ public class CubeManager implements IRealizationProvider {
         return cube;
     }
 
+    //创建一个CubeInstance对象
     public CubeInstance createCube(CubeInstance cube, String projectName, String owner) throws IOException {
         logger.info("Creating cube '" + projectName + "-->" + cube.getName() + "' from instance object. '");
 
@@ -310,6 +314,7 @@ public class CubeManager implements IRealizationProvider {
         return cube;
     }
 
+    //更新一个cube
     public CubeInstance updateCube(CubeUpdate update) throws IOException {
         CubeInstance cube = updateCubeWithRetry(update, 0);
 
@@ -341,7 +346,7 @@ public class CubeManager implements IRealizationProvider {
             Iterator<CubeSegment> iterator = newSegs.iterator();//循环每一个segment
             while (iterator.hasNext()) {
                 CubeSegment currentSeg = iterator.next();
-                boolean found = false;//true表示发现了segment
+                boolean found = false;//true表示发现了要删除的segment
                 for (CubeSegment toRemoveSeg : update.getToRemoveSegs()) {
                     if (currentSeg.getUuid().equals(toRemoveSeg.getUuid())) {
                         iterator.remove();//删除该segment
@@ -357,7 +362,7 @@ public class CubeManager implements IRealizationProvider {
 
         if (update.getToUpdateSegs() != null) {
             for (CubeSegment segment : update.getToUpdateSegs()) {
-                boolean found = false;//true表示发现了segment
+                boolean found = false;//true表示发现了要更新的segment
                 for (int i = 0; i < newSegs.size(); i++) {
                     if (newSegs.get(i).getUuid().equals(segment.getUuid())) {
                         newSegs.set(i, segment);//更新,即老的替换新的segment数据
@@ -421,30 +426,33 @@ public class CubeManager implements IRealizationProvider {
         return cube;
     }
 
+    //追加一个segment
     // append a full build segment
     public CubeSegment appendSegment(CubeInstance cube) throws IOException {
         return appendSegment(cube, 0, 0, 0, 0);
     }
 
+    //追加一个segment
     public CubeSegment appendSegment(CubeInstance cube, long startDate, long endDate, long startOffset, long endOffset) throws IOException {
         return appendSegment(cube, startDate, endDate, startOffset, endOffset, true);
     }
 
+    //追加一个segment
     public CubeSegment appendSegment(CubeInstance cube, long startDate, long endDate, long startOffset, long endOffset, boolean strictChecking) throws IOException {
 
         if (strictChecking)
-            checkNoBuildingSegment(cube);
+            checkNoBuildingSegment(cube);//校验该cube是否有正在buidler的,如果有则抛异常
 
         if (cube.getDescriptor().getModel().getPartitionDesc().isPartitioned()) {//是分区的表
             // try figure out a reasonable start if missing
             if (startDate == 0 && startOffset == 0) {
-                boolean isOffsetsOn = endOffset != 0;
+                boolean isOffsetsOn = endOffset != 0;//说明设置了offset
                 if (isOffsetsOn) {
                     startOffset = calculateStartOffsetForAppendSegment(cube);
                     if (startOffset == Long.MAX_VALUE) {
                         throw new IllegalStateException("There is already one pending for building segment, please submit request later.");
                     }
-                } else {
+                } else {//说明是按照分区时间获取的.因此获取开始时间
                     startDate = calculateStartDateForAppendSegment(cube);
                 }
             }
@@ -455,44 +463,49 @@ public class CubeManager implements IRealizationProvider {
             endOffset = 0;
         }
 
+        //创建一个CubeSegment对象
         CubeSegment newSegment = newSegment(cube, startDate, endDate, startOffset, endOffset);
-        validateNewSegments(cube, newSegment);
+        validateNewSegments(cube, newSegment);//为该cube校验该segment
 
         CubeUpdate cubeBuilder = new CubeUpdate(cube);
-        cubeBuilder.setToAddSegs(newSegment);
-        updateCube(cubeBuilder);
+        cubeBuilder.setToAddSegs(newSegment);//新增一个该segment
+        updateCube(cubeBuilder);//更新cube
         return newSegment;
     }
 
     //重新build过去的一段数据
     public CubeSegment refreshSegment(CubeInstance cube, long startDate, long endDate, long startOffset, long endOffset) throws IOException {
-        checkNoBuildingSegment(cube);
+        checkNoBuildingSegment(cube);//校验该cube是否有正在buidler的,如果有则抛异常
 
-        CubeSegment newSegment = newSegment(cube, startDate, endDate, startOffset, endOffset);
+        CubeSegment newSegment = newSegment(cube, startDate, endDate, startOffset, endOffset);//创建一个新的segment
 
-        Pair<Boolean, Boolean> pair = CubeValidator.fitInSegments(cube.getSegments(), newSegment);
+        Pair<Boolean, Boolean> pair = CubeValidator.fitInSegments(cube.getSegments(), newSegment);//确保该segment是存在的,因此才可以进行重新build
         if (pair.getFirst() == false || pair.getSecond() == false)
             throw new IllegalArgumentException("The new refreshing segment " + newSegment + " does not match any existing segment in cube " + cube);
 
         CubeUpdate cubeBuilder = new CubeUpdate(cube);
-        cubeBuilder.setToAddSegs(newSegment);
-        updateCube(cubeBuilder);
+        cubeBuilder.setToAddSegs(newSegment);//添加新的segment变更
+        updateCube(cubeBuilder);//更新cube
 
         return newSegment;
     }
 
+    /**
+     * 合并多个segment
+     * @param force  true表示强制进行merge合并,false表示不强制,如果有一个segment的大小是0,说明是空的,则抛异常,不能进行merge合并操作
+     */
     public CubeSegment mergeSegments(CubeInstance cube, long startDate, long endDate, long startOffset, long endOffset, boolean force) throws IOException {
         if (cube.getSegments().isEmpty())
             throw new IllegalArgumentException("Cube " + cube + " has no segments");
         if (startDate >= endDate && startOffset >= endOffset)
             throw new IllegalArgumentException("Invalid merge range");
 
-        checkNoBuildingSegment(cube);
-        checkCubeIsPartitioned(cube);
+        checkNoBuildingSegment(cube);//不允许有正在builder的segment
+        checkCubeIsPartitioned(cube);//必须有partition分区,否则是不需要merge合并的
 
-        boolean isOffsetsOn = cube.getSegments().get(0).isSourceOffsetsOn();
+        boolean isOffsetsOn = cube.getSegments().get(0).isSourceOffsetsOn();//是否使用了offset流式
 
-        if (isOffsetsOn) {
+        if (isOffsetsOn) {//处理流式
             // offset cube, merge by date range?
             if (startOffset == endOffset) {
                 Pair<CubeSegment, CubeSegment> pair = findMergeOffsetsByDateRange(cube.getSegments(SegmentStatusEnum.READY), startDate, endDate, Long.MAX_VALUE);
@@ -503,7 +516,7 @@ public class CubeManager implements IRealizationProvider {
             }
             startDate = 0;
             endDate = 0;
-        } else {
+        } else {//处理分区方式
             // date range cube, make sure range is on dates
             if (startDate == endDate) {
                 startDate = startOffset;
@@ -513,14 +526,16 @@ public class CubeManager implements IRealizationProvider {
             endOffset = 0;
         }
 
-        CubeSegment newSegment = newSegment(cube, startDate, endDate, startOffset, endOffset);
+        CubeSegment newSegment = newSegment(cube, startDate, endDate, startOffset, endOffset);//创建新的segment
 
+        //参数是组合后的segment范围,返回该segment范围内已经存在的所有segment
         List<CubeSegment> mergingSegments = cube.getMergingSegments(newSegment);
         if (mergingSegments.size() <= 1)
             throw new IllegalArgumentException("Range " + newSegment.getSourceOffsetStart() + "-" + newSegment.getSourceOffsetEnd() + " must contain at least 2 segments, but there is " + mergingSegments.size());
 
         CubeSegment first = mergingSegments.get(0);
         CubeSegment last = mergingSegments.get(mergingSegments.size() - 1);
+        //设置真实的开始位置和结束位置
         if (newSegment.isSourceOffsetsOn()) {
             newSegment.setDateRangeStart(minDateRangeStart(mergingSegments));
             newSegment.setDateRangeEnd(maxDateRangeEnd(mergingSegments));
@@ -531,8 +546,9 @@ public class CubeManager implements IRealizationProvider {
             newSegment.setDateRangeEnd(last.getSourceOffsetEnd());
         }
 
+        //对不强制merge合并的操作,要进行校验
         if (force == false) {
-            List<String> emptySegment = Lists.newArrayList();
+            List<String> emptySegment = Lists.newArrayList();//找到空的segment集合
             for (CubeSegment seg : mergingSegments) {
                 if (seg.getSizeKB() == 0) {
                     emptySegment.add(seg.getName());
@@ -544,26 +560,35 @@ public class CubeManager implements IRealizationProvider {
             }
         }
 
+        //校验segment的合法性
         validateNewSegments(cube, newSegment);
 
+        //更新操作
         CubeUpdate cubeBuilder = new CubeUpdate(cube);
         cubeBuilder.setToAddSegs(newSegment);
-        updateCube(cubeBuilder);
+        updateCube(cubeBuilder);//更新cube
 
         return newSegment;
     }
 
-    //找到在startDate到endDate之间的符合条件的CubeSegment集合
+    /**
+     * 找到在startDate到endDate之间的符合条件的CubeSegment集合
+     * @param segments
+     * @param startDate
+     * @param endDate
+     * @param skipSegDateRangeCap 合并的周期
+     * @return
+     */
     private Pair<CubeSegment, CubeSegment> findMergeOffsetsByDateRange(List<CubeSegment> segments, long startDate, long endDate, long skipSegDateRangeCap) {
         // must be offset cube
         LinkedList<CubeSegment> result = Lists.newLinkedList();
         for (CubeSegment seg : segments) {
 
             // include if date range overlaps
-            if (startDate < seg.getDateRangeEnd() && seg.getDateRangeStart() < endDate) {
+            if (startDate < seg.getDateRangeEnd() && seg.getDateRangeStart() < endDate) {//这里面返回true,说明CubeSegment是包含startDate和endDate区间的数据的
 
                 // reject too big segment
-                if (seg.getDateRangeEnd() - seg.getDateRangeStart() > skipSegDateRangeCap)
+                if (seg.getDateRangeEnd() - seg.getDateRangeStart() > skipSegDateRangeCap) //说明这个segment的范围已经超过了合并周期了,比如范围是30天,已经超过28天合并,因此直接break
                     break;
 
                 // reject holes
@@ -580,6 +605,7 @@ public class CubeManager implements IRealizationProvider {
             return Pair.newPair(result.getFirst(), result.getLast());
     }
 
+    //找到最小的segment
     private long minDateRangeStart(List<CubeSegment> mergingSegments) {
         long min = Long.MAX_VALUE;
         for (CubeSegment seg : mergingSegments)
@@ -587,6 +613,7 @@ public class CubeManager implements IRealizationProvider {
         return min;
     }
 
+    //找到最大的segment
     private long maxDateRangeEnd(List<CubeSegment> mergingSegments) {
         long max = Long.MIN_VALUE;
         for (CubeSegment seg : mergingSegments)
@@ -595,6 +622,7 @@ public class CubeManager implements IRealizationProvider {
     }
 
 
+    //获取当前最后一个segment的end位置
     private long calculateStartOffsetForAppendSegment(CubeInstance cube) {
         List<CubeSegment> existing = cube.getSegments();
         if (existing.isEmpty()) {
@@ -605,6 +633,7 @@ public class CubeManager implements IRealizationProvider {
     }
 
 
+    //获取当前最后一个segment的date的end位置
     private long calculateStartDateForAppendSegment(CubeInstance cube) {
         List<CubeSegment> existing = cube.getSegments();
         if (existing.isEmpty()) {
@@ -621,6 +650,7 @@ public class CubeManager implements IRealizationProvider {
         }
     }
 
+    //确保该cube必须有分区,没有分区则抛异常
     private void checkCubeIsPartitioned(CubeInstance cube) {
         if (cube.getDescriptor().getModel().getPartitionDesc().isPartitioned() == false) {
             throw new IllegalStateException("there is no partition date column specified, only full build is supported");
@@ -701,6 +731,7 @@ public class CubeManager implements IRealizationProvider {
             return null;
         }
 
+        //只能选择是ready的,如果有非ready的,则返回null,并且打印debug日志
         if (cube.getBuildingSegments().size() > 0) {
             logger.debug("Cube " + cube.getName() + " has bulding segment, will not trigger merge at this moment");
             return null;
@@ -938,11 +969,11 @@ public class CubeManager implements IRealizationProvider {
     // ============================================================================
 
     public interface CubeChangeListener {
-        void afterCubeCreate(CubeInstance cube);
+        void afterCubeCreate(CubeInstance cube);//监听cube被创建的之后
 
-        void afterCubeUpdate(CubeInstance cube);
+        void afterCubeUpdate(CubeInstance cube);//监听cube有更新的之后
 
-        void afterCubeDelete(CubeInstance cube);
+        void afterCubeDelete(CubeInstance cube);//监听cube被删除的之后
     }
 
     private CubeChangeListener listener;

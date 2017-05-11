@@ -109,6 +109,7 @@ public class CubeValidator {
         }
     }
 
+    //确保该segment是存在的,因此才可以进行重新build
     public static Pair<Boolean, Boolean> fitInSegments(List<CubeSegment> segments, CubeSegment newOne) {
         if (segments == null || segments.isEmpty())
             return null;

@@ -49,6 +49,9 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 
+/**
+ * 主要对web页面配置的cube对象增加了segment的管理
+ */
 @SuppressWarnings("serial")
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
 public class CubeInstance extends RootPersistentEntity implements IRealization, IBuildable {
@@ -86,7 +89,7 @@ public class CubeInstance extends RootPersistentEntity implements IRealization, 
     @JsonProperty("status")
     private RealizationStatusEnum status;
 
-    //属于该cube的全部segment集合
+    //属于该cube的全部segment集合---并且该集合是有顺序的
     @JsonManagedReference
     @JsonProperty("segments")
     private List<CubeSegment> segments = new ArrayList<CubeSegment>();
@@ -112,6 +115,7 @@ public class CubeInstance extends RootPersistentEntity implements IRealization, 
         return buildingSegments;
     }
 
+    //参数是组合后的segment范围,返回该segment范围内已经存在的所有segment
     public List<CubeSegment> getMergingSegments(CubeSegment mergedSegment) {
         LinkedList<CubeSegment> result = new LinkedList<CubeSegment>();
         if (mergedSegment == null)
@@ -135,6 +139,7 @@ public class CubeInstance extends RootPersistentEntity implements IRealization, 
         return result;
     }
 
+    //返回该cube对应的web页面配置的描述对象
     public CubeDesc getDescriptor() {
         return CubeDescManager.getInstance(config).getCubeDesc(descName);
     }
@@ -169,7 +174,7 @@ public class CubeInstance extends RootPersistentEntity implements IRealization, 
     }
 
     // ============================================================================
-
+    //描述该cube一共多少字节,即所有的segment字节之和
     @JsonProperty("size_kb")
     public long getSizeKB() {
         long sizeKb = 0L;
@@ -283,6 +288,7 @@ public class CubeInstance extends RootPersistentEntity implements IRealization, 
         }
     }
 
+    //最后一个segment
     public CubeSegment getLatestReadySegment() {
         CubeSegment latest = null;
         for (int i = segments.size() - 1; i >= 0; i--) {
@@ -382,6 +388,7 @@ public class CubeInstance extends RootPersistentEntity implements IRealization, 
         return RealizationType.CUBE;
     }
 
+    //该cube使用到的所有列,包括derived列
     @Override
     public List<TblColRef> getAllColumns() {
         return Lists.newArrayList(getDescriptor().listAllColumns());
@@ -419,10 +426,12 @@ public class CubeInstance extends RootPersistentEntity implements IRealization, 
         return getDescriptor().supportsLimitPushDown();
     }
 
+    //rowkey字段的个数
     public int getRowKeyColumnCount() {
         return getDescriptor().getRowkey().getRowKeyColumns().length;
     }
 
+    //该cube的所有维度列,包括derived列,因为derived也是维度啊,但是不算度量的列
     @Override
     public List<TblColRef> getAllDimensions() {
         return Lists.newArrayList(getDescriptor().listDimensionColumnsIncludingDerived());

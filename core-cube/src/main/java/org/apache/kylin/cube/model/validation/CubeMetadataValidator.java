@@ -26,11 +26,12 @@ import org.apache.kylin.cube.model.validation.rule.RowKeyAttrRule;
 
 /**
  * For cube metadata validator
- * 
+ * 对cube的描述信息进行校验
  * @author jianliu
  * 
  */
 public class CubeMetadataValidator {
+    //校验规则集合
     @SuppressWarnings("unchecked")
     private IValidatorRule<CubeDesc>[] rules = new IValidatorRule[] { new FunctionRule(), new AggregationGroupRule(), new RowKeyAttrRule(), new DictionaryRule() };
 
@@ -39,13 +40,13 @@ public class CubeMetadataValidator {
     }
 
     /**
-     * @param inject    inject error into cube desc
+     * @param inject    inject error into cube desc,true表示对cube的描述内容进行反馈,将错误信息反馈给cube
      * @return
      */
     public ValidateContext validate(CubeDesc cube, boolean inject) {
-        ValidateContext context = new ValidateContext();
-        for (int i = 0; i < rules.length; i++) {
-            IValidatorRule<CubeDesc> rule = rules[i];
+        ValidateContext context = new ValidateContext();//创建校验的上下文
+        for (int i = 0; i < rules.length; i++) {//循环每一个规则
+            IValidatorRule<CubeDesc> rule = rules[i];//对每一个规则进行校验
             rule.validate(cube, context);
         }
         if (inject) {
@@ -57,15 +58,16 @@ public class CubeMetadataValidator {
     /**
      * 
      * Inject errors info into cubeDesc
+     * 如果出现错误,则对其进行输出到cube描述中
      * 
      * @param cubeDesc
      * @param context
      */
     public void injectResult(CubeDesc cubeDesc, ValidateContext context) {
-        ValidateContext.Result[] results = context.getResults();
+        ValidateContext.Result[] results = context.getResults();//获取错误信息
         for (int i = 0; i < results.length; i++) {
             ValidateContext.Result result = results[i];
-            cubeDesc.addError(result.getLevel() + " : " + result.getMessage(), true);
+            cubeDesc.addError(result.getLevel() + " : " + result.getMessage(), true);//true表示出现错误后要抛出异常
         }
 
     }

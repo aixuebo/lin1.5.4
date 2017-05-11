@@ -116,6 +116,7 @@ public class CubeController extends BasicController {
         return cubes.subList(coffset, coffset + climit);
     }
 
+    //返回支持的编码方式
     @RequestMapping(value = "validEncodings", method = { RequestMethod.GET })
     @ResponseBody
     public Set<String> getValidEncodings() {
@@ -301,6 +302,7 @@ public class CubeController extends BasicController {
         }
     }
 
+    //将cube的状态更改成DISABLED状态
     @RequestMapping(value = "/{cubeName}/disable", method = { RequestMethod.PUT })
     @ResponseBody
     public CubeInstance disableCube(@PathVariable String cubeName) {
@@ -504,7 +506,7 @@ public class CubeController extends BasicController {
 
     /**
      * get Hbase Info
-     *
+     * 获取该cube所有的segment在hbase中的信息集合
      * @return true
      * @throws IOException
      */
@@ -521,7 +523,7 @@ public class CubeController extends BasicController {
         List<CubeSegment> segments = cube.getSegments();
 
         for (CubeSegment segment : segments) {
-            String tableName = segment.getStorageLocationIdentifier();
+            String tableName = segment.getStorageLocationIdentifier();//该segment在hbase对应的表名
             HBaseResponse hr = null;
 
             // Get info of given table.

@@ -25,6 +25,7 @@ import java.util.List;
 
 /**
  * Context. Supply all dependent objects for validator
+ * 校验上下文,用于存储所有的校验过程中出现的问题
  */
 public class ValidateContext {
     private List<Result> results = new ArrayList<ValidateContext.Result>();
@@ -81,7 +82,7 @@ public class ValidateContext {
      */
     public void print(PrintStream out) {
         if (results.isEmpty()) {
-            out.println("The element is perfect.");
+            out.println("The element is perfect.");//说明没有错误,是完美的
         }
         Iterator<Result> it = results.iterator();
         while (it.hasNext()) {

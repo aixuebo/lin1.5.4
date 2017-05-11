@@ -434,6 +434,7 @@ public class Cuboid implements Comparable<Cuboid> {
         CUBOID_CACHE.clear();
     }
 
+    //删除该cube的信息,因为该cube已经重新修改了,下次使用的时候在重新加载该cube
     public static void reloadCache(String cubeDescName) {
         CUBOID_CACHE.remove(cubeDescName);
     }

@@ -22,15 +22,16 @@ import org.apache.kylin.metadata.realization.RealizationStatusEnum;
 
 /**
  * Hold changes to a cube so that they can be applied as one unit.
+ * 此时要更新cube,因此该类表示cube要更改的信息
  */
 public class CubeUpdate {
-    private CubeInstance cubeInstance;
+    private CubeInstance cubeInstance;//要更新的cube实例对象
     private CubeSegment[] toAddSegs = null;//增加的segment
     private CubeSegment[] toRemoveSegs = null;//要删除的segment集合
     private CubeSegment[] toUpdateSegs = null;//更新的segment
-    private RealizationStatusEnum status;
+    private RealizationStatusEnum status;//要更改的cube状态
     private String owner;
-    private int cost = -1;
+    private int cost = -1;//更新cube的cost代价
 
     public CubeUpdate(CubeInstance cubeInstance) {
         this.cubeInstance = cubeInstance;

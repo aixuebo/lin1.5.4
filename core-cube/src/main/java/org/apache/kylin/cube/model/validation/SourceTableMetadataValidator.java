@@ -22,6 +22,7 @@ import org.apache.kylin.metadata.model.TableDesc;
 
 /**
  * Validate Table metadata from source.
+ * 校验数据table的元数据,默认都是返回true,即校验成功
  * <p/>
  */
 public class SourceTableMetadataValidator {

@@ -50,6 +50,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 //先比较开始位置,在比较结束位置
+//该对象存储在CubeInstance文件中
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
 public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegment {
 

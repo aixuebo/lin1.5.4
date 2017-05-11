@@ -26,6 +26,7 @@ import org.apache.kylin.cube.model.validation.ResultLevel;
 import org.apache.kylin.cube.model.validation.ValidateContext;
 
 /**
+ * 校验rowkey列必须存在
  */
 public class RowKeyAttrRule implements IValidatorRule<CubeDesc> {
 

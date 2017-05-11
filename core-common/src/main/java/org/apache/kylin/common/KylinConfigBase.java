@@ -448,6 +448,7 @@ abstract public class KylinConfigBase implements Serializable {
         return Double.parseDouble(getOptional("kylin.cube.algorithm.auto.threshold", "8"));
     }
 
+    //在cube的创建过程中维度组最多允许多少个
     @Deprecated
     public int getCubeAggrGroupMaxSize() {
         return Integer.parseInt(getOptional("kylin.cube.aggrgroup.max.size", "12"));

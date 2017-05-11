@@ -33,6 +33,7 @@ import org.apache.kylin.cube.model.validation.ValidateContext;
 /**
  *  find forbid overlaps in each AggregationGroup
  *  the include dims in AggregationGroup must contain all mandatory, hierarchy and joint
+ *  对字段组进行校验
  */
 public class AggregationGroupRule implements IValidatorRule<CubeDesc> {
 
@@ -50,11 +51,11 @@ public class AggregationGroupRule implements IValidatorRule<CubeDesc> {
     }
 
     private void inner(CubeDesc cube, ValidateContext context) {
-        int maxSize = getMaxAgrGroupSize();
+        int maxSize = getMaxAgrGroupSize();//在cube的创建过程中维度组最多允许多少个
 
         int index = 0;
         for (AggregationGroup agg : cube.getAggregationGroups()) {
-            if (agg.getIncludes() == null) {
+            if (agg.getIncludes() == null) {//不允许getIncludes是null
                 context.addResult(ResultLevel.ERROR, "Aggregation group " + index + " includes field not set");
                 continue;
             }
@@ -96,6 +97,7 @@ public class AggregationGroupRule implements IValidatorRule<CubeDesc> {
                 }
             }
 
+            //include字段一定包含其他字段,即其他字段一定从include字段中选择出来
             if (!includeDims.containsAll(mandatoryDims) || !includeDims.containsAll(hierarchyDims) || !includeDims.containsAll(jointDims)) {
                 context.addResult(ResultLevel.ERROR, "Aggregation group " + index + " Include dims not containing all the used dims");
                 continue;
@@ -126,11 +128,11 @@ public class AggregationGroupRule implements IValidatorRule<CubeDesc> {
                 continue;
             }
 
-            int jointDimNum = 0;
+            int jointDimNum = 0;//多少个字段参与了joint
             if (agg.getSelectRule().joint_dims != null) {
                 for (String[] joints : agg.getSelectRule().joint_dims) {
 
-                    Set<String> oneJoint = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+                    Set<String> oneJoint = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);//一个joint需要的字段集合
                     for (String s : joints) {
                         oneJoint.add(s);
                     }
@@ -141,11 +143,11 @@ public class AggregationGroupRule implements IValidatorRule<CubeDesc> {
                     }
                     jointDimNum += oneJoint.size();
 
-                    int overlapHierarchies = 0;
+                    int overlapHierarchies = 0;//有交集的次数
                     if (agg.getSelectRule().hierarchy_dims != null) {
                         for (String[] oneHierarchy : agg.getSelectRule().hierarchy_dims) {
                             Set<String> share = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-                            share.addAll(CollectionUtils.intersection(oneJoint, Arrays.asList(oneHierarchy)));
+                            share.addAll(CollectionUtils.intersection(oneJoint, Arrays.asList(oneHierarchy)));//获取交集
 
                             if (!share.isEmpty()) {
                                 overlapHierarchies++;
@@ -173,6 +175,7 @@ public class AggregationGroupRule implements IValidatorRule<CubeDesc> {
         }
     }
 
+    //在cube的创建过程中维度组最多允许多少个
     @SuppressWarnings("deprecation")
     protected int getMaxAgrGroupSize() {
         return KylinConfig.getInstanceFromEnv().getCubeAggrGroupMaxSize();

@@ -20,11 +20,15 @@ package org.apache.kylin.rest.response;
 
 import java.io.Serializable;
 
+/**
+ * 表示一个segment在hbase中的信息
+ */
 public class HBaseResponse implements Serializable {
     private static final long serialVersionUID = 7263557115683263492L;
-    private String tableName;
+    private String tableName;//该segment对应的hbase的表名字
     private long tableSize;
     private int regionCount;
+    //该segment的分区开始位置和结束位置
     private long dateRangeStart;
     private long dateRangeEnd;
 

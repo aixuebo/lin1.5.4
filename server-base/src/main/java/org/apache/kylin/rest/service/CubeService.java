@@ -167,7 +167,7 @@ public class CubeService extends BasicService {
         CubeDesc createdDesc;
         CubeInstance createdCube;
 
-        createdDesc = getCubeDescManager().createCubeDesc(desc);//创建cube描述对象
+        createdDesc = getCubeDescManager().createCubeDesc(desc);//创建cube描述对象---把cube的描述信息保存到hbase中
 
         if (!createdDesc.getError().isEmpty()) {
             getCubeDescManager().removeCubeDesc(createdDesc);
@@ -310,7 +310,7 @@ public class CubeService extends BasicService {
 
     /**
      * Stop all jobs belonging to this cube and clean out all segments
-     *
+     * 删除所有的cube下segment
      * @param cube
      * @return
      * @throws IOException
@@ -321,7 +321,7 @@ public class CubeService extends BasicService {
 
         String cubeName = cube.getName();
         RealizationStatusEnum ostatus = cube.getStatus();
-        if (null != ostatus && !RealizationStatusEnum.DISABLED.equals(ostatus)) {
+        if (null != ostatus && !RealizationStatusEnum.DISABLED.equals(ostatus)) {//该cube必须状态是DISABLED
             throw new InternalErrorException("Only disabled cube can be purged, status of " + cubeName + " is " + ostatus);
         }
 
@@ -336,7 +336,7 @@ public class CubeService extends BasicService {
 
     /**
      * Update a cube status from ready to disabled.
-     *
+     * 将cube的状态更改成DISABLED状态
      * @return
      * @throws IOException
      * @throws JobException
@@ -346,8 +346,8 @@ public class CubeService extends BasicService {
 
         String cubeName = cube.getName();
 
-        RealizationStatusEnum ostatus = cube.getStatus();
-        if (null != ostatus && !RealizationStatusEnum.READY.equals(ostatus)) {
+        RealizationStatusEnum ostatus = cube.getStatus();//此时cube的状态
+        if (null != ostatus && !RealizationStatusEnum.READY.equals(ostatus)) {//必须ready的状态才能变成disabled状态
             throw new InternalErrorException("Only ready cube can be disabled, status of " + cubeName + " is " + ostatus);
         }
 
@@ -562,7 +562,7 @@ public class CubeService extends BasicService {
 
     /**
      * purge the cube
-     *
+     * 删除该cube下所有的segment
      * @throws IOException
      * @throws JobException
      */
