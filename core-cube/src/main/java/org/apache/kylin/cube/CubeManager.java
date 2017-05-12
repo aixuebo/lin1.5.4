@@ -76,9 +76,9 @@ import com.google.common.collect.Multimap;
  */
 public class CubeManager implements IRealizationProvider {
 
-    private static String ALPHA_NUM = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static String ALPHA_NUM = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";//为该segment创建hbase的表名字时候从这些字符串中获取字符
 
-    private static int HBASE_TABLE_LENGTH = 10;
+    private static int HBASE_TABLE_LENGTH = 10;//为segment设置一个hbase的表名字的时候,生成的表名字长度
     public static final Serializer<CubeInstance> CUBE_SERIALIZER = new JsonSerializer<CubeInstance>(CubeInstance.class);
 
     private static final Logger logger = LoggerFactory.getLogger(CubeManager.class);
@@ -235,18 +235,18 @@ public class CubeManager implements IRealizationProvider {
         MetadataManager metaMgr = getMetadataManager();
         SnapshotManager snapshotMgr = getSnapshotManager();
 
-        TableDesc tableDesc = new TableDesc(metaMgr.getTableDesc(lookupTable));
+        TableDesc tableDesc = new TableDesc(metaMgr.getTableDesc(lookupTable));//获取该lookup表元数据对象
         if (TableDesc.TABLE_TYPE_VIRTUAL_VIEW.equalsIgnoreCase(tableDesc.getTableType())) {//说明该表是视图
             String tableName = tableDesc.getMaterializedName();
             tableDesc.setDatabase(config.getHiveDatabaseForIntermediateTable());
             tableDesc.setName(tableName);
         }
 
-        //读取hive的表数据内容
+        //读取hive的表数据内容---即如何读取该lookup表内容
         ReadableTable hiveTable = SourceFactory.createReadableTable(tableDesc);
         SnapshotTable snapshot = snapshotMgr.buildSnapshot(hiveTable, tableDesc);//为该hive表构建快照
 
-        cubeSeg.putSnapshotResPath(lookupTable, snapshot.getResourcePath());
+        cubeSeg.putSnapshotResPath(lookupTable, snapshot.getResourcePath());//保存该lookup表,以及该lookup表内数据对应的存储路径
         CubeUpdate cubeBuilder = new CubeUpdate(cubeSeg.getCubeInstance());
         cubeBuilder.setToUpdateSegs(cubeSeg);
         updateCube(cubeBuilder);//更新cube
@@ -445,7 +445,7 @@ public class CubeManager implements IRealizationProvider {
 
         if (cube.getDescriptor().getModel().getPartitionDesc().isPartitioned()) {//是分区的表
             // try figure out a reasonable start if missing
-            if (startDate == 0 && startOffset == 0) {
+            if (startDate == 0 && startOffset == 0) {//说明没有设置开始时间,因此会自动初始化开始时间为上一次的最后一个时间
                 boolean isOffsetsOn = endOffset != 0;//说明设置了offset
                 if (isOffsetsOn) {
                     startOffset = calculateStartOffsetForAppendSegment(cube);
@@ -479,8 +479,9 @@ public class CubeManager implements IRealizationProvider {
 
         CubeSegment newSegment = newSegment(cube, startDate, endDate, startOffset, endOffset);//创建一个新的segment
 
-        Pair<Boolean, Boolean> pair = CubeValidator.fitInSegments(cube.getSegments(), newSegment);//确保该segment是存在的,因此才可以进行重新build
-        if (pair.getFirst() == false || pair.getSecond() == false)
+        //因为开始和结束只要存在,重新builder的时候,会重新对segment排序,因为该重新builder的范围可能跨域了老的segment的若干个,因此会将老的segment若干个都删除掉,保留新的
+        Pair<Boolean, Boolean> pair = CubeValidator.fitInSegments(cube.getSegments(), newSegment);//确保该segment是存在的,因此才可以进行重新build,说明存在的意义是,只要重新builder的开始和结束存在,则就可以重新builder
+        if (pair.getFirst() == false || pair.getSecond() == false) //必须开始位置和结束位置都存在,否则没办法重新build
             throw new IllegalArgumentException("The new refreshing segment " + newSegment + " does not match any existing segment in cube " + cube);
 
         CubeUpdate cubeBuilder = new CubeUpdate(cube);
@@ -518,17 +519,19 @@ public class CubeManager implements IRealizationProvider {
             endDate = 0;
         } else {//处理分区方式
             // date range cube, make sure range is on dates
-            if (startDate == endDate) {
+            if (startDate == endDate) {//暂时没想明白什么时候会走这个流程,反正当时间相同的时候,他将会走offset流程
                 startDate = startOffset;
                 endDate = endOffset;
             }
+            //因为是时间区间的,因此将offset区间设置为0
             startOffset = 0;
             endOffset = 0;
         }
 
+        //比如虽然新的merge的segment开始位置和结束位置分别是2017-01-01 2017-12-31,但是我真实的segment只有2017-01-01 2017-11-31,则最后的segment的结果就仅仅是2017-01-01到2017-11-31
         CubeSegment newSegment = newSegment(cube, startDate, endDate, startOffset, endOffset);//创建新的segment
 
-        //参数是组合后的segment范围,返回该segment范围内已经存在的所有segment
+        //参数是merge时候创建新的segment,该方法返回已经存在的segment中在merge范围内的,即merge的segment真实合并的是哪些segment
         List<CubeSegment> mergingSegments = cube.getMergingSegments(newSegment);
         if (mergingSegments.size() <= 1)
             throw new IllegalArgumentException("Range " + newSegment.getSourceOffsetStart() + "-" + newSegment.getSourceOffsetEnd() + " must contain at least 2 segments, but there is " + mergingSegments.size());
@@ -572,26 +575,29 @@ public class CubeManager implements IRealizationProvider {
     }
 
     /**
-     * 找到在startDate到endDate之间的符合条件的CubeSegment集合
+     * 在segment集合中,与startDate,endDate有交集的,则被帅选出来,选择第一个和最后一个满足交集的segment
+     * 即找到准备合并的segment集合
      * @param segments
-     * @param startDate
-     * @param endDate
+     * @param startDate 第一个segment的开始时间
+     * @param endDate 第一个segment的开始时间 + skipSegDateRangeCap的时间
      * @param skipSegDateRangeCap 合并的周期
      * @return
      */
     private Pair<CubeSegment, CubeSegment> findMergeOffsetsByDateRange(List<CubeSegment> segments, long startDate, long endDate, long skipSegDateRangeCap) {
         // must be offset cube
         LinkedList<CubeSegment> result = Lists.newLinkedList();
-        for (CubeSegment seg : segments) {
+        for (CubeSegment seg : segments) {//循环所有的segment
 
             // include if date range overlaps
-            if (startDate < seg.getDateRangeEnd() && seg.getDateRangeStart() < endDate) {//这里面返回true,说明CubeSegment是包含startDate和endDate区间的数据的
+            if (startDate < seg.getDateRangeEnd() && seg.getDateRangeStart() < endDate) {//这里面返回true,说明有交集
 
-                // reject too big segment
+                //虽然有交集,但是也要进一步filter过滤
+
+                // reject too big segment,即过滤掉segment区间本身就大于合并周期的
                 if (seg.getDateRangeEnd() - seg.getDateRangeStart() > skipSegDateRangeCap) //说明这个segment的范围已经超过了合并周期了,比如范围是30天,已经超过28天合并,因此直接break
                     break;
 
-                // reject holes
+                // reject holes 过滤掉中间有空隙的,即有空隙的不参与合并
                 if (result.size() > 0 && result.getLast().getSourceOffsetEnd() != seg.getSourceOffsetStart())//说明上下两个segment的开始位置和结束位置没有连接上
                     break;
 
@@ -671,13 +677,14 @@ public class CubeManager implements IRealizationProvider {
         cubeMap.removeLocal(cubeName);
     }
 
+    //如何读取该segment下某一个维度表内的快照数据
     public LookupStringTable getLookupTable(CubeSegment cubeSegment, DimensionDesc dim) {
 
         String tableName = dim.getTable();
         String[] pkCols = dim.getJoin().getPrimaryKey();//lookup表主键
-        String snapshotResPath = cubeSegment.getSnapshotResPath(tableName);//快照路径
+        String snapshotResPath = cubeSegment.getSnapshotResPath(tableName);//获取该segment在builder的时候对应该表的快照路径
         if (snapshotResPath == null)
-            throw new IllegalStateException("No snaphot for table '" + tableName + "' found on cube segment" + cubeSegment.getCubeInstance().getName() + "/" + cubeSegment);
+            throw new IllegalStateException("No snaphot for table '" + tableName + "' found on cube segment" + cubeSegment.getCubeInstance().getName() + "/" + cubeSegment);//说明没有快照
 
         try {
             SnapshotTable snapshot = getSnapshotManager().getSnapshotTable(snapshotResPath);//返回快照对象
@@ -742,22 +749,21 @@ public class CubeManager implements IRealizationProvider {
         long[] timeRanges = cube.getDescriptor().getAutoMergeTimeRanges();//自动merge分区的时间信息
         Arrays.sort(timeRanges);
 
-        for (int i = timeRanges.length - 1; i >= 0; i--) {
+        for (int i = timeRanges.length - 1; i >= 0; i--) {//只要一个满足了,就return停止了
             long toMergeRange = timeRanges[i];//每一个规定的自动merge分区时间
 
-            for (int s = 0; s < ready.size(); s++) {
+            for (int s = 0; s < ready.size(); s++) {//循环全部的segment
                 CubeSegment seg = ready.get(s);
-                Pair<CubeSegment, CubeSegment> p = findMergeOffsetsByDateRange(ready.subList(s, ready.size()),
-                        seg.getDateRangeStart(), seg.getDateRangeStart() + toMergeRange, toMergeRange);//找到在startDate到endDate之间的符合条件的CubeSegment集合
-
-                if (p != null && p.getSecond().getDateRangeEnd() - p.getFirst().getDateRangeStart() >= toMergeRange)
-                    return Pair.newPair(p.getFirst().getSourceOffsetStart(), p.getSecond().getSourceOffsetEnd());
+                Pair<CubeSegment, CubeSegment> p = findMergeOffsetsByDateRange(ready.subList(s, ready.size()),seg.getDateRangeStart(), seg.getDateRangeStart() + toMergeRange, toMergeRange);//找到在startDate到endDate之间的需要被合并的segment的第一个和最后一个segment
+                if (p != null && p.getSecond().getDateRangeEnd() - p.getFirst().getDateRangeStart() >= toMergeRange) //说明区间已经超过了合并时间周期了,因此进行合并
+                    return Pair.newPair(p.getFirst().getSourceOffsetStart(), p.getSecond().getSourceOffsetEnd());//合并获取开始位置和结束位置
             }
         }
 
         return null;
     }
 
+    //相关信息参见org.apache.kylin.engine.mr.steps.UpdateCubeInfoAfterBuildStep,是该job结束后更新的这些关于segment的元数据信息
     public void promoteNewlyBuiltSegments(CubeInstance cube, CubeSegment... newSegments) throws IOException {
         List<CubeSegment> tobe = calculateToBeSegments(cube);
 
@@ -792,61 +798,67 @@ public class CubeManager implements IRealizationProvider {
         updateCube(cubeBuilder);
     }
 
+    //为新增的segment进行校验,确保没问题
     public void validateNewSegments(CubeInstance cube, CubeSegment... newSegments) {
-        List<CubeSegment> tobe = calculateToBeSegments(cube, newSegments);
+        List<CubeSegment> tobe = calculateToBeSegments(cube, newSegments);//返回新增加的segment后,合法的segment集合
         List<CubeSegment> newList = Arrays.asList(newSegments);
-        if (tobe.containsAll(newList) == false) {
+        if (tobe.containsAll(newList) == false) {//确保新增加的segment一定都是合法的,否则抛异常
             throw new IllegalStateException("For cube " + cube + ", the new segments " + newList + " do not fit in its current " + cube.getSegments() + "; the resulted tobe is " + tobe);
         }
     }
 
     /**
      * Smartly figure out the TOBE segments once all new segments are built.
-     * - Ensures no gap, no overlap
-     * - Favors new segments over the old
-     * - Favors big segments over the small
+     * 对cube原有的segment和新增加的segment进行合并.删除不符合规则的segment,返回最终的segment
+     *
+     * 不符合规则的条件是:
+     * - Ensures no gap, no overlap 确保没有间隙，也没有交叠
+     * - Favors new segments over the old 保留new状态的,比ready状态的优先级高
+     * - Favors big segments over the small 范围大的segment要替换掉范围小的segment,即当有包含关系的时候,删除一个范围小的segment
      */
     private List<CubeSegment> calculateToBeSegments(CubeInstance cube, CubeSegment... newSegments) {
 
-        List<CubeSegment> tobe = Lists.newArrayList(cube.getSegments());
+        List<CubeSegment> tobe = Lists.newArrayList(cube.getSegments());//cube此时所有的segment
         if (newSegments != null)
-            tobe.addAll(Arrays.asList(newSegments));
+            tobe.addAll(Arrays.asList(newSegments));//添加新的segment
         if (tobe.size() == 0)
             return tobe;
 
-        // sort by source offset
+        // sort by source offset 排序
         Collections.sort(tobe);
 
-        CubeSegment firstSeg = tobe.get(0);
-        firstSeg.validate();
+        CubeSegment firstSeg = tobe.get(0);//获取第一个
+        firstSeg.validate();//校验segment合法性----必须是分区的,否则不需要segment,校验开始时间不能大于结束时间
 
-        for (int i = 0, j = 1; j < tobe.size();) {
-            CubeSegment is = tobe.get(i);
-            CubeSegment js = tobe.get(j);
-            js.validate();
+        for (int i = 0, j = 1; j < tobe.size();) {//从第2个segment开始循环,即j=1开始,i上j的上一个segment
+            CubeSegment is = tobe.get(i);//获取上一个segment
+            CubeSegment js = tobe.get(j);//获取本次应该校验的segment
+            js.validate();//校验本次处理的segment
 
+            //以下两个校验应该是不会发生的
             // check i is either ready or new
-            if (!isNew(is) && !isReady(is)) {
+            if (!isNew(is) && !isReady(is)) {//说明状态不对,continue,从集合中移除该segment
                 tobe.remove(i);
                 continue;
             }
 
-            // check j is either ready or new
+            // check j is either ready or new 说明状态不对,continue,从集合中移除该segment
             if (!isNew(js) && !isReady(js)) {
                 tobe.remove(j);
                 continue;
             }
 
-            if (is.getSourceOffsetStart() == js.getSourceOffsetStart()) {
+            if (is.getSourceOffsetStart() == js.getSourceOffsetStart()) {//两个segment的开始位置相同,此时应该业务上控制,也不会发生,但是会发生在refreshSegment阶段,产生新的segment跨域了老的segment若干个,因此会出现这种情况
+                //一旦进来后,最终都会continue,但是最终会删除一个segment
                 // if i, j competes
-                if (isReady(is) && isReady(js) || isNew(is) && isNew(js)) {
+                if (isReady(is) && isReady(js) || isNew(is) && isNew(js)) {//都是状态合法的,此时就要删除一个,选择区间最小的删除掉,因为开始时间是相同的,则看结束时间即可
                     // if both new or ready, favor the bigger segment
                     if (is.getSourceOffsetEnd() <= js.getSourceOffsetEnd()) {
                         tobe.remove(i);
                     } else {
                         tobe.remove(j);
                     }
-                } else if (isNew(is)) {
+                } else if (isNew(is)) {//删除new新的,反正保留一个即可---此时new优先,如果new则保留,删除非new的
                     // otherwise, favor the new segment
                     tobe.remove(j);
                 } else {
@@ -856,13 +868,13 @@ public class CubeManager implements IRealizationProvider {
             }
 
             // if i, j in sequence
-            if (is.getSourceOffsetEnd() <= js.getSourceOffsetStart()) {
+            if (is.getSourceOffsetEnd() <= js.getSourceOffsetStart()) {//说明合法,后一个开始位置就应该比前一个结束位置大,因此执行下一个segment
                 i++;
                 j++;
                 continue;
             }
 
-            // seems j not fitting
+            // seems j not fitting此时说明后一个不比前一个区间大,因此要删除后一个,因此此时说明有交叠overlap
             tobe.remove(j);
         }
 

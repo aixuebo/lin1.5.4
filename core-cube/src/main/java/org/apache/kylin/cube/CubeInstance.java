@@ -115,7 +115,7 @@ public class CubeInstance extends RootPersistentEntity implements IRealization, 
         return buildingSegments;
     }
 
-    //参数是组合后的segment范围,返回该segment范围内已经存在的所有segment
+    //参数是merge时候创建新的segment,该方法返回已经存在的segment中在merge范围内的,即merge的segment真实合并的是哪些segment
     public List<CubeSegment> getMergingSegments(CubeSegment mergedSegment) {
         LinkedList<CubeSegment> result = new LinkedList<CubeSegment>();
         if (mergedSegment == null)
@@ -128,10 +128,10 @@ public class CubeInstance extends RootPersistentEntity implements IRealization, 
             if (seg == mergedSegment)
                 continue;
 
-            if (mergedSegment.sourceOffsetContains(seg)) {
+            if (mergedSegment.sourceOffsetContains(seg)) {//说明该merge后的segment是包含seg的
                 // make sure no holes
-                if (result.size() > 0 && result.getLast().getSourceOffsetEnd() != seg.getSourceOffsetStart())
-                    throw new IllegalStateException("Merging segments must not have holes between " + result.getLast() + " and " + seg);
+                if (result.size() > 0 && result.getLast().getSourceOffsetEnd() != seg.getSourceOffsetStart())//说明取消的一个segment的最后一个位置和当前要处理的segment开始位置不同,即说明有空隙
+                    throw new IllegalStateException("Merging segments must not have holes between " + result.getLast() + " and " + seg);//说明merge过程中所有的segment必须不允许有空隙
 
                 result.add(seg);
             }

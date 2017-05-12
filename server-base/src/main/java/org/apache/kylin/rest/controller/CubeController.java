@@ -141,7 +141,7 @@ public class CubeController extends BasicController {
 
     /**
      * Get hive SQL of the cube
-     *
+     * 返回hive的sql,即执行cube的一个segment的时候,如何执行hive原始的sql
      * @param cubeName Cube Name
      * @return
      * @throws UnknownHostException
@@ -163,7 +163,7 @@ public class CubeController extends BasicController {
 
     /**
      * Update cube notify list
-     *
+     * 更新通知的邮件列表
      * @param cubeName
      * @param notifyList
      * @throws IOException
@@ -186,6 +186,7 @@ public class CubeController extends BasicController {
 
     }
 
+    //更新cost值
     @RequestMapping(value = "/{cubeName}/cost", method = { RequestMethod.PUT })
     @ResponseBody
     public CubeInstance updateCubeCost(@PathVariable String cubeName, @RequestParam(value = "cost") int cost) {
@@ -203,6 +204,7 @@ public class CubeController extends BasicController {
         }
     }
 
+    //更新hbase的协处理器开关
     @RequestMapping(value = "/{cubeName}/coprocessor", method = { RequestMethod.PUT })
     @ResponseBody
     public Map<String, Boolean> updateCubeCoprocessor(@PathVariable String cubeName, @RequestParam(value = "force") String force) {
@@ -218,7 +220,7 @@ public class CubeController extends BasicController {
 
     /**
      * Force rebuild a cube's lookup table snapshot
-     *
+     * 强制对一个cube的某个segment对应的一个lookup表做快照
      * @throws IOException
      */
     @RequestMapping(value = "/{cubeName}/segs/{segmentName}/refresh_lookup", method = { RequestMethod.PUT })

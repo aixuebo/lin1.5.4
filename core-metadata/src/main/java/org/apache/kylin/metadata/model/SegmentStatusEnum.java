@@ -24,5 +24,6 @@ package org.apache.kylin.metadata.model;
  */
 public enum SegmentStatusEnum {
     NEW,//segment初始状态
-    READY, READY_PENDING
+    READY,
+    READY_PENDING
 }

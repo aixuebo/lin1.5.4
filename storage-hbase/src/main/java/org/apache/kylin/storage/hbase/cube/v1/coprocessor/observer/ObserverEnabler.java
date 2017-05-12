@@ -174,6 +174,7 @@ public class ObserverEnabler {
         System.clearProperty(FORCE_COPROCESSOR);
     }
 
+    //updateCubeCoprocessor.updateCubeCoprocessor来控制该值
     public static void updateCubeOverride(String cubeName, String force) {
         if ("null".equalsIgnoreCase(force) || "default".equalsIgnoreCase(force)) {
             CUBE_OVERRIDES.remove(cubeName);

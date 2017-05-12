@@ -46,11 +46,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * @author yangli9
- * 一个table的快照可能有多个版本,因此是对应多个快照文件的
+ * 一个table的快照可能有多个版本,因此是对应多个快照文件的---因为快照很多时候是针对segment级别的,即一个segment对应一个快照
  *
  * 快照的内容包括:表的内容以及表的元数据
  *
  * 非常占用内存,因为要将table内的数据都加载到字典表中,存放在内存中
+ *
+ * 注意:
+ * 1.快照的表不一定是lookup表,可能是任何表
+ * 2.默认最多不允许300M
+ * 3.可以使用字典方式进行存储,减少空间
  */
 @SuppressWarnings("serial")
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.NONE, isGetterVisibility = Visibility.NONE, setterVisibility = Visibility.NONE)
@@ -64,23 +69,29 @@ public class SnapshotTable extends RootPersistentEntity implements ReadableTable
     private boolean useDictionary;//true表示序列化的时候要将字典也序列化到磁盘
 
     //序列化和反序列化下面两个字段是很耗时的,因此有时候可能不需要序列化这两个字段
-    private ArrayList<int[]> rowIndices;//存储每一行每一列数据对应的字典
+    private ArrayList<int[]> rowIndices;//存储每一行每一列数据对应的字典---多少行数据就有多少size元素,每一个元素是一行数据中每一列对应的字典ID,通过该字典ID可以还原该列的内容
     private Dictionary<String> dict;//字典,用于存储表中所有的字段的值
 
     // default constructor for JSON serialization
     public SnapshotTable() {
     }
 
+    /**
+     * @param table hive如何读取该表的对象
+     * @param tableName 表的name
+     * @throws IOException
+     */
     SnapshotTable(ReadableTable table, String tableName) throws IOException {
         this.tableName = tableName;
         this.signature = table.getSignature();
         this.useDictionary = true;
     }
 
+    //尝试加载快照的数据
     public void takeSnapshot(ReadableTable table, TableDesc tableDesc) throws IOException {
         this.signature = table.getSignature();
 
-        int maxIndex = tableDesc.getMaxColumnIndex();//该table的最大列ID
+        int maxIndex = tableDesc.getMaxColumnIndex();//该table的最大列ID,即一共多少个列
 
         TrieDictionaryBuilder<String> b = new TrieDictionaryBuilder<String>(new StringBytesConverter());//构造字典树---存储表中所有的字段的值
 
@@ -88,7 +99,7 @@ public class SnapshotTable extends RootPersistentEntity implements ReadableTable
         try {
             while (reader.next()) {
                 String[] row = reader.getRow();//数据内容
-                if (row.length <= maxIndex) {
+                if (row.length <= maxIndex) {//说明该行数据没有那么多列
                     throw new IllegalStateException("Bad hive table row, " + tableDesc + " expect " + (maxIndex + 1) + " columns, but got " + Arrays.toString(row));
                 }
                 for (ColumnDesc column : tableDesc.getColumns()) {//循环每一个列对象
@@ -247,9 +258,9 @@ public class SnapshotTable extends RootPersistentEntity implements ReadableTable
                     }
                 }
 
-            } else {
+            } else {//不使用字典,则序列化具体文字
                 for (int i = 0; i < rowIndices.size(); i++) {//循环每一行数据
-                    int[] row = rowIndices.get(i);
+                    int[] row = rowIndices.get(i);//每一列对应的字典ID
                     for (int j = 0; j < n; j++) {
                         // NULL_STR is tricky, but we don't want to break the current snapshots
                         out.writeUTF(dict.getValueFromId(row[j]) == null ? NULL_STR : dict.getValueFromId(row[j]));//从字典表中将数据还原成String,输出出去

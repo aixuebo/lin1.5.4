@@ -75,7 +75,7 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
     @JsonProperty("source_offset_end")
     private long sourceOffsetEnd;
 
-
+    //segment大小相关信息参见org.apache.kylin.engine.mr.steps.UpdateCubeInfoAfterBuildStep,是该job结束后更新的这些关于segment的元数据信息
     @JsonProperty("status")
     private SegmentStatusEnum status;//状态
     @JsonProperty("size_kb")
@@ -104,7 +104,7 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
     @JsonProperty("dictionaries")
     private ConcurrentHashMap<String, String> dictionaries; // table/column ==> dictionary resource path 存储cube的字典
 
-    //key是lookup表的table名字,value是该表对应的快照的路径
+    //key是lookup表的table名字,value是该表对应的快照的路径---因为lookup表由于dervied和extends的原因,会引用lookup表的数据内容,因此需要有一个映射快照的需求
     @JsonProperty("snapshots")
     private ConcurrentHashMap<String, String> snapshots; // table name ==> snapshot resource path 存储cube的快照
 
@@ -357,7 +357,7 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
         this.sourceOffsetEnd = sourceOffsetEnd;
     }
 
-    //true表示参数CubeSegment在本类范围内,不包含=关系
+    //true表示有重叠,false表示没有交集
     public boolean dateRangeOverlaps(CubeSegment seg) {
         return dateRangeStart < seg.dateRangeEnd && seg.dateRangeStart < dateRangeEnd;
     }
@@ -368,7 +368,7 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
     }
 
     // date range is used in place of source offsets when offsets are missing
-    //true表示参数CubeSegment在本类范围内,不包含=关系
+    //true表示有重叠,false表示没有交集
     public boolean sourceOffsetOverlaps(CubeSegment seg) {
         if (isSourceOffsetsOn())
             return sourceOffsetStart < seg.sourceOffsetEnd && seg.sourceOffsetStart < sourceOffsetEnd;
@@ -386,6 +386,7 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
             return dateRangeContains(seg);
     }
 
+    //校验segment合法性----必须是分区的,否则不需要segment,校验开始时间不能大于结束时间
     public void validate() {
         if (cubeInstance.getDescriptor().getModel().getPartitionDesc().isPartitioned()) {//model是分区的
             if (!isSourceOffsetsOn() && dateRangeStart >= dateRangeEnd) //判断start > end 时候是非法的,则报错

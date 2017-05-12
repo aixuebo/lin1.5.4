@@ -69,6 +69,7 @@ public class SnapshotManager {
     // ============================================================================
 
     private KylinConfig config;
+    //key是resource的资源路径,value是该路径对应的快招表
     private LoadingCache<String, SnapshotTable> snapshotCache; // resource
 
     // path ==>
@@ -91,10 +92,12 @@ public class SnapshotManager {
                 });
     }
 
+    //抹除缓存,即清空缓存
     public void wipeoutCache() {
         snapshotCache.invalidateAll();
     }
 
+    //获取或者加载一个资源
     public SnapshotTable getSnapshotTable(String resourcePath) throws IOException {
         try {
             SnapshotTable r = snapshotCache.get(resourcePath);
@@ -111,31 +114,38 @@ public class SnapshotManager {
     //删除一个快照资源
     public void removeSnapshot(String resourcePath) throws IOException {
         ResourceStore store = MetadataManager.getInstance(this.config).getStore();
-        store.deleteResource(resourcePath);
-        snapshotCache.invalidate(resourcePath);
+        store.deleteResource(resourcePath);//删除该文件
+        snapshotCache.invalidate(resourcePath);//清空该路径对应的缓存
     }
 
+    /**
+     * 构建一个快照对象
+     * @param table hive如何读取表的对象
+     * @param tableDesc 表对象的描述
+     * @return 构建的一个快照
+     */
     public SnapshotTable buildSnapshot(ReadableTable table, TableDesc tableDesc) throws IOException {
         SnapshotTable snapshot = new SnapshotTable(table, tableDesc.getIdentity());
         snapshot.updateRandomUuid();
 
-        String dup = checkDupByInfo(snapshot);
+        String dup = checkDupByInfo(snapshot);//true表示已经存在了该快照版本了,并且没有任何变化
         if (dup != null) {//快照已经存在了,则返回存在的快照即可
             logger.info("Identical input " + table.getSignature() + ", reuse existing snapshot at " + dup);
             return getSnapshotTable(dup);
         }
 
         //单位M,快照的hive表对应的文件不应该超过这个大小
-        if (snapshot.getSignature().getSize() / 1024 / 1024 > config.getTableSnapshotMaxMB()) {
+        if (snapshot.getSignature().getSize() / 1024 / 1024 > config.getTableSnapshotMaxMB()) {//默认300M
             throw new IllegalStateException("Table snapshot should be no greater than " + config.getTableSnapshotMaxMB() //
                     + " MB, but " + tableDesc + " size is " + snapshot.getSignature().getSize());
         }
 
         snapshot.takeSnapshot(table, tableDesc);//加载快照表的数据
 
-        return trySaveNewSnapshot(snapshot);
+        return trySaveNewSnapshot(snapshot);//保存快照到磁盘
     }
 
+    //重新对该表对应的快照
     public SnapshotTable rebuildSnapshot(ReadableTable table, TableDesc tableDesc, String overwriteUUID) throws IOException {
         SnapshotTable snapshot = new SnapshotTable(table, tableDesc.getIdentity());
         snapshot.setUuid(overwriteUUID);
@@ -166,7 +176,7 @@ public class SnapshotManager {
         return snapshotTable;
     }
 
-    //true表示已经存在了该快照版本了
+    //true表示已经存在了该快照版本了,并且没有任何变化
     private String checkDupByInfo(SnapshotTable snapshot) throws IOException {
         ResourceStore store = MetadataManager.getInstance(this.config).getStore();
         String resourceDir = snapshot.getResourceDir();
@@ -174,7 +184,7 @@ public class SnapshotManager {
         if (existings == null)
             return null;
 
-        TableSignature sig = snapshot.getSignature();
+        TableSignature sig = snapshot.getSignature();//快照的信息
         for (String existing : existings) {
             SnapshotTable existingTable = load(existing, false); // skip cache,
             // direct load from store
@@ -194,7 +204,7 @@ public class SnapshotManager {
             return null;
 
         for (String existing : existings) {
-            SnapshotTable existingTable = load(existing, true); // skip cache, direct load from store
+            SnapshotTable existingTable = load(existing, true); // skip cache, direct load from store 同时也比较快照内容
             if (existingTable != null && existingTable.equals(snapshot))
                 return existing;
         }

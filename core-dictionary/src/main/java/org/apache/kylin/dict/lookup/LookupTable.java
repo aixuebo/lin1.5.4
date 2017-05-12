@@ -39,6 +39,14 @@ import com.google.common.collect.Sets;
  * table is indexed by specified PK for fast lookup.
  * 在内存中读取look up表中数据内容
  * @author yangli9
+ *
+ *
+ * 注意:
+ * 1.该数据是不压缩的保存在内存中,因此数据不宜过大
+ * 2.该数据因为是lookup表,因此要确保on字段连接作为key,保证该key是唯一的,不能出现两行
+ *
+ *
+ * ReadableTable不再是hive表直接读取的数据内容,而是快照的内容,因此该内容已经可能是字典编码后压缩的
  */
 abstract public class LookupTable<T> {
 
@@ -49,6 +57,13 @@ abstract public class LookupTable<T> {
     //存储该lookup表中 所有数据,Array对象是key的集合,即join时候on语法相关联的key对应的真实值的集合,value数组就是该表内所有的列数据集合
     protected ConcurrentHashMap<Array<T>, T[]> data;
 
+    /**
+     *
+     * @param tableDesc
+     * @param keyColumns 与fact表join的列名字集合
+     * @param table
+     * @throws IOException
+     */
     public LookupTable(TableDesc tableDesc, String[] keyColumns, ReadableTable table) throws IOException {
         this.tableDesc = tableDesc;
         this.keyColumns = keyColumns;
@@ -85,7 +100,7 @@ abstract public class LookupTable<T> {
         for (int i = 0; i < keyCols.length; i++)
             keyCols[i] = value[keyIndex[i]];//获取join时候on对应的String具体值
 
-        Array<T> key = new Array<T>(keyCols);
+        Array<T> key = new Array<T>(keyCols);//fact表与lookup表on中字段的value值集合作为key,该值是数组,因为on可以连接多个字段
 
         //说明key已经存在在look up表了,相当于复合主键冲突,因此抛异常,将冲突的数据和现在的数据都打印出来
         if (data.containsKey(key))
@@ -115,7 +130,7 @@ abstract public class LookupTable<T> {
         ArrayList<T> result = new ArrayList<T>();
         int colIdx = tableDesc.findColumnByName(col).getZeroBasedIndex();//找到列的下标
         int returnIdx = tableDesc.findColumnByName(returnCol).getZeroBasedIndex();//找到列的下标
-        for (T[] row : data.values()) {//循环所有的表内数据
+        for (T[] row : data.values()) {//循环所有的表内每一行的数据
             if (values.contains(row[colIdx]))//该列数据在values中存在
                 result.add(row[returnIdx]);//添加returnCol列对应的值
         }
@@ -129,7 +144,7 @@ abstract public class LookupTable<T> {
         int colIdx = tableDesc.findColumnByName(col).getZeroBasedIndex();//找到列的下标
         int returnIdx = tableDesc.findColumnByName(returnCol).getZeroBasedIndex();//找到列的下标
         Set<T> result = Sets.newHashSetWithExpectedSize(values.size());
-        for (T[] row : data.values()) {//循环所有的表内数据
+        for (T[] row : data.values()) {//循环所有的表内每一行的数据
             if (values.contains(row[colIdx])) {
                 result.add(row[returnIdx]);
             }
@@ -151,7 +166,7 @@ abstract public class LookupTable<T> {
 
         T returnBegin = null;
         T returnEnd = null;
-        for (T[] row : data.values()) {//循环所有的表内数据
+        for (T[] row : data.values()) {//循环所有的表内每一行数据
             if (between(beginValue, row[colIdx], endValue, colComp)) {//如果该值在范围内
                 T returnValue = row[returnIdx];//需要的列的具体的值
 
@@ -177,6 +192,7 @@ abstract public class LookupTable<T> {
         return (beginValue == null || comp.compare(beginValue, v) <= 0) && (endValue == null || comp.compare(v, endValue) <= 0);
     }
 
+    //不同的列,类型不一样,因此对value的比较方式也不同
     abstract protected Comparator<T> getComparator(int colIdx);
 
     public String toString() {

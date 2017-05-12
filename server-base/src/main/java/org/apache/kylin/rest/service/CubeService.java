@@ -135,6 +135,7 @@ public class CubeService extends BasicService {
         return filterCubes;
     }
 
+    //更新cost值
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN + " or hasPermission(#cube, 'ADMINISTRATION') or hasPermission(#cube, 'MANAGEMENT')")
     public CubeInstance updateCubeCost(CubeInstance cube, int cost) throws IOException {
 
@@ -511,6 +512,7 @@ public class CubeService extends BasicService {
         getExecutableManager().addJob(job);
     }
 
+    //更新通知的邮件列表
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN + " or hasPermission(#cube, 'ADMINISTRATION') or hasPermission(#cube, 'OPERATION')  or hasPermission(#cube, 'MANAGEMENT')")
     public void updateCubeNotifyList(CubeInstance cube, List<String> notifyList) throws IOException {
         CubeDesc desc = cube.getDescriptor();
@@ -518,11 +520,13 @@ public class CubeService extends BasicService {
         getCubeDescManager().updateCubeDesc(desc);
     }
 
+    /**
+     * 对一个cube对应的一个lookup表做快照
+     */
     @PreAuthorize(Constant.ACCESS_HAS_ROLE_ADMIN + " or hasPermission(#cube, 'ADMINISTRATION') or hasPermission(#cube, 'OPERATION')  or hasPermission(#cube, 'MANAGEMENT')")
     public CubeInstance rebuildLookupSnapshot(CubeInstance cube, String segmentName, String lookupTable) throws IOException {
         CubeSegment seg = cube.getSegment(segmentName, SegmentStatusEnum.READY);
         getCubeManager().buildSnapshotTable(seg, lookupTable);
-
         return cube;
     }
 
@@ -659,6 +663,7 @@ public class CubeService extends BasicService {
         }
     }
 
+    //定期进行合并该cube的segment
     private void mergeCubeSegment(String cubeName) {
         CubeInstance cube = getCubeManager().getCube(cubeName);
         if (!cube.needAutoMerge())
@@ -667,11 +672,11 @@ public class CubeService extends BasicService {
         synchronized (CubeService.class) {
             try {
                 cube = getCubeManager().getCube(cubeName);
-                Pair<Long, Long> offsets = getCubeManager().autoMergeCubeSegments(cube);
+                Pair<Long, Long> offsets = getCubeManager().autoMergeCubeSegments(cube);//找到该cube准备merge合并的开始位置和结束位置
                 if (offsets != null) {
-                    CubeSegment newSeg = getCubeManager().mergeSegments(cube, 0, 0, offsets.getFirst(), offsets.getSecond(), true);
+                    CubeSegment newSeg = getCubeManager().mergeSegments(cube, 0, 0, offsets.getFirst(), offsets.getSecond(), true);//创建合并新的segment
                     logger.debug("Will submit merge job on " + newSeg);
-                    DefaultChainedExecutable job = EngineFactory.createBatchMergeJob(newSeg, "SYSTEM");
+                    DefaultChainedExecutable job = EngineFactory.createBatchMergeJob(newSeg, "SYSTEM");//进行该job调度
                     getExecutableManager().addJob(job);
                 } else {
                     logger.debug("Not ready for merge on cube " + cubeName);

@@ -33,15 +33,20 @@ public class SnapshotCLI {
             rebuild(args[1], args[2]);
     }
 
+    /**
+     * @param table 要加载的hive表name
+     * @param overwriteUUID 重新为该快照设置uuid
+     */
     private static void rebuild(String table, String overwriteUUID) throws IOException {
         KylinConfig conf = KylinConfig.getInstanceFromEnv();
         MetadataManager metaMgr = MetadataManager.getInstance(conf);
         SnapshotManager snapshotMgr = SnapshotManager.getInstance(conf);
 
-        TableDesc tableDesc = metaMgr.getTableDesc(table);
+        TableDesc tableDesc = metaMgr.getTableDesc(table);//得到该hive表的元数据对象
         if (tableDesc == null)
-            throw new IllegalArgumentException("Not table found by " + table);
+            throw new IllegalArgumentException("Not table found by " + table);//说明该hive的table不存在
 
+        //重新builder该表,进行对该表进行快照,第一个参数是hive如何读取该表数据,返回快照后的数据
         SnapshotTable snapshot = snapshotMgr.rebuildSnapshot(SourceFactory.createReadableTable(tableDesc), tableDesc, overwriteUUID);
         System.out.println("resource path updated: " + snapshot.getResourcePath());
     }

@@ -47,7 +47,7 @@ abstract public class ResourceStore {
     public static final String DATA_MODEL_DESC_RESOURCE_ROOT = "/model_desc";//存放model模型
     public static final String DICT_RESOURCE_ROOT = "/dict";
     public static final String PROJECT_RESOURCE_ROOT = "/project";//存储project内容,将该project对象序列化成json对象,存储到/project/projectName.json文件中
-    public static final String SNAPSHOT_RESOURCE_ROOT = "/table_snapshot";
+    public static final String SNAPSHOT_RESOURCE_ROOT = "/table_snapshot";//快照存储路径
     public static final String TABLE_EXD_RESOURCE_ROOT = "/table_exd";//存储table的额外的key-value信息
     public static final String TABLE_RESOURCE_ROOT = "/table";//保存table元数据信息
     public static final String EXTERNAL_FILTER_RESOURCE_ROOT = "/ext_filter";//用于存储filter
