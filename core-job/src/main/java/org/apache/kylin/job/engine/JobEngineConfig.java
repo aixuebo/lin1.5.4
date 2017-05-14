@@ -49,12 +49,12 @@ public class JobEngineConfig {
 
     //在home下获取一个配置文件,参数是文件名
     private static File getJobConfig(String fileName) {
-        String path = System.getProperty(KylinConfig.KYLIN_CONF);
+        String path = System.getProperty(KylinConfig.KYLIN_CONF);//先读取环境变量KYLIN_CONF对应配置文件路径
         if (StringUtils.isNotEmpty(path)) {
             return new File(path, fileName);
         }
 
-        path = KylinConfig.getKylinHome();
+        path = KylinConfig.getKylinHome();//获取kylin的home目录
         if (StringUtils.isNotEmpty(path)) {
             return new File(path + File.separator + "conf", fileName);
         }
@@ -132,19 +132,20 @@ public class JobEngineConfig {
         return config;
     }
 
+    //获取HDFS上的kylin工作目录
     public String getHdfsWorkingDirectory() {
         return config.getHdfsWorkingDirectory();
     }
 
     /**
-     * @return the maxConcurrentJobLimit
+     * @return the maxConcurrentJobLimit 最多允许job的工作数量
      */
     public int getMaxConcurrentJobLimit() {
         return config.getMaxConcurrentJobLimit();
     }
 
     /**
-     * @return the timeZone
+     * @return the timeZone job节点的时区
      */
     public String getTimeZone() {
         return config.getTimeZone();

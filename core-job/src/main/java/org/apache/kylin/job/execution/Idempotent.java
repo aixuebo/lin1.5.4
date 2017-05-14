@@ -21,6 +21,7 @@ package org.apache.kylin.job.execution;
 import org.apache.kylin.job.exception.ExecuteException;
 
 /**
+ * 如何清理资源
  */
 public interface Idempotent {
 

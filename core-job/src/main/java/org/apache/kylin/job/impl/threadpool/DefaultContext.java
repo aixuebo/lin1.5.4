@@ -59,7 +59,7 @@ public class DefaultContext implements ExecutableContext {
         runningJobs.remove(executable.getId());
     }
 
-    //返回运行中的job集合
+    //返回运行中的job集合,此时是copy的过程
     public Map<String, Executable> getRunningJobs() {
         return Collections.unmodifiableMap(runningJobs);
     }

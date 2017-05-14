@@ -29,13 +29,16 @@ import org.apache.kylin.job.lock.JobLock;
  */
 public interface Scheduler<T extends Executable> {
 
+    //初始化该调度
     void init(JobEngineConfig jobEngineConfig, JobLock jobLock) throws SchedulerException;
 
+    //关闭该调度
     void shutdown() throws SchedulerException;
 
+    //调度上停止一个任务
     boolean stop(T executable) throws SchedulerException;
 
-    //任务是否开启
+    //任务是否开启成功
     boolean hasStarted();
 
 }

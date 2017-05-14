@@ -28,7 +28,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 
 /**
- * 状态以及状态转换流程
+ * 一个job的状态以及状态转换流程
  */
 public enum ExecutableState {
 
@@ -36,6 +36,8 @@ public enum ExecutableState {
     RUNNING, ERROR, STOPPED,
     DISCARDED,//丢弃
     SUCCEED;//成功执行
+
+    //正常流程READY---RUNNING---SUCCEED/ERROR----DISCARDED
 
     //定义状态机
     private static Multimap<ExecutableState, ExecutableState> VALID_STATE_TRANSFER;
@@ -48,10 +50,10 @@ public enum ExecutableState {
             }
         });
 
-        //scheduler
+        //scheduler调度器可以让job从ready到running和error
         VALID_STATE_TRANSFER.put(ExecutableState.READY, ExecutableState.RUNNING);
         VALID_STATE_TRANSFER.put(ExecutableState.READY, ExecutableState.ERROR);
-        //user
+        //user 用户可以手动将ready任务直接变成DISCARDED
         VALID_STATE_TRANSFER.put(ExecutableState.READY, ExecutableState.DISCARDED);
 
 

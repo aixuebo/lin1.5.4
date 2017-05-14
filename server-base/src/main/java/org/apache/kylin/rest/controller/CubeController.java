@@ -291,13 +291,19 @@ public class CubeController extends BasicController {
         return buildInternal(cubeName, 0, 0, req.getStartSourceOffset(), req.getEndSourceOffset(), req.getBuildType(), req.isForce());
     }
 
+    /**
+     *
+     * @param buildType 是否是merge还是refresh 还是builder
+     * @param force
+     * @return
+     */
     private JobInstance buildInternal(String cubeName, long startTime, long endTime, //
             long startOffset, long endOffset, String buildType, boolean force) {
         try {
             String submitter = SecurityContextHolder.getContext().getAuthentication().getName();
-            CubeInstance cube = jobService.getCubeManager().getCube(cubeName);
+            CubeInstance cube = jobService.getCubeManager().getCube(cubeName);//在磁盘上创建一个cube对象
             return jobService.submitJob(cube, startTime, endTime, startOffset, endOffset, //
-                    CubeBuildTypeEnum.valueOf(buildType), force, submitter);
+                    CubeBuildTypeEnum.valueOf(buildType), force, submitter);//对该segment发起任务去执行
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage(), e);
             throw new InternalErrorException(e.getLocalizedMessage());

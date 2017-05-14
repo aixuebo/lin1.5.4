@@ -36,7 +36,7 @@ public final class ExecutableConstants {
     public static final String SOURCE_RECORDS_COUNT = "source_records_count";//匹配输入源有多少行数据
     public static final String SOURCE_RECORDS_SIZE = "source_records_size";//匹配输入源读取多少字节数据
 
-    public static final int DEFAULT_SCHEDULER_INTERVAL_SECONDS = 60;
+    public static final int DEFAULT_SCHEDULER_INTERVAL_SECONDS = 60;//默认调度间隔,单位秒
 
     //JOB监控中的job名字
     public static final String STEP_NAME_CREATE_FLAT_HIVE_TABLE = "Create Intermediate Flat Hive Table";//创建hive的临时表执行任务,即执行hive的sql

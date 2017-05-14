@@ -396,6 +396,7 @@ abstract public class KylinConfigBase implements Serializable {
         return getOptional("kylin.job.yarn.app.rest.check.status.url", null);
     }
 
+    //请求yarn获取job的状态,每次请求的时间间隔
     public int getYarnStatusCheckIntervalSeconds() {
         return Integer.parseInt(getOptional("kylin.job.yarn.app.rest.check.interval.seconds", "60"));
     }
@@ -404,6 +405,7 @@ abstract public class KylinConfigBase implements Serializable {
         return Integer.parseInt(getOptional("kylin.job.concurrent.max.limit", "10"));
     }
 
+    //获取时区,在JobController中使用
     public String getTimeZone() {
         return getOptional("kylin.rest.timezone", "PST");
     }
@@ -702,6 +704,7 @@ abstract public class KylinConfigBase implements Serializable {
         return Boolean.parseBoolean(getOptional("crossdomain.enable", "true"));
     }
 
+    //job失败后,尝试调用几次
     public int getJobRetry() {
         return Integer.parseInt(this.getOptional("kylin.job.retry", "0"));
     }
@@ -734,6 +737,7 @@ abstract public class KylinConfigBase implements Serializable {
         return Integer.parseInt(getOptional("kylin.job.cubing.inmem.sampling.hll.precision", "14"));
     }
 
+    //调度锁对象,在JobController中使用
     public String getJobControllerLock() {
         return getOptional("kylin.job.controller.lock", "org.apache.kylin.storage.hbase.util.ZookeeperJobLock");
     }
@@ -782,6 +786,7 @@ abstract public class KylinConfigBase implements Serializable {
         return r;
     }
 
+    //job的调度使用什么实现类去实现
     public Integer getSchedulerType() {
         return Integer.parseInt(getOptional("kylin.enable.scheduler", "0"));
     }

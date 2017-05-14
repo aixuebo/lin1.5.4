@@ -38,15 +38,18 @@ import com.google.common.collect.Lists;
 
 /**
  * 用于将任务的执行job内容和输出内容存储到磁盘上
+ *
+ * 该方法没有使用缓存,而是直接每次都读取磁盘,因此可以日后有优化空间
  */
 public class ExecutableDao {
 
-    private static final Serializer<ExecutablePO> JOB_SERIALIZER = new JsonSerializer<ExecutablePO>(ExecutablePO.class);
-    private static final Serializer<ExecutableOutputPO> JOB_OUTPUT_SERIALIZER = new JsonSerializer<ExecutableOutputPO>(ExecutableOutputPO.class);
+    private static final Serializer<ExecutablePO> JOB_SERIALIZER = new JsonSerializer<ExecutablePO>(ExecutablePO.class);//如何序列化一个job任务
+    private static final Serializer<ExecutableOutputPO> JOB_OUTPUT_SERIALIZER = new JsonSerializer<ExecutableOutputPO>(ExecutableOutputPO.class);//如何为job的输出内容进行序列化
+
     private static final Logger logger = LoggerFactory.getLogger(ExecutableDao.class);
     private static final ConcurrentHashMap<KylinConfig, ExecutableDao> CACHE = new ConcurrentHashMap<KylinConfig, ExecutableDao>();
 
-    private ResourceStore store;
+    private ResourceStore store;//存储引擎
 
     public static ExecutableDao getInstance(KylinConfig config) {
         ExecutableDao r = CACHE.get(config);
@@ -70,7 +73,7 @@ public class ExecutableDao {
         this.store = MetadataManager.getInstance(config).getStore();
     }
 
-    //获取该任务uuid对应的信息存储路径
+    //存储一个job的描述信息,比如job的执行class,job的执行中需要的参数,job中包含哪些子任务等
     private String pathOfJob(ExecutablePO job) {
         return pathOfJob(job.getUuid());
     }
@@ -78,7 +81,7 @@ public class ExecutableDao {
         return ResourceStore.EXECUTE_RESOURCE_ROOT + "/" + uuid; //execute
     }
 
-    ///存放每一个job任务的执行的输出信息
+    //存储一个job的输出内容---job的最终输出结果,job的状态,job的输出ket=value等结果
     public static String pathOfJobOutput(String uuid) {
         return ResourceStore.EXECUTE_OUTPUT_RESOURCE_ROOT + "/" + uuid;//execute_output
     }
@@ -174,7 +177,7 @@ public class ExecutableDao {
     //添加一个任务
     public ExecutablePO addJob(ExecutablePO job) throws PersistentException {
         try {
-            if (getJob(job.getUuid()) != null) {
+            if (getJob(job.getUuid()) != null) {//说明该job已经存在了,因此抛异常
                 throw new IllegalArgumentException("job id:" + job.getUuid() + " already exists");
             }
             writeJobResource(pathOfJob(job), job);

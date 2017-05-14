@@ -60,6 +60,7 @@ public class CubingExecutableUtil {
         params.put(CUBE_NAME, cubeName);
     }
 
+    //获取cube名字
     public static String getCubeName(Map<String, String> params) {
         return params.get(CUBE_NAME);
     }
@@ -68,6 +69,7 @@ public class CubingExecutableUtil {
         params.put(SEGMENT_ID, segmentId);
     }
 
+    //获取segmentID
     public static String getSegmentId(Map<String, String> params) {
         return params.get(SEGMENT_ID);
     }

@@ -51,7 +51,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
- *
+ * spring启动后,会自动启动该任务
  */
 @Controller
 @RequestMapping(value = "jobs")
@@ -68,6 +68,7 @@ public class JobController extends BasicController implements InitializingBean {
      * 
      * @see
      * org.springframework.beans.factory.InitializingBean#afterPropertiesSet()
+     * spring自动在一个时间点去启动该任务
      */
     @SuppressWarnings("unchecked")
     @Override
@@ -78,6 +79,7 @@ public class JobController extends BasicController implements InitializingBean {
         TimeZone.setDefault(tzone);
 
         final KylinConfig kylinConfig = KylinConfig.getInstanceFromEnv();
+        //job的调度使用什么实现类去实现
         final Scheduler<AbstractExecutable> scheduler = (Scheduler<AbstractExecutable>) SchedulerFactory.scheduler(kylinConfig.getSchedulerType());
 
         jobLock = (JobLock) ClassUtil.newInstance(kylinConfig.getJobControllerLock());
@@ -86,8 +88,8 @@ public class JobController extends BasicController implements InitializingBean {
             @Override
             public void run() {
                 try {
-                    scheduler.init(new JobEngineConfig(kylinConfig), jobLock);
-                    if (!scheduler.hasStarted()) {
+                    scheduler.init(new JobEngineConfig(kylinConfig), jobLock);//初始化该调度
+                    if (!scheduler.hasStarted()) {//说明初始化后,依然未开启调度
                         logger.info("Job engine doesn't start in this node.");
                     }
                 } catch (Exception e) {
@@ -96,6 +98,7 @@ public class JobController extends BasicController implements InitializingBean {
             }
         }).start();
 
+        //添加一个钩子,关闭该调度
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
             public void run() {

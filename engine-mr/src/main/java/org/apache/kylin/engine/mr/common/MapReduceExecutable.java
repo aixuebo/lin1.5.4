@@ -164,7 +164,7 @@ public class MapReduceExecutable extends AbstractExecutable {
                 }
                 executableManager.addJobInfo(getId(), hadoopCmdOutput.getInfo());
                 status = newStatus;
-                if (status.isComplete()) {
+                if (status.isComplete()) {//说明此时该MR任务已经完成
                     final Map<String, String> info = hadoopCmdOutput.getInfo();
                     readCounters(hadoopCmdOutput, info);
                     executableManager.addJobInfo(getId(), info);
@@ -175,7 +175,7 @@ public class MapReduceExecutable extends AbstractExecutable {
                         return new ExecuteResult(ExecuteResult.State.FAILED, output.toString());
                     }
                 }
-                Thread.sleep(context.getConfig().getYarnStatusCheckIntervalSeconds() * 1000);
+                Thread.sleep(context.getConfig().getYarnStatusCheckIntervalSeconds() * 1000);//每次请求后,休息一段时间间隔,再次发送请求
             }
 
             // try to kill running map-reduce job to release resources.

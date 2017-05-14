@@ -68,9 +68,9 @@ public class CubingJob extends DefaultChainedExecutable {
     public static final String SOURCE_RECORD_COUNT = "sourceRecordCount";//原始记录数
     public static final String SOURCE_SIZE_BYTES = "sourceSizeBytes";//原始文件大小
     public static final String CUBE_SIZE_BYTES = "byteSizeBytes";//cube的文件大小
-    public static final String MAP_REDUCE_WAIT_TIME = "mapReduceWaitTime";
+    public static final String MAP_REDUCE_WAIT_TIME = "mapReduceWaitTime";//mr任务过程中等待的时间
     private static final String DEPLOY_ENV_NAME = "envName";
-    private static final String PROJECT_INSTANCE_NAME = "projectName";
+    private static final String PROJECT_INSTANCE_NAME = "projectName";//设置该cube所属的project
 
     //build一个CubeSegment
     public static CubingJob createBuildJob(CubeSegment seg, String submitter, JobEngineConfig config) {
@@ -101,8 +101,8 @@ public class CubingJob extends DefaultChainedExecutable {
         format.setTimeZone(TimeZone.getTimeZone(config.getTimeZone()));
         result.setDeployEnvName(kylinConfig.getDeployEnv());
         result.setProjectName(projList.get(0).getName());
-        CubingExecutableUtil.setCubeName(seg.getCubeInstance().getName(), result.getParams());
-        CubingExecutableUtil.setSegmentId(seg.getUuid(), result.getParams());
+        CubingExecutableUtil.setCubeName(seg.getCubeInstance().getName(), result.getParams());//设置该执行关联的cube
+        CubingExecutableUtil.setSegmentId(seg.getUuid(), result.getParams());//设置关联的segment
         result.setName(seg.getCubeInstance().getName() + " - " + seg.getName() + " - " + jobType + " - " + format.format(new Date(System.currentTimeMillis())));
         result.setSubmitter(submitter);
         result.setNotifyList(seg.getCubeInstance().getDescriptor().getNotifyList());

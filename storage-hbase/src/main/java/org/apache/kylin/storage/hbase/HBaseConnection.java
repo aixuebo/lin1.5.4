@@ -135,6 +135,7 @@ public class HBaseConnection {
         connPool.clear();
     }
 
+    //获取hbase对应的配置文件对象
     public static Configuration getCurrentHBaseConfiguration() {
         if (configThreadLocal.get() == null) {
             String storageUrl = KylinConfig.getInstanceFromEnv().getStorageUrl();

@@ -97,7 +97,7 @@ public class ExecutableManager {
         executableDao.addJobOutput(executableOutputPO);
         if (executable instanceof DefaultChainedExecutable) {//可能由于多个任务组成,因此要为每一个子任务添加输出
             for (AbstractExecutable subTask : ((DefaultChainedExecutable) executable).getTasks()) {
-                addJobOutput(subTask);
+                addJobOutput(subTask);//每一个任务一个输出
             }
         }
     }
@@ -271,7 +271,7 @@ public class ExecutableManager {
         AbstractExecutable job = getJob(jobId);
         if (job instanceof DefaultChainedExecutable) {
             List<AbstractExecutable> tasks = ((DefaultChainedExecutable) job).getTasks();
-            for (AbstractExecutable task : tasks) {
+            for (AbstractExecutable task : tasks) {//子任务也都变成丢弃状态
                 if (!task.getStatus().isFinalState()) {
                     updateJobOutput(task.getId(), ExecutableState.DISCARDED, null, null);
                 }
@@ -280,7 +280,13 @@ public class ExecutableManager {
         updateJobOutput(jobId, ExecutableState.DISCARDED, null, null);//更新输出内容
     }
 
-    //更新一个任务的所有信息
+    /**
+     * 更新一个任务的所有信息
+     * @param jobId
+     * @param newStatus 该job最新的状态
+     * @param info 该job新增加的key=value的输出内容
+     * @param output 该job最终的输出字符串,比如job全部执行后,出现异常时候的内容
+     */
     public void updateJobOutput(String jobId, ExecutableState newStatus, Map<String, String> info, String output) {
         try {
             final ExecutableOutputPO jobOutput = executableDao.getJobOutput(jobId);//获取该任务
@@ -333,7 +339,7 @@ public class ExecutableManager {
         }
         try {
             //获取该任务的输出内容
-            ExecutableOutputPO output = executableDao.getJobOutput(id);
+            ExecutableOutputPO output = executableDao.getJobOutput(id);//先获取对象
             Preconditions.checkArgument(output != null, "there is no related output for job id:" + id);
             output.getInfo().putAll(info);//追加信息
             executableDao.updateJobOutput(output);//重新将内容写入到磁盘

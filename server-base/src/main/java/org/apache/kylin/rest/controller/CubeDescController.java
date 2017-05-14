@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 /**
  * @author xduo
- * 
+ * 该接口获取的是cube在web页面上填写的表单内容,即cube的描述内容
  */
 @Controller
 @RequestMapping(value = "/cube_desc")

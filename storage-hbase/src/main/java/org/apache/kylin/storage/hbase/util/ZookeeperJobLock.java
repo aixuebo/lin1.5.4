@@ -43,6 +43,8 @@ import com.google.common.collect.Iterables;
 
 /**
  * 使用zookeeper对文件进行锁
+ *
+ * 该锁用于在分布式环境下,多个节点可以都是job任务节点,因此该锁主要确保一个节点是job的节点,即kylin只有一个节点是jon节点
  */
 public class ZookeeperJobLock implements JobLock {
     private Logger logger = LoggerFactory.getLogger(ZookeeperJobLock.class);
@@ -53,7 +55,8 @@ public class ZookeeperJobLock implements JobLock {
     private InterProcessMutex sharedLock;//锁对象关注在scheduleID节点上
     private CuratorFramework zkClient;
 
-    //获取锁
+    //获取锁---每一次获取锁都要连接一次zookeeper,这个是非常耗时的,不明白为什么会这么设计,难道很少使用到该锁么?如果很频繁的创建锁对象,那么这里的性能是很有问题的
+    //注意:此时创建锁后并没有close关闭zookeeper,如果连接很多,那么都不关闭,那不是很有问题么?
     @Override
     public boolean lock() {
         this.scheduleID = schedulerId();
@@ -64,8 +67,8 @@ public class ZookeeperJobLock implements JobLock {
             throw new IllegalArgumentException("ZOOKEEPER_QUORUM is empty!");
         }
 
-        RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);//尝试3次.每次间隔1秒
-        this.zkClient = CuratorFrameworkFactory.newClient(zkConnectString, retryPolicy);
+        RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);//连接zookeeper的尝试连接代理,尝试3次.每次间隔1秒
+        this.zkClient = CuratorFrameworkFactory.newClient(zkConnectString, retryPolicy);//创建新的zookeeper客户端
         this.zkClient.start();
         this.sharedLock = new InterProcessMutex(zkClient, this.scheduleID);
         boolean hasLock = false;
@@ -87,9 +90,9 @@ public class ZookeeperJobLock implements JobLock {
         releaseLock();
     }
 
-    //连接zookeeper的串
+    //连接zookeeper的串,ip:port,ip:port,多个连接使用逗号拆分,该zookeeper的连接是从hbase中读取到的
     private String getZKConnectString() {
-        Configuration conf = HBaseConnection.getCurrentHBaseConfiguration();
+        Configuration conf = HBaseConnection.getCurrentHBaseConfiguration();//从hbase的配置文件获取zookeepker
         final String serverList = conf.get(HConstants.ZOOKEEPER_QUORUM);
         final String port = conf.get(HConstants.ZOOKEEPER_CLIENT_PORT);
         return org.apache.commons.lang3.StringUtils.join(Iterables.transform(Arrays.asList(serverList.split(",")), new Function<String, String>() {
@@ -101,7 +104,7 @@ public class ZookeeperJobLock implements JobLock {
         }), ",");
     }
 
-    //释放锁
+    //释放锁---只有在job调度节点shutdown的时候才会被释放该锁,让其他节点去再次获取成为job的调度节点
     private void releaseLock() {
         try {
             if (zkClient.getState().equals(CuratorFrameworkState.STARTED)) {

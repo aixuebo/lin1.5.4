@@ -55,7 +55,7 @@ public abstract class AbstractExecutable implements Executable, Idempotent {
     protected int retry = 0;//尝试次数
 
     private String name;
-    private String id;
+    private String id;//该任务的ID,UUID
     private Map<String, String> params = Maps.newHashMap();//存储该job的输出额外的信息
 
     protected static ExecutableManager executableManager = ExecutableManager.getInstance(KylinConfig.getInstanceFromEnv());//管理如何将job的信息和job的输出信息存储到磁盘上
@@ -333,6 +333,7 @@ public abstract class AbstractExecutable implements Executable, Idempotent {
         return getExtraInfoAsLong(output, END_TIME, 0L);
     }
 
+    //job已经执行了多久
     public static long getDuration(long startTime, long endTime) {
         if (startTime == 0) {
             return 0;
@@ -392,6 +393,7 @@ public abstract class AbstractExecutable implements Executable, Idempotent {
         return status == ExecutableState.DISCARDED;
     }
 
+    //是否还需要继续调度job
     protected boolean needRetry() {
         return this.retry <= KylinConfig.getInstanceFromEnv().getJobRetry();
     }

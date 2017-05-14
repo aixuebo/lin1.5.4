@@ -31,6 +31,7 @@ public interface Executable {
 
     String getName();//任务的名字
 
+    //运行一个job,返回job的返回值
     ExecuteResult execute(ExecutableContext executableContext) throws ExecuteException;//去执行一个job,传递一个上下文对象,返回执行结果对象
 
     ExecutableState getStatus();//job运行中的状态机

@@ -43,6 +43,7 @@ public class DefaultChainedExecutable extends AbstractExecutable implements Chai
         super();
     }
 
+    //每次调度会产生一个job去运行
     @Override
     protected ExecuteResult doWork(ExecutableContext context) throws ExecuteException {
         List<? extends Executable> executables = getTasks();
@@ -56,7 +57,7 @@ public class DefaultChainedExecutable extends AbstractExecutable implements Chai
             } else if (state == ExecutableState.ERROR) {
                 throw new IllegalStateException("invalid subtask state, subtask:" + subTask.getName() + ", state:" + subTask.getStatus());
             }
-            if (subTask.isRunnable()) {
+            if (subTask.isRunnable()) {//对ready状态的任务进行执行
                 return subTask.execute(context);
             }
         }
@@ -86,37 +87,38 @@ public class DefaultChainedExecutable extends AbstractExecutable implements Chai
         if (isDiscarded()) {
             setEndTime(System.currentTimeMillis());
             notifyUserStatusChange(executableContext, ExecutableState.DISCARDED);
-        } else if (result.succeed()) {
+        } else if (result.succeed()) {//说明此时一个小任务完成了
             List<? extends Executable> jobs = getTasks();
             boolean allSucceed = true;//表示是否所有的任务都成功了
             boolean hasError = false;//表示是否有任务失败
             boolean hasRunning = false;//表示是否有任务还在进行中
             for (Executable task : jobs) {
-                final ExecutableState status = task.getStatus();
-                if (status == ExecutableState.ERROR) {
+                final ExecutableState status = task.getStatus();//循环所有的子任务
+                if (status == ExecutableState.ERROR) {//说明任务有异常的子任务
                     hasError = true;
                 }
-                if (status != ExecutableState.SUCCEED) {
+                if (status != ExecutableState.SUCCEED) {//说明不是所有的都是成功的
                     allSucceed = false;
                 }
-                if (status == ExecutableState.RUNNING) {
+                if (status == ExecutableState.RUNNING) {//说明还有正在运行中的
                     hasRunning = true;
                 }
             }
-            if (allSucceed) {
+            if (allSucceed) {//说明全部完成了
                 setEndTime(System.currentTimeMillis());
-                jobService.updateJobOutput(getId(), ExecutableState.SUCCEED, null, null);
+                jobService.updateJobOutput(getId(), ExecutableState.SUCCEED, null, null);//因此本任务,即父任务设置成成功完成
                 notifyUserStatusChange(executableContext, ExecutableState.SUCCEED);
-            } else if (hasError) {
+            } else if (hasError) {//说明已经有异常了,则最终设置为该父任务为error
                 setEndTime(System.currentTimeMillis());
                 jobService.updateJobOutput(getId(), ExecutableState.ERROR, null, null);
                 notifyUserStatusChange(executableContext, ExecutableState.ERROR);
-            } else if (hasRunning) {
+            } else if (hasRunning) {//说明此时该任务还有子任务在运行中,因此父任务的状态也是运行中
+                //注意:目前没想明白说明情况下,子任务还在运行中,父任务却已经通知完成了,按道理不应该出现这种情况
                 jobService.updateJobOutput(getId(), ExecutableState.RUNNING, null, null);
-            } else {
+            } else {//说明还有任务在ready中,因此继续把该任务设置为ready,下一次系统调度的时候就会继续调度该任务,依次启动新的任务
                 jobService.updateJobOutput(getId(), ExecutableState.READY, null, null);
             }
-        } else {
+        } else {//说明任务已经失败了,则直接返回error
             setEndTime(System.currentTimeMillis());
             jobService.updateJobOutput(getId(), ExecutableState.ERROR, null, result.output());
             notifyUserStatusChange(executableContext, ExecutableState.ERROR);

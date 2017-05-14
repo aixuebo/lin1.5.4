@@ -142,6 +142,7 @@ public class JobService extends BasicService {
         }));
     }
 
+    //可以知道参数job集合中有多少个不同的状态
     private Set<ExecutableState> convertStatusEnumToStates(List<JobStatusEnum> statusList) {
         Set<ExecutableState> states;
         if (statusList == null || statusList.isEmpty()) {
@@ -155,6 +156,7 @@ public class JobService extends BasicService {
         return states;
     }
 
+    //获取开始时间
     private long getTimeStartInMillis(Calendar calendar, JobTimeFilterEnum timeFilter) {
         switch (timeFilter) {
         case LAST_ONE_DAY:
@@ -255,6 +257,7 @@ public class JobService extends BasicService {
         return getExecutableManager().getOutput(id);
     }
 
+    //为一个job转换成一个job实例
     private JobInstance getSingleJobInstance(AbstractExecutable job) {
         if (job == null) {
             return null;
