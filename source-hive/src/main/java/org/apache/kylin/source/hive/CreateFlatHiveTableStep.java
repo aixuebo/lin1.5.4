@@ -103,7 +103,7 @@ public class CreateFlatHiveTableStep extends AbstractExecutable {
 
     //获取该cube对应的配置文件
     private KylinConfig getCubeSpecificConfig() {
-        String cubeName = CubingExecutableUtil.getCubeName(getParams());
+        String cubeName = CubingExecutableUtil.getCubeName(getParams());//获取cube的名字
         CubeManager manager = CubeManager.getInstance(KylinConfig.getInstanceFromEnv());
         CubeInstance cube = manager.getCube(cubeName);
         return cube.getConfig();
@@ -118,16 +118,16 @@ public class CreateFlatHiveTableStep extends AbstractExecutable {
 
             int numReducers = 0;
             if (useRedistribute == true) {
-                long rowCount = readRowCountFromFile();
+                long rowCount = readRowCountFromFile();//读取一共多少条数据
                 if (!config.isEmptySegmentAllowed() && rowCount == 0) {
                     stepLogger.log("Detect upstream hive table is empty, " + "fail the job because \"kylin.job.allow.empty.segment\" = \"false\"");
                     return new ExecuteResult(ExecuteResult.State.ERROR, stepLogger.getBufferedLog());
                 }
 
-                numReducers = determineNumReducer(config, rowCount);
+                numReducers = determineNumReducer(config, rowCount);//决定多少个reduce
             }
 
-            createFlatHiveTable(config, numReducers);
+            createFlatHiveTable(config, numReducers);//创建宽表
             return new ExecuteResult(ExecuteResult.State.SUCCEED, stepLogger.getBufferedLog());
 
         } catch (Exception e) {

@@ -139,7 +139,7 @@ public class HiveMRInput implements IMRInput {
                 //先计算fact原是表有多少条数据,然后进行排序处理
                 final String rowCountOutputDir = JobBuilderSupport.getJobWorkingDir(conf, jobFlow.getId()) + "/row_count";//行数存储目录
                 jobFlow.addTask(createCountHiveTableStep(conf, flatDesc, jobFlow.getId(), rowCountOutputDir));//计算fact表符合条件的记录总共有多少行数据任务
-                jobFlow.addTask(createFlatHiveTableStep(conf, flatDesc, jobFlow.getId(), cubeName, true, rowCountOutputDir));//创建执行hive sql的执行器,将segment中的数据生成原始的hive临时表任务
+                jobFlow.addTask(createFlatHiveTableStep(conf, flatDesc, jobFlow.getId(), cubeName, true, rowCountOutputDir));//创建执行hive sql的执行器,将segment中的数据生成原始的hive临时表任务----根据行数设置reduce数量
             } else {
                 throw new IllegalArgumentException("Unknown value for kylin.hive.create.flat.table.method: " + createFlatTableMethod);
             }
@@ -241,7 +241,7 @@ public class HiveMRInput implements IMRInput {
             final String useDatabaseHql = "USE " + conf.getConfig().getHiveDatabaseForIntermediateTable() + ";\n";//use 数据库
             final String dropTableHql = JoinedFlatTable.generateDropTableStatement(flatTableDesc);//DROP TABLE IF EXISTS 删除语句
             final String createTableHql = JoinedFlatTable.generateCreateTableStatement(flatTableDesc, JobBuilderSupport.getJobWorkingDir(conf, jobId));//创建hive临时表
-            String insertDataHqls = JoinedFlatTable.generateInsertDataStatement(flatTableDesc, conf, redistribute);//INSERT OVERWRITE TABLE biao select...产生创建数据的sql
+            String insertDataHqls = JoinedFlatTable.generateInsertDataStatement(flatTableDesc, conf, redistribute);//INSERT OVERWRITE TABLE biao select...产生创建数据的sql----查询所有的表,select是IJoinedFlatTableDesc所有的字段,where条件是分区字段,DISTRIBUTE BY shared字段,这样能把结果分布到不同的节点上
 
             //执行上面的hive的sql
             CreateFlatHiveTableStep step = new CreateFlatHiveTableStep();
