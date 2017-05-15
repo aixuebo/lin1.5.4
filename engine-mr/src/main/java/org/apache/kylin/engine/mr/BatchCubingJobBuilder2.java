@@ -50,8 +50,8 @@ public class BatchCubingJobBuilder2 extends JobBuilderSupport {
     public CubingJob build() {
         logger.info("MR_V2 new job to BUILD segment " + seg);
 
-        final CubingJob result = CubingJob.createBuildJob((CubeSegment) seg, submitter, config);
-        final String jobId = result.getId();
+        final CubingJob result = CubingJob.createBuildJob((CubeSegment) seg, submitter, config);//设置该job的属性---比如开始时间、对应的cube以及segment等
+        final String jobId = result.getId();//uuid
         final String cuboidRootPath = getCuboidRootPath(jobId);//cuboid存储的根目录
 
         // Phase 1: Create Flat Table & Materialize Hive View in Lookup Tables

@@ -39,7 +39,7 @@ public class MultipleDictionaryValueEnumerator implements IDictionaryValueEnumer
     private List<Dictionary> dictionaryList;//多个字典
 
     public MultipleDictionaryValueEnumerator(List<DictionaryInfo> dictionaryInfoList) {
-        dictionaryList = Lists.newArrayListWithCapacity(dictionaryInfoList.size());
+        dictionaryList = Lists.newArrayListWithCapacity(dictionaryInfoList.size());//字典集合
         for (DictionaryInfo dictInfo : dictionaryInfoList) {
             dictionaryList.add(dictInfo.getDictionaryObject());
         }

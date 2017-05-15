@@ -112,7 +112,7 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
     private String indexPath;//设置二级索引目录
 
     @JsonProperty("rowkey_stats")
-    private List<Object[]> rowkeyStats = Lists.newArrayList();
+    private List<Object[]> rowkeyStats = Lists.newArrayList();//存储字典相关的信息,比如col.getName(), dict.getSize(), dict.getSizeOfId()即容纳多少个不同的值,以及每一个字典对应的编号占用多少个字节
 
     @JsonProperty("additionalInfo")
     @JsonInclude(JsonInclude.Include.NON_EMPTY)

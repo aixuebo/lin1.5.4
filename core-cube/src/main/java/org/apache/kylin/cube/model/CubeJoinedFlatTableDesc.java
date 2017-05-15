@@ -34,6 +34,7 @@ import com.google.common.collect.Maps;
 
 /**
  * 为一个cube的segment产生一个hive的临时中间表,用于存储该build需要的数据内容
+ * 字段只是包含rowkey需要的列+扩展列+字典列+度量需要的列
  */
 public class CubeJoinedFlatTableDesc implements IJoinedFlatTableDesc {
 
@@ -62,6 +63,7 @@ public class CubeJoinedFlatTableDesc implements IJoinedFlatTableDesc {
     }
 
     // check what columns from hive tables are required, and index them
+    //解析该cube
     private void parseCubeDesc() {
 
         //临时表
@@ -72,7 +74,7 @@ public class CubeJoinedFlatTableDesc implements IJoinedFlatTableDesc {
         }
 
         int columnIndex = 0;
-        for (TblColRef col : cubeDesc.listDimensionColumnsExcludingDerived(false)) {//选择需要的属性集合
+        for (TblColRef col : cubeDesc.listDimensionColumnsExcludingDerived(false)) {//选择需要的属性集合---刨除derived的列,因为推测列不应该参与builder
             columnIndexMap.put(col, columnIndex);
             columnList.add(col);
             columnIndex++;
@@ -83,7 +85,7 @@ public class CubeJoinedFlatTableDesc implements IJoinedFlatTableDesc {
         int measureSize = measures.size();
         for (int i = 0; i < measureSize; i++) {
             FunctionDesc func = measures.get(i).getFunction();
-            List<TblColRef> colRefs = func.getParameter().getColRefs();
+            List<TblColRef> colRefs = func.getParameter().getColRefs();//该度量函数需要的列集合
             if (colRefs != null) {
                 for (int j = 0; j < colRefs.size(); j++) {
                     TblColRef c = colRefs.get(j);

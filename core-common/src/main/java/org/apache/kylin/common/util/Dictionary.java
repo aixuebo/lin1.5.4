@@ -65,7 +65,7 @@ abstract public class Dictionary<T> implements Serializable {
 
     /**
      * @return the (maximum) size of value in bytes, determined by the longest value
-     * key未压缩前占用多少字节
+     * key未压缩前占用多少字节---即字典的value的原始内容对应的最大长度
      */
     abstract public int getSizeOfValue();
 
@@ -219,6 +219,7 @@ abstract public class Dictionary<T> implements Serializable {
     //将id转换成原始内容对应的字节数组,并且转换后的内容追加到returnValue中,从returnValue的offset位置开始追加
     abstract protected int getValueBytesFromIdImpl(int id, byte[] returnValue, int offset);
 
+    //将字典的内容输出到out中
     abstract public void dump(PrintStream out);
 
     //获取null值

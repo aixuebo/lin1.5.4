@@ -28,6 +28,7 @@ import org.apache.kylin.common.util.JsonUtil;
 import org.apache.kylin.dict.DictionaryInfo;
 import org.apache.kylin.dict.DictionaryInfoSerializer;
 
+//打印一组路径下所有字典内容
 public class DumpDictionaryCLI {
 
     //参数是一组path路径集合
@@ -46,13 +47,13 @@ public class DumpDictionaryCLI {
 
         if (f.getName().endsWith(".dict")) {//如果文件是.dict就执行
             DictionaryInfoSerializer ser = new DictionaryInfoSerializer();
-            DictionaryInfo dictInfo = ser.deserialize(new DataInputStream(new FileInputStream(f)));
+            DictionaryInfo dictInfo = ser.deserialize(new DataInputStream(new FileInputStream(f)));//反序列化该文件,得到字典对象
 
             System.out.println("============================================================================");
             System.out.println("File: " + f.getAbsolutePath());
-            System.out.println(new Date(dictInfo.getLastModified()));
-            System.out.println(JsonUtil.writeValueAsIndentString(dictInfo));
-            dictInfo.getDictionaryObject().dump(System.out);
+            System.out.println(new Date(dictInfo.getLastModified()));//字典的最后修改时间
+            System.out.println(JsonUtil.writeValueAsIndentString(dictInfo));//打印字典的元数据信息
+            dictInfo.getDictionaryObject().dump(System.out);//字典内容反序列化后打印出来
             System.out.println();
         }
     }

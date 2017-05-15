@@ -28,7 +28,8 @@ import org.apache.kylin.metadata.model.IJoinedFlatTableDesc;
 public class MRBatchCubingEngine implements IBatchCubingEngine {
 
     /**
-     * 为一个cube的segment产生一个hive的临时中间表,用于存储该build需要的数据内容
+     * 创建一个临时hive表,存储cube需要的字段,即在原有的表的基础上进行了一部分字段过滤
+     * 剩余的字段只是包含rowkey需要的列+扩展列+字典列+度量需要的列
      */
     @Override
     public IJoinedFlatTableDesc getJoinedFlatTableDesc(CubeDesc cubeDesc) {
@@ -36,7 +37,8 @@ public class MRBatchCubingEngine implements IBatchCubingEngine {
     }
 
     /**
-     * 为一个cube的segment产生一个hive的临时中间表,用于存储该build需要的数据内容
+     * 创建一个临时hive表,存储cube需要的字段,即在原有的表的基础上进行了一部分字段过滤
+     * 剩余的字段只是包含rowkey需要的列+扩展列+字典列+度量需要的列
      */
     @Override
     public IJoinedFlatTableDesc getJoinedFlatTableDesc(CubeSegment newSegment) {

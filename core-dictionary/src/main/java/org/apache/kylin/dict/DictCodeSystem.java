@@ -38,6 +38,7 @@ public class DictCodeSystem implements IFilterCodeSystem<String> {
         // singleton
     }
 
+    //判断value的编码内容是否表示null
     @Override
     public boolean isNull(String value) {
         if (value == null)

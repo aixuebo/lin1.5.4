@@ -26,6 +26,10 @@ import org.apache.kylin.metadata.model.TableDesc;
 /**
  * Any ITableSource that wishes to serve as input of MapReduce build engine must adapt to this interface.
  * 参见org.apache.kylin.source.hive.HiveMRInput实现类
+ *
+ * 提供了两个功能
+ * 1.表示用于对一个cube的segment创建一个临时的hive表,存储该cube需要的列集合,日后处理只需要处理该临时表即可
+ * 2.表示如何读取一个hive的table
  */
 public interface IMRInput {
 

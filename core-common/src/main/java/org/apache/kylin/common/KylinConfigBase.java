@@ -475,6 +475,7 @@ abstract public class KylinConfigBase implements Serializable {
         return getPropertiesByPrefix("kylin.cube.measure.customMeasureType.");
     }
 
+    //一个字典中最多允许多少个不同的值存在,默认值是3000万---仅仅限制TrieDictionary类型的字典
     public int getDictionaryMaxCardinality() {
         return Integer.parseInt(getOptional("kylin.dictionary.max.cardinality", "30000000"));
     }

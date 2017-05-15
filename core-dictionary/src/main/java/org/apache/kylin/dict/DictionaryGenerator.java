@@ -47,6 +47,7 @@ public class DictionaryGenerator {
 
     private static final String[] DATE_PATTERNS = new String[] { "yyyy-MM-dd", "yyyyMMdd" };//日期格式
 
+    //加载字典的最多允许多少个不同的值存在---仅仅限制TrieDictionary类型的字典
     private static int getDictionaryMaxCardinality() {
         try {
             return KylinConfig.getInstanceFromEnv().getDictionaryMaxCardinality();
@@ -56,6 +57,7 @@ public class DictionaryGenerator {
     }
 
     /**
+     * 构建一个字典
      * @param dataType 列的类型
      * @param valueEnumerator 如何读取该列的数据
      */
@@ -79,6 +81,7 @@ public class DictionaryGenerator {
     }
 
     /**
+     * 构建一个字典
      * @param builder 字典类
      * @param dictInfo 字典描述信息
      * @param valueEnumerator 如何读取该字典的列的数据
@@ -88,9 +91,9 @@ public class DictionaryGenerator {
         int nSamples = 5;
         ArrayList<String> samples = new ArrayList<String>(nSamples);
 
-        Dictionary<String> dict = builder.build(dictInfo, valueEnumerator, baseId, nSamples, samples);
+        Dictionary<String> dict = builder.build(dictInfo, valueEnumerator, baseId, nSamples, samples);//真正产生字典
 
-        // log a few samples
+        // log a few samples 打印抽样数据内容
         StringBuilder buf = new StringBuilder();
         for (String s : samples) {
             if (buf.length() > 0) {
@@ -102,13 +105,13 @@ public class DictionaryGenerator {
         logger.debug("Dictionary cardinality: " + dict.getSize());
         logger.debug("Dictionary builder class: " + builder.getClass().getName());
         logger.debug("Dictionary class: " + dict.getClass().getName());
-        if (dict instanceof TrieDictionary && dict.getSize() > DICT_MAX_CARDINALITY) {
+        if (dict instanceof TrieDictionary && dict.getSize() > DICT_MAX_CARDINALITY) {//说明字典的值太多了
             throw new IllegalArgumentException("Too high cardinality is not suitable for dictionary -- cardinality: " + dict.getSize());
         }
         return dict;
     }
 
-    //读取多个字典文件
+    //读取多个字典文件 进行合并
     public static Dictionary mergeDictionaries(DataType dataType, List<DictionaryInfo> sourceDicts) throws IOException {
         return buildDictionary(dataType, new MultipleDictionaryValueEnumerator(sourceDicts));
     }

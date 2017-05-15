@@ -183,7 +183,7 @@ public class CubeManager implements IRealizationProvider {
      * 为某一个cube的CubeSegment的某一列构建字典
      * @param cubeSeg 要处理的segment对象
      * @param col 要处理的某一个字段
-     * @param factTableValueProvider 该字段的数据在哪个路径下存放
+     * @param factTableValueProvider 如何读取该字段所有的属性值
      */
     public DictionaryInfo buildDictionary(CubeSegment cubeSeg, TblColRef col, DistinctColumnValuesProvider factTableValueProvider) throws IOException {
         CubeDesc cubeDesc = cubeSeg.getCubeDesc();

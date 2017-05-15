@@ -35,7 +35,7 @@ public class TimeStrDictionary extends Dictionary<String> {
 
     // Integer.MAX_VALUE - 1 to avoid cardinality (max_id - min_id + 1) overflow
     private static final int MAX_ID = Integer.MAX_VALUE - 1;//因为一天是86400秒, 一年31536000秒,该范围可以存储68年,因为时间戳从197x年开始计算的,所以68年是可以是正常范围的
-    private static final int MAX_LENGTH_OF_POSITIVE_LONG = 19;
+    private static final int MAX_LENGTH_OF_POSITIVE_LONG = 19;//时间格式yyyy-MM-dd HH:mm:ss
 
     @Override
     public int getMinId() {
@@ -53,6 +53,7 @@ public class TimeStrDictionary extends Dictionary<String> {
         return 4;
     }
 
+    //字典的value的原始内容对应的最大长度
     @Override
     public int getSizeOfValue() {
         return MAX_LENGTH_OF_POSITIVE_LONG;
@@ -96,6 +97,7 @@ public class TimeStrDictionary extends Dictionary<String> {
         }
     }
 
+    //将字典ID转换成字符串,然后在转换成字节数组
     @Override
     final protected byte[] getValueBytesFromIdImpl(int id) {
         String date = getValueFromId(id);

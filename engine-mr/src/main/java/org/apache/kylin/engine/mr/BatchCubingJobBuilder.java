@@ -52,7 +52,7 @@ public class BatchCubingJobBuilder extends JobBuilderSupport {
         logger.info("MR_V1 new job to BUILD segment " + seg);
 
         final CubingJob result = CubingJob.createBuildJob((CubeSegment) seg, submitter, config);
-        final String jobId = result.getId();
+        final String jobId = result.getId();//产生一个UUID
         final String cuboidRootPath = getCuboidRootPath(jobId);
 
         // Phase 1: Create Flat Table 为任务添加创建hive临时表的任务

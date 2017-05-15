@@ -27,6 +27,10 @@ import org.apache.kylin.metadata.model.IJoinedFlatTableDesc;
 
 public class MRBatchCubingEngine2 implements IBatchCubingEngine {
 
+    /**
+     * 创建一个临时hive表,存储cube需要的字段,即在原有的表的基础上进行了一部分字段过滤
+     * 剩余的字段只是包含rowkey需要的列+扩展列+字典列+度量需要的列
+     */
     @Override
     public IJoinedFlatTableDesc getJoinedFlatTableDesc(CubeDesc cubeDesc) {
         return new CubeJoinedFlatTableDesc(cubeDesc);

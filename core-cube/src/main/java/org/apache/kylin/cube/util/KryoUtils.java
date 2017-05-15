@@ -30,6 +30,7 @@ public class KryoUtils {
 
     private static ThreadLocal<Kryo> _Kryo = new ThreadLocal<>();
 
+    //对象序列化成字节数组
     public static byte[] serialize(Object obj) {
         Kryo kryo = getKryo();
         Output output = new Output(1024, 2014 * 1024);
@@ -37,17 +38,20 @@ public class KryoUtils {
         return output.toBytes();
     }
 
+    //字节数组反序列化成对象
     public static <T> T deserialize(byte[] bytes, Class<T> clazz) {
         Kryo kryo = getKryo();
         Input input = new Input(bytes);
         return kryo.readObject(input, clazz);
     }
 
+    //相当于copy数据,因此是先序列化,后反序列化
     public static <T> T copy(T origin, Class<T> clazz) {
         byte[] bytes = serialize(origin);
         return deserialize(bytes, clazz);
     }
 
+    //创建Kryo对象用于参与序列化与反序列化
     public static Kryo getKryo() {
         if (_Kryo.get() == null) {
             Kryo kryo = new Kryo();

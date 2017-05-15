@@ -26,6 +26,7 @@ import org.apache.kylin.common.util.Bytes;
  */
 public class NumberDictionaryBuilder<T> extends TrieDictionaryBuilder<T> {
 
+    //如何对value进行编码
     NumberDictionary.NumberBytesCodec codec = new NumberDictionary.NumberBytesCodec(NumberDictionary.MAX_DIGITS_BEFORE_DECIMAL_POINT);//如何对数字进行编码
 
     public NumberDictionaryBuilder(BytesConverter<T> bytesConverter) {

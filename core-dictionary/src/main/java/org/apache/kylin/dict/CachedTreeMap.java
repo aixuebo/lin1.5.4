@@ -56,25 +56,26 @@ public class CachedTreeMap<K extends WritableComparable, V extends Writable> ext
     private final Class<V> valueClazz;
     transient volatile Collection<V> values;
     private final LoadingCache<K, V> valueCache;
-    private final TreeSet<String> fileList;
+    private final TreeSet<String> fileList;//key组成的文件集合
     private final Configuration conf;
-    private final String baseDir;
-    private final String tmpDir;
+    private final String baseDir;//基础目录
+    private final String tmpDir;//临时目录
     private final FileSystem fs;
-    private final boolean persistent;
-    private final boolean immutable;
-    private long writeValueTime = 0;
-    private long readValueTime = 0;
+    private final boolean persistent;//是否最终需要持久化,true表示需要持久化
+    private final boolean immutable;//true表示不可变,即该CachedTreeMap不能有变化
+    private long writeValueTime = 0;//写数据一共花费的时间
+    private long readValueTime = 0;//读取数据一共花费的时间
 
     private static final int BUFFER_SIZE = 8 * 1024 * 1024;
 
+    //如何构建一个CachedTreeMap,即设置一些属性
     public static class CachedTreeMapBuilder<K, V> {
         private Class<K> keyClazz;
         private Class<V> valueClazz;
         private int maxCount = 8;
         private String baseDir;
         private boolean persistent;
-        private boolean immutable;
+        private boolean immutable;//true表示不可变
 
         public static CachedTreeMapBuilder newBuilder() {
             return new CachedTreeMapBuilder();
@@ -181,11 +182,13 @@ public class CachedTreeMap<K extends WritableComparable, V extends Writable> ext
         });
     }
 
+    //创建文件名字
     private String generateFileName(K key) {
         String file = (immutable ? baseDir : tmpDir) + "/cached_" + key.toString();
         return file;
     }
 
+    //当前工作目录
     public String getCurrentDir() {
         return immutable ? baseDir : tmpDir;
     }
@@ -217,12 +220,14 @@ public class CachedTreeMap<K extends WritableComparable, V extends Writable> ext
         }
     }
 
+    //先确保有哪些key
     public void loadEntry(CachedTreeMap other) {
         for (Object key : other.keySet()) {
             super.put((K)key, null);
         }
     }
 
+    //key作为文件名,value作为文件内容存储到HDFS上
     private void writeValue(K key, V value) {
         if (immutable) {
             return;
@@ -230,7 +235,7 @@ public class CachedTreeMap<K extends WritableComparable, V extends Writable> ext
         long t0 = System.currentTimeMillis();
         String fileName = generateFileName(key);
         Path filePath = new Path(fileName);
-        try (FSDataOutputStream out = fs.create(filePath, true, BUFFER_SIZE, (short) 5, BUFFER_SIZE * 8)) {
+        try (FSDataOutputStream out = fs.create(filePath, true, BUFFER_SIZE, (short) 5, BUFFER_SIZE * 8)) {//覆盖原始文件,产生64M的数据块,5个备份信息
             value.write(out);
             if (!persistent) {
                 fs.deleteOnExit(filePath);
@@ -244,13 +249,14 @@ public class CachedTreeMap<K extends WritableComparable, V extends Writable> ext
         }
     }
 
+    //读取key对应的文件内容
     private V readValue(K key) throws Exception {
         long t0 = System.currentTimeMillis();
-        String fileName = generateFileName(key);
+        String fileName = generateFileName(key);//根据key找到对应的文件
         Path filePath = new Path(fileName);
         try (FSDataInputStream input = fs.open(filePath, BUFFER_SIZE)) {
             V value = valueClazz.newInstance();
-            value.readFields(input);
+            value.readFields(input);//读取文件内容,反序列化成对象
             return value;
         } catch (Exception e) {
             logger.error(String.format("read value from %s exception: %s", fileName, e), e);
@@ -260,6 +266,7 @@ public class CachedTreeMap<K extends WritableComparable, V extends Writable> ext
         }
     }
 
+    //删除一个文件
     private void deleteValue(K key) {
         if (persistent && immutable) {
             return;
@@ -319,6 +326,7 @@ public class CachedTreeMap<K extends WritableComparable, V extends Writable> ext
         return (vs != null) ? vs : (values = new Values());
     }
 
+    //遍历每一个value对象
     class Values extends AbstractCollection<V> {
         @Override
         public Iterator<V> iterator() {
@@ -363,6 +371,7 @@ public class CachedTreeMap<K extends WritableComparable, V extends Writable> ext
         }
     }
 
+    //序列化
     @Override
     public void write(DataOutput out) throws IOException {
         assert persistent : "Only support serialize with persistent true";
@@ -376,6 +385,7 @@ public class CachedTreeMap<K extends WritableComparable, V extends Writable> ext
         }
     }
 
+    //反序列化
     @Override
     public void readFields(DataInput in) throws IOException {
         assert persistent : "Only support deserialize with persistent true";
@@ -392,6 +402,7 @@ public class CachedTreeMap<K extends WritableComparable, V extends Writable> ext
     }
 
     // clean up all tmp files
+    //清理所有文件
     @Override
     public void finalize() throws Throwable {
         if (persistent) {

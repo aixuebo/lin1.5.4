@@ -30,7 +30,7 @@ public interface IJoinedFlatTableDesc {
 
     DataModelDesc getDataModel();//该cube需要哪个模型
     
-    List<TblColRef> getAllColumns();//该cube需要的列集合
+    List<TblColRef> getAllColumns();//该cube需要的列集合---包含rowkey需要的列+扩展列+字典列+度量需要的列
     
     int getColumnIndex(TblColRef colRef);//获取一个列在列集合中的下标
 

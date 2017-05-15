@@ -29,7 +29,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * 字典的描述对象
- * 一个表的一个字段的值
+ * 一个表的一个字段的值进行字典处理
  * 注意:一个表一个字典可能包含多个DictionaryInfo对象,因为不同segment可能就包含一个该字典DictionaryInfo对象了
  */
 @SuppressWarnings("serial")
@@ -45,11 +45,11 @@ public class DictionaryInfo extends RootPersistentEntity {
     @JsonProperty("data_type")
     private String dataType;//该字段的类型
     @JsonProperty("input")
-    private TableSignature input;//该字段的签名,比如最后修改时间等
+    private TableSignature input;//该字段对应的表的签名,比如最后修改时间等
     @JsonProperty("dictionary_class")
     private String dictionaryClass;//该字典使用什么类去存储
     @JsonProperty("cardinality")
-    private int cardinality;//该字典容纳了多少条数据
+    private int cardinality;//该字典容纳了多少条不同的数据值
 
     transient Dictionary<?> dictionaryObject; //对应的字典对象,即dictionaryClass的实现类---包含了字典的实现class,以及字典存储的全部内容
 
@@ -81,9 +81,10 @@ public class DictionaryInfo extends RootPersistentEntity {
     // ----------------------------------------------------------------------------
 
     public String getResourcePath() {
-        return ResourceStore.DICT_RESOURCE_ROOT + "/" + sourceTable + "/" + sourceColumn + "/" + uuid + ".dict";
+        return ResourceStore.DICT_RESOURCE_ROOT + "/" + sourceTable + "/" + sourceColumn + "/" + uuid + ".dict";//每一个表-字段,存在多个字典,因此使用uuid进行标识
     }
 
+    //获取该表--字段对应的所有字典的根目录
     public String getResourceDir() {
         return ResourceStore.DICT_RESOURCE_ROOT + "/" + sourceTable + "/" + sourceColumn;
     }

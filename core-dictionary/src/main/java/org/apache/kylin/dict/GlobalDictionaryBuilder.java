@@ -31,7 +31,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * GlobalDictinary based on whole cube, to ensure one value has same dict id in different segments.
+ * 基于整个cube组成的全局字典,确保在不同的segment中,一个值有相同的字典ID
+ *
  * GlobalDictinary mainly used for count distinct measure to support rollup among segments.
+ * 全局的字典主要被适用于count distinct度量
  * Created by sunyerui on 16/5/24.
  */
 public class GlobalDictionaryBuilder implements IDictionaryBuilder {
@@ -42,15 +45,16 @@ public class GlobalDictionaryBuilder implements IDictionaryBuilder {
         if (dictInfo == null) {
             throw new IllegalArgumentException("GlobalDictinaryBuilder must used with an existing DictionaryInfo");
         }
-        String dictDir = KylinConfig.getInstanceFromEnv().getHdfsWorkingDirectory() + "resources/GlobalDict" + dictInfo.getResourceDir() + "/";
+        String dictDir = KylinConfig.getInstanceFromEnv().getHdfsWorkingDirectory() + "resources/GlobalDict" + dictInfo.getResourceDir() + "/";//存储全局的字典路径
 
         // Try to load the existing dict from cache, making sure there's only the same one object in memory
-        NavigableSet<String> dicts = MetadataManager.getInstance(KylinConfig.getInstanceFromEnv()).getStore().listResources(dictInfo.getResourceDir());
+        NavigableSet<String> dicts = MetadataManager.getInstance(KylinConfig.getInstanceFromEnv()).getStore().listResources(dictInfo.getResourceDir());//获取每一个segment对应的字典集合
+        //找到可追加的字典存储path集合
         ArrayList<String> appendDicts = new ArrayList<>();
         if (dicts != null && !dicts.isEmpty()) {
             for (String dict : dicts) {
-                DictionaryInfo info = MetadataManager.getInstance(KylinConfig.getInstanceFromEnv()).getStore().getResource(dict, DictionaryInfo.class, DictionaryInfoSerializer.INFO_SERIALIZER);
-                if (info.getDictionaryClass().equals(AppendTrieDictionary.class.getName())) {
+                DictionaryInfo info = MetadataManager.getInstance(KylinConfig.getInstanceFromEnv()).getStore().getResource(dict, DictionaryInfo.class, DictionaryInfoSerializer.INFO_SERIALIZER);//仅仅加载基础信息,不加载字典内容
+                if (info.getDictionaryClass().equals(AppendTrieDictionary.class.getName())) {//说明该字典是可追加的字典
                     appendDicts.add(dict);
                 }
             }
@@ -69,15 +73,15 @@ public class GlobalDictionaryBuilder implements IDictionaryBuilder {
         }
 
         byte[] value;
-        while (valueEnumerator.moveNext()) {
+        while (valueEnumerator.moveNext()) {//不断循环所有数据
             value = valueEnumerator.current();
             if (value == null) {
                 continue;
             }
             String v = Bytes.toString(value);
-            builder.addValue(v);
+            builder.addValue(v);//追加新的值
             if (returnSamples.size() < nSamples && returnSamples.contains(v) == false)
-                returnSamples.add(v);
+                returnSamples.add(v);//添加抽样数据
         }
         return builder.build(baseId);
     }

@@ -23,6 +23,7 @@ import java.util.ArrayList;
 
 import org.apache.kylin.common.util.Dictionary;
 
+//如何将数据构建成一个字典
 public interface IDictionaryBuilder {
 
     /**

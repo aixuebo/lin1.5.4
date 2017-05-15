@@ -52,7 +52,7 @@ public class CreateDictionaryJob extends AbstractHadoopJob {
 
             KylinConfig config = KylinConfig.getInstanceFromEnv();
 
-            DictionaryGeneratorCLI.processSegment(config, cubeName, segmentID, new DistinctColumnValuesProvider() {
+            DictionaryGeneratorCLI.processSegment(config, cubeName, segmentID, new DistinctColumnValuesProvider() {//如何读取一个字段对应的所有的字段值
                 @Override
                 public ReadableTable getDistinctValuesFor(TblColRef col) {
                     return new DFSFileTable(factColumnsInputPath + "/" + col.getName(), -1);//如何读取某一个列中的数据内容,该内容存储在输出的目录中,存储的内容是该字段所有不重复的数据内容集合

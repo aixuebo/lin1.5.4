@@ -47,7 +47,7 @@ public class DictionaryGeneratorCLI {
         CubeInstance cube = CubeManager.getInstance(config).getCube(cubeName);
         CubeSegment segment = cube.getSegmentById(segmentID);
 
-        processSegment(config, segment, factTableValueProvider);
+        processSegment(config, segment, factTableValueProvider);//对cube的segment去创建字典
     }
 
     /**
