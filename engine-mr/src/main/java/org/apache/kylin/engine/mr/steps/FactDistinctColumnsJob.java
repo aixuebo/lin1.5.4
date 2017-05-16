@@ -56,7 +56,7 @@ public class FactDistinctColumnsJob extends AbstractHadoopJob {
             options.addOption(OPTION_JOB_NAME);
             options.addOption(OPTION_CUBE_NAME);
             options.addOption(OPTION_CUBING_JOB_ID);
-            options.addOption(OPTION_OUTPUT_PATH);
+            options.addOption(OPTION_OUTPUT_PATH);//输出root/jobid/cube/fact_distinct_columns
             options.addOption(OPTION_SEGMENT_ID);
             options.addOption(OPTION_STATISTICS_ENABLED);
             options.addOption(OPTION_STATISTICS_OUTPUT);
@@ -103,7 +103,7 @@ public class FactDistinctColumnsJob extends AbstractHadoopJob {
                 System.out.println("Found segment " + segment);
             }
             setupMapper(cube.getSegmentById(segmentID));
-            setupReducer(output, "true".equalsIgnoreCase(statistics_enabled) ? columnsNeedDict.size() + 1 : columnsNeedDict.size());
+            setupReducer(output, "true".equalsIgnoreCase(statistics_enabled) ? columnsNeedDict.size() + 1 : columnsNeedDict.size());//每一个reduce表示一个字典的一个字段
 
             attachKylinPropsAndMetadata(cube, job.getConfiguration());
 
@@ -121,7 +121,7 @@ public class FactDistinctColumnsJob extends AbstractHadoopJob {
     }
 
     private void setupMapper(CubeSegment cubeSeg) throws IOException {
-        IMRTableInputFormat flatTableInputFormat = MRUtil.getBatchCubingInputSide(cubeSeg).getFlatTableInputFormat();//读取cube的hive临时表数据内容
+        IMRTableInputFormat flatTableInputFormat = MRUtil.getBatchCubingInputSide(cubeSeg).getFlatTableInputFormat();//读取cube的hive临时表数据内容,即根据segment的名字,读取到hive的临时宽表
         flatTableInputFormat.configureJob(job);
 
         job.setMapperClass(FactDistinctHiveColumnsMapper.class);//输出没i个列的index和对应的列值

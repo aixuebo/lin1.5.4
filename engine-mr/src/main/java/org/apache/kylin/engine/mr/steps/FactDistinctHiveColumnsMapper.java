@@ -69,7 +69,7 @@ public class FactDistinctHiveColumnsMapper<KEYIN> extends FactDistinctColumnsMap
         keyBuffer = ByteBuffer.allocate(4096);
         collectStatistics = Boolean.parseBoolean(context.getConfiguration().get(BatchConstants.CFG_STATISTICS_ENABLED));//是否进行统计
         if (collectStatistics) {
-            samplingPercentage = Integer.parseInt(context.getConfiguration().get(BatchConstants.CFG_STATISTICS_SAMPLING_PERCENT));
+            samplingPercentage = Integer.parseInt(context.getConfiguration().get(BatchConstants.CFG_STATISTICS_SAMPLING_PERCENT));//抽样百分比
             cuboidScheduler = new CuboidScheduler(cubeDesc);
             nRowKey = cubeDesc.getRowkey().getRowKeyColumns().length;
 
@@ -80,7 +80,7 @@ public class FactDistinctHiveColumnsMapper<KEYIN> extends FactDistinctColumnsMap
             allCuboidsBitSet = allCuboidsBitSetList.toArray(new Integer[cuboidIdList.size()][]);
             cuboidIds = cuboidIdList.toArray(new Long[cuboidIdList.size()]);
 
-            allCuboidsHLL = new HyperLogLogPlusCounter[cuboidIds.length];
+            allCuboidsHLL = new HyperLogLogPlusCounter[cuboidIds.length];//每一个cuboid对应一个统计对象
             for (int i = 0; i < cuboidIds.length; i++) {
                 allCuboidsHLL[i] = new HyperLogLogPlusCounter(cubeDesc.getConfig().getCubeStatsHLLPrecision());
             }
@@ -114,7 +114,7 @@ public class FactDistinctHiveColumnsMapper<KEYIN> extends FactDistinctColumnsMap
         }
 
         allCuboidsBitSet.add(indice);//添加子节点集合
-        Collection<Long> children = cuboidScheduler.getSpanningCuboid(cuboidId);
+        Collection<Long> children = cuboidScheduler.getSpanningCuboid(cuboidId);//获取该cuboid下的子节点
         for (Long childId : children) {
             addCuboidBitSet(childId, allCuboidsBitSet, allCuboids);
         }
@@ -125,14 +125,14 @@ public class FactDistinctHiveColumnsMapper<KEYIN> extends FactDistinctColumnsMap
     public void map(KEYIN key, Object record, Context context) throws IOException, InterruptedException {
         String[] row = flatTableInputFormat.parseMapperInput(record);//读取每一行数据,转换成列集合
         try {
-            for (int i = 0; i < factDictCols.size(); i++) {//循环fact表中字段集合
+            for (int i = 0; i < factDictCols.size(); i++) {//循环fact表中字典的字段集合
                 String fieldValue = row[dictionaryColumnIndex[i]];//fact表中列所在的index索引---获取该fact表中对应的字段值
                 if (fieldValue == null)
                     continue;
 
                 keyBuffer.clear();
-                //存储第几列,以及对应的值
-                keyBuffer.put(Bytes.toBytes(i)[3]); // one byte is enough  将int序号转换成字节数组,但是因为序号很少,一个字节就足够了,因此只获取第一个字节,即只存储了一个字节
+                //向reduce中输出 存储第几列,以及对应的值
+                keyBuffer.put(Bytes.toBytes(i)[3]); // one byte is enough  将int序号转换成字节数组,但是因为序号很少,一个字节就足够了,因此只获取最后一个字节,即只存储了一个字节
                 keyBuffer.put(Bytes.toBytes(fieldValue));//存储字节数组内容
                 outputKey.set(keyBuffer.array(), 0, keyBuffer.position());
                 context.write(outputKey, EMPTY_TEXT);
@@ -155,6 +155,7 @@ public class FactDistinctHiveColumnsMapper<KEYIN> extends FactDistinctColumnsMap
         for (int i = 0; i < nRowKey; i++) {
             Hasher hc = hf.newHasher();
             String colValue = row[intermediateTableDesc.getRowKeyColumnIndexes()[i]];//选择该列的值
+            //注意 set是重置的命令
             if (colValue != null) {
                 row_hashcodes[i].set(hc.putString(colValue).hash().asBytes());//将该列对应的值进行hash,然后hash后的字节数组存储起来
             } else {
@@ -163,6 +164,7 @@ public class FactDistinctHiveColumnsMapper<KEYIN> extends FactDistinctColumnsMap
         }
 
         // user the row key column hash to get a consolidated hash for each cuboid
+        //计算每一个cuboid的各自组合,每一行数据的值都要组装成各种组合,即cuboid,每一种组合都有一个值被设置
         for (int i = 0, n = allCuboidsBitSet.length; i < n; i++) {//循环有多少个cuboid节点
             Hasher hc = hf.newHasher();//每一个节点产生一个新的hash算法
             for (int position = 0; position < allCuboidsBitSet[i].length; position++) {//计算该cuboid下面有哪些维度是1
@@ -175,6 +177,7 @@ public class FactDistinctHiveColumnsMapper<KEYIN> extends FactDistinctColumnsMap
                 hc.putBytes(row_hashcodes[allCuboidsBitSet[i][position]].array());
             }
 
+            //将该cuboid对应的这行值,转换成具体的内容,比如cuboid包含3个属性,那么将这3个属性的值组装成一个值,查看组装后的不同值
             allCuboidsHLL[i].add(hc.hash().asBytes());//组装好的rowkey对应的hash值,不同的hash值,说明rowkey的内容是不同的
         }
     }

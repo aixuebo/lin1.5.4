@@ -57,7 +57,7 @@ public class CubeHTableUtil {
      * @param splitKeys 表示resgion分区
      */
     public static void createHTable(CubeSegment cubeSegment, byte[][] splitKeys) throws IOException {
-        String tableName = cubeSegment.getStorageLocationIdentifier();
+        String tableName = cubeSegment.getStorageLocationIdentifier();//hbase的表名字
         CubeInstance cubeInstance = cubeSegment.getCubeInstance();
         CubeDesc cubeDesc = cubeInstance.getDescriptor();
         KylinConfig kylinConfig = cubeDesc.getConfig();

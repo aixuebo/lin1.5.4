@@ -93,7 +93,7 @@ public class FactDistinctColumnsReducer extends KylinReducer<Text, Text, NullWri
         if (collectStatistics && (taskId == numberOfTasks - 1)) {//最后一个reduce
             // hll
             isStatistics = true;
-            statisticsOutput = conf.get(BatchConstants.CFG_STATISTICS_OUTPUT);
+            statisticsOutput = conf.get(BatchConstants.CFG_STATISTICS_OUTPUT);//统计输出的路径
             baseCuboidRowCountInMappers = Lists.newArrayList();
             cuboidHLLMap = Maps.newHashMap();
             samplingPercentage = Integer.parseInt(context.getConfiguration().get(BatchConstants.CFG_STATISTICS_SAMPLING_PERCENT));
@@ -121,7 +121,7 @@ public class FactDistinctColumnsReducer extends KylinReducer<Text, Text, NullWri
             for (Text value : values) {//循环每一个统计的值
                 HyperLogLogPlusCounter hll = new HyperLogLogPlusCounter(cubeConfig.getCubeStatsHLLPrecision());
                 ByteBuffer bf = ByteBuffer.wrap(value.getBytes(), 0, value.getLength());
-                hll.readRegisters(bf);
+                hll.readRegisters(bf);//将本次bf添加到HyperLogLogPlusCounter中
 
                 totalRowsBeforeMerge += hll.getCountEstimate();
 

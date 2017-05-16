@@ -80,7 +80,7 @@ public class CubeStatsReader {
     //一个segment一个统计文件
     public CubeStatsReader(CubeSegment cubeSegment, KylinConfig kylinConfig) throws IOException {
         ResourceStore store = ResourceStore.getStore(kylinConfig);
-        String statsKey = cubeSegment.getStatisticsResourcePath();//统计文件存储位置
+        String statsKey = cubeSegment.getStatisticsResourcePath();//统计文件存储位置  /cube_statistics/cubeName/cubeSegmentId.seq
         File tmpSeqFile = writeTmpSeqFile(store.getResource(statsKey).inputStream);//将文件写入到本地文件系统中
         Reader reader = null;
 
@@ -170,7 +170,7 @@ public class CubeStatsReader {
      */
     public static Map<Long, Double> getCuboidSizeMapFromRowCount(CubeSegment cubeSegment, Map<Long, Long> rowCountMap) {
         final CubeDesc cubeDesc = cubeSegment.getCubeDesc();
-        final List<Integer> rowkeyColumnSize = Lists.newArrayList();//每一个列对应的固定字节大小
+        final List<Integer> rowkeyColumnSize = Lists.newArrayList();//每一个列对应的编码后的固定长度
         final long baseCuboidId = Cuboid.getBaseCuboidId(cubeDesc);
         final Cuboid baseCuboid = Cuboid.findById(cubeDesc, baseCuboidId);
         final List<TblColRef> columnList = baseCuboid.getColumns();
@@ -180,6 +180,7 @@ public class CubeStatsReader {
             rowkeyColumnSize.add(dimEncMap.get(columnList.get(i)).getLengthOfEncoding());
         }
 
+        //key是每一个cuboid,value是该cuboid占用大小,单位是M
         Map<Long, Double> sizeMap = Maps.newHashMap();
         for (Map.Entry<Long, Long> entry : rowCountMap.entrySet()) {//计算多少个不同元素占用字节
             sizeMap.put(entry.getKey(), estimateCuboidStorageSize(cubeSegment, entry.getKey(), entry.getValue(), baseCuboidId, rowkeyColumnSize));
@@ -189,28 +190,37 @@ public class CubeStatsReader {
 
     /**
      * Estimate the cuboid's size
-     *
-     * @return the cuboid size in M bytes
-     * 计算多少个不同元素占用字节  单位是M
+     * @param cubeSegment
+     * @param cuboidId
+     * @param rowCount 该cuboid有多少个不同的数值
+     * @param baseCuboidId
+     * @param rowKeyColumnLength //每一个列对应编码后的长度
+     * @return 计算多少个不同元素占用字节  单位是M
      */
     private static double estimateCuboidStorageSize(CubeSegment cubeSegment, long cuboidId, long rowCount, long baseCuboidId, List<Integer> rowKeyColumnLength) {
 
+        /**
+         * 因为每个cuboid存储到hbase占用的空间取决于:rowkey+value,
+         * 1.rowkey由sharding需要的字节长度+cuboid需要的字节长度 + 真正的rowkey的编码后的值组成
+         * 2.value由度量的结果组成
+         *
+         */
         int bytesLength = cubeSegment.getRowKeyPreambleSize();
         KylinConfig kylinConf = cubeSegment.getConfig();
 
         long mask = Long.highestOneBit(baseCuboidId);
         long parentCuboidIdActualLength = Long.SIZE - Long.numberOfLeadingZeros(baseCuboidId);
-        for (int i = 0; i < parentCuboidIdActualLength; i++) {
+        for (int i = 0; i < parentCuboidIdActualLength; i++) {//表示该cuboid有多少个1,即有多少个字段
             if ((mask & cuboidId) > 0) {
-                bytesLength += rowKeyColumnLength.get(i); //colIO.getColumnLength(columnList.get(i));
+                bytesLength += rowKeyColumnLength.get(i); //colIO.getColumnLength(columnList.get(i));//表示每一个字段需要编码后的字节长度
             }
             mask = mask >> 1;
         }
 
-        // add the measure length
+        // add the measure length 添加度量需要的长度
         int space = 0;
         boolean isMemoryHungry = false;
-        for (MeasureDesc measureDesc : cubeSegment.getCubeDesc().getMeasures()) {
+        for (MeasureDesc measureDesc : cubeSegment.getCubeDesc().getMeasures()) {//循环所有的度量
             if (measureDesc.getFunction().getMeasureType().isMemoryHungry()) {
                 isMemoryHungry = true;
             }
@@ -219,13 +229,14 @@ public class CubeStatsReader {
         }
         bytesLength += space;
 
+        //每一个cuboid的固定长度*总内容数量,即最终的占用大小,单位是M
         double ret = 1.0 * bytesLength * rowCount / (1024L * 1024L);
         if (isMemoryHungry) {
-            double cuboidSizeMemHungryRatio = kylinConf.getJobCuboidSizeMemHungryRatio();
+            double cuboidSizeMemHungryRatio = kylinConf.getJobCuboidSizeMemHungryRatio();//默认值0.05
             logger.info("Cube is memory hungry, storage size estimation multiply " + cuboidSizeMemHungryRatio);
-            ret *= cuboidSizeMemHungryRatio;
+            ret *= cuboidSizeMemHungryRatio;//ret = ret * cuboidSizeMemHungryRatio,不理解为什么后来变得更小了
         } else {
-            double cuboidSizeRatio = kylinConf.getJobCuboidSizeRatio();
+            double cuboidSizeRatio = kylinConf.getJobCuboidSizeRatio();//默认值0.25
             logger.info("Cube is not memory hungry, storage size estimation multiply " + cuboidSizeRatio);
             ret *= cuboidSizeRatio;
         }
@@ -234,8 +245,8 @@ public class CubeStatsReader {
     }
 
     private void print(PrintWriter out) {
-        Map<Long, Long> cuboidRows = getCuboidRowEstimatesHLL();
-        Map<Long, Double> cuboidSizes = getCuboidSizeMap();
+        Map<Long, Long> cuboidRows = getCuboidRowEstimatesHLL();//每一个cuboid有多少个不同元素
+        Map<Long, Double> cuboidSizes = getCuboidSizeMap();//每一个cuboid占用字节数
         List<Long> cuboids = new ArrayList<Long>(cuboidRows.keySet());
         Collections.sort(cuboids);
 
@@ -243,13 +254,13 @@ public class CubeStatsReader {
         out.println("Statistics of " + seg);
         out.println();
         out.println("Cube statistics hll precision: " + cuboidRowEstimatesHLL.values().iterator().next().getPrecision());
-        out.println("Total cuboids: " + cuboidRows.size());
-        out.println("Total estimated rows: " + SumHelper.sumLong(cuboidRows.values()));
-        out.println("Total estimated size(MB): " + SumHelper.sumDouble(cuboidSizes.values()));
+        out.println("Total cuboids: " + cuboidRows.size());//一共产生多少个cuboid
+        out.println("Total estimated rows: " + SumHelper.sumLong(cuboidRows.values()));//总不同的数量
+        out.println("Total estimated size(MB): " + SumHelper.sumDouble(cuboidSizes.values()));//总大小
         out.println("Sampling percentage:  " + samplingPercentage);
         out.println("Mapper overlap ratio: " + mapperOverlapRatioOfFirstBuild);
-        printKVInfo(out);
-        printCuboidInfoTreeEntry(cuboidRows, cuboidSizes, out);
+        printKVInfo(out);    //打印每一个属性对应编码后的字节长度
+        printCuboidInfoTreeEntry(cuboidRows, cuboidSizes, out);//递归打印所有cuboid的内容
         out.println("----------------------------------------------------------------------------");
     }
 
@@ -261,6 +272,7 @@ public class CubeStatsReader {
         printCuboidInfoTree(-1L, baseCuboid, scheduler, cuboidRows, cuboidSizes, dimensionCount, 0, out);
     }
 
+    //打印每一个属性对应编码后的字节长度
     private void printKVInfo(PrintWriter writer) {
         Cuboid cuboid = Cuboid.getBaseCuboid(seg.getCubeDesc());
         RowKeyEncoder encoder = new RowKeyEncoder(seg, cuboid);
@@ -272,7 +284,7 @@ public class CubeStatsReader {
     private static void printCuboidInfoTree(long parent, long cuboidID, final CuboidScheduler scheduler, Map<Long, Long> cuboidRows, Map<Long, Double> cuboidSizes, int dimensionCount, int depth, PrintWriter out) {
         printOneCuboidInfo(parent, cuboidID, cuboidRows, cuboidSizes, dimensionCount, depth, out);
 
-        List<Long> children = scheduler.getSpanningCuboid(cuboidID);
+        List<Long> children = scheduler.getSpanningCuboid(cuboidID);//获取该cuboidID下所有子cuboidID
         Collections.sort(children);
 
         for (Long child : children) {
@@ -280,19 +292,29 @@ public class CubeStatsReader {
         }
     }
 
+    /**
+     *
+     * @param parent 父cubouid
+     * @param cuboidID 当前处理的cuboid
+     * @param cuboidRows 每一个cuboid有多少个不同的数据
+     * @param cuboidSizes 每一个cuboid占用空间,单位M
+     * @param dimensionCount basecuboid有多少个1,即有多少维
+     * @param depth 第几层
+     * @param out
+     */
     private static void printOneCuboidInfo(long parent, long cuboidID, Map<Long, Long> cuboidRows, Map<Long, Double> cuboidSizes, int dimensionCount, int depth, PrintWriter out) {
         StringBuffer sb = new StringBuffer();
-        for (int i = 0; i < depth; i++) {
+        for (int i = 0; i < depth; i++) {//多少深度,就打印多少个空格
             sb.append("    ");
         }
-        String cuboidName = Cuboid.getDisplayName(cuboidID, dimensionCount);
+        String cuboidName = Cuboid.getDisplayName(cuboidID, dimensionCount);//其实就是打印对应的二进制,让其知道cuboid是哪些位置是1
         sb.append("|---- Cuboid ").append(cuboidName);
 
         long rowCount = cuboidRows.get(cuboidID);
         double size = cuboidSizes.get(cuboidID);
-        sb.append(", est row: ").append(rowCount).append(", est MB: ").append(formatDouble(size));
+        sb.append(", est row: ").append(rowCount).append(", est MB: ").append(formatDouble(size));//打印多少行不同的数据,以及占用多少M空间
 
-        if (parent != -1) {
+        if (parent != -1) {//有父类,则打印收缩百分比,即当前节点不同值的数量/父节点不同值的数量
             sb.append(", shrink: ").append(formatDouble(100.0 * cuboidRows.get(cuboidID) / cuboidRows.get(parent))).append("%");
         }
 

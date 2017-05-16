@@ -466,6 +466,7 @@ public class CubeSegment implements Comparable<CubeSegment>, IBuildable, ISegmen
         return getStatisticsResourcePath(this.getCubeInstance().getName(), this.getUuid());
     }
 
+    //为每一个cube的segment输出统计信息  /cube_statistics/cubeName/cubeSegmentId.seq
     public static String getStatisticsResourcePath(String cubeName, String cubeSegmentId) {
         return ResourceStore.CUBE_STATISTICS_ROOT + "/" + cubeName + "/" + cubeSegmentId + ".seq";
     }

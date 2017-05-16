@@ -70,7 +70,7 @@ public class CreateHTableJob extends AbstractHadoopJob {
     CubeDesc cubeDesc = null;
     String segmentID = null;
     KylinConfig kylinConfig;
-    Path partitionFilePath;//rowkey划分存储的partition的路径  读取rowkey的分布范围
+    Path partitionFilePath;//rowkey划分存储的partition的路径  读取rowkey的分布范围---存储rowkey范围,按照该范围进行region拆分
 
     @Override
     public int run(String[] args) throws Exception {
@@ -96,7 +96,7 @@ public class CreateHTableJob extends AbstractHadoopJob {
         Configuration conf = HBaseConnection.getCurrentHBaseConfiguration();//获取hbase的配置信息
 
         try {
-            byte[][] splitKeys;
+            byte[][] splitKeys;//二维数组,第一维度表示每一个resgion范围,第二个维度表示每一个region分区时候的rowkey
             if (statsEnabled) {//如果统计
                 final Map<Long, Double> cuboidSizeMap = new CubeStatsReader(cubeSegment, kylinConfig).getCuboidSizeMap();//计算每一个cuboid占用多少字节,单位是M
                 splitKeys = getRegionSplitsFromCuboidStatistics(cuboidSizeMap, kylinConfig, cubeSegment, partitionFilePath.getParent());
@@ -104,7 +104,7 @@ public class CreateHTableJob extends AbstractHadoopJob {
                 splitKeys = getRegionSplits(conf, partitionFilePath);
             }
 
-            CubeHTableUtil.createHTable(cubeSegment, splitKeys);//为segment创建hbase的表
+            CubeHTableUtil.createHTable(cubeSegment, splitKeys);//为segment创建hbase的表--分配每一个region范围,分配协处理器
             return 0;
         } catch (Exception e) {
             printUsage(options);
@@ -167,12 +167,12 @@ public class CreateHTableJob extends AbstractHadoopJob {
      * @param cubeSegment
      * @param hfileSplitsOutputFolder
      * @return
-     * @throws IOException
+     * @throws IOException 返回值是每一个region存储的cuboid的边界
      */
     public static byte[][] getRegionSplitsFromCuboidStatistics(final Map<Long, Double> cubeSizeMap, final KylinConfig kylinConfig, final CubeSegment cubeSegment, final Path hfileSplitsOutputFolder) throws IOException {
 
         final CubeDesc cubeDesc = cubeSegment.getCubeDesc();
-        float cut = cubeDesc.getConfig().getKylinHBaseRegionCut();//最终切分成多少个region
+        float cut = cubeDesc.getConfig().getKylinHBaseRegionCut();//单位G,每一个region存储多大数据
 
         logger.info("Cut for HBase region is " + cut + "GB");
 
@@ -183,9 +183,9 @@ public class CreateHTableJob extends AbstractHadoopJob {
 
         List<Long> allCuboids = Lists.newArrayList();//存储所有的cuboid集合
         allCuboids.addAll(cubeSizeMap.keySet());
-        Collections.sort(allCuboids);
+        Collections.sort(allCuboids);//排序
 
-        int nRegion = Math.round((float) (totalSizeInM / (cut * 1024L)));//每一个region多少M
+        int nRegion = Math.round((float) (totalSizeInM / (cut * 1024L)));//region数量,理论上totalSizeInM>cut,因此表示可以拆分成多少个region
         //校验范围在最大值和最小值之间
         nRegion = Math.max(kylinConfig.getHBaseRegionCountMin(), nRegion);
         nRegion = Math.min(kylinConfig.getHBaseRegionCountMax(), nRegion);
@@ -202,12 +202,12 @@ public class CreateHTableJob extends AbstractHadoopJob {
                 nRegion = Short.MAX_VALUE;
             }
 
-            if (nRegion != original) {
+            if (nRegion != original) {//说明region数量有调整了
                 logger.info("Region count is adjusted from " + original + " to " + nRegion + " to help random sharding");
             }
         }
 
-        int mbPerRegion = (int) (totalSizeInM / nRegion);
+        int mbPerRegion = (int) (totalSizeInM / nRegion);//每一个region最终多大
         mbPerRegion = Math.max(1, mbPerRegion);
 
         logger.info("Total size " + totalSizeInM + "M (estimated)");
@@ -225,8 +225,8 @@ public class CreateHTableJob extends AbstractHadoopJob {
             }
             
             double[] regionSizes = new double[nRegion];
-            for (long cuboidId : allCuboids) {
-                double estimatedSize = cubeSizeMap.get(cuboidId);
+            for (long cuboidId : allCuboids) {//循环所有的cuboid
+                double estimatedSize = cubeSizeMap.get(cuboidId);//该cuboid对应的size,单位是M
                 double magic = 23;
                 int shardNum = (int) (estimatedSize * magic / mbPerRegion + 1);
                 if (shardNum < 1) {
@@ -258,17 +258,17 @@ public class CreateHTableJob extends AbstractHadoopJob {
             return getSplitsByRegionCount(nRegion);
 
         } else {
-            List<Long> regionSplit = Lists.newArrayList();
+            List<Long> regionSplit = Lists.newArrayList();//拆分点的cuboid
 
-            long size = 0;
+            long size = 0;//此时region的大小
             int regionIndex = 0;
-            int cuboidCount = 0;
-            for (int i = 0; i < allCuboids.size(); i++) {
+            int cuboidCount = 0;//此时region中包含的cuboid的数量
+            for (int i = 0; i < allCuboids.size(); i++) {//循环所有的cuboid
                 long cuboidId = allCuboids.get(i);
-                if (size >= mbPerRegion || (size + cubeSizeMap.get(cuboidId)) >= mbPerRegion * 1.2) {
+                if (size >= mbPerRegion || (size + cubeSizeMap.get(cuboidId)) >= mbPerRegion * 1.2) {//切换一个region
                     // if the size already bigger than threshold, or it will exceed by 20%, cut for next region
                     regionSplit.add(cuboidId);
-                    logger.info("Region " + regionIndex + " will be " + size + " MB, contains cuboids < " + cuboidId + " (" + cuboidCount + ") cuboids");
+                    logger.info("Region " + regionIndex + " will be " + size + " MB, contains cuboids < " + cuboidId + " (" + cuboidCount + ") cuboids");//打印每一个region的最终大小,单位M,该segment包含多少个cuboid
                     size = 0;
                     cuboidCount = 0;
                     regionIndex++;
@@ -286,6 +286,14 @@ public class CreateHTableJob extends AbstractHadoopJob {
         }
     }
 
+    /**
+     *
+     * @param innerRegionSplits
+     * @param mbPerRegion 每一个region多少M
+     * @param outputFolder 存储路径
+     * @param kylinConfig
+     * @throws IOException
+     */
     protected static void saveHFileSplits(final List<HashMap<Long, Double>> innerRegionSplits, int mbPerRegion, final Path outputFolder, final KylinConfig kylinConfig) throws IOException {
 
         if (outputFolder == null) {
@@ -296,22 +304,22 @@ public class CreateHTableJob extends AbstractHadoopJob {
         // note read-write separation, respect HBase FS here
         Configuration hbaseConf = HBaseConnection.getCurrentHBaseConfiguration();
         FileSystem fs = FileSystem.get(hbaseConf);
-        if (fs.exists(outputFolder) == false) {
+        if (fs.exists(outputFolder) == false) {//创建该文件路径
             fs.mkdirs(outputFolder);
         }
 
-        final float hfileSizeGB = kylinConfig.getHBaseHFileSizeGB();
-        float hfileSizeMB = hfileSizeGB * 1024;
+        final float hfileSizeGB = kylinConfig.getHBaseHFileSizeGB();//单位GB,hbase的Hfile文件大小
+        float hfileSizeMB = hfileSizeGB * 1024;//转换成M
         if (hfileSizeMB > mbPerRegion) {
             hfileSizeMB = mbPerRegion;
         }
 
         // keep the tweak for sandbox test
-        if (hfileSizeMB > 0.0 && kylinConfig.isDevEnv()) {
+        if (hfileSizeMB > 0.0 && kylinConfig.isDevEnv()) {//说明是开发环境
             hfileSizeMB = mbPerRegion / 2;
         }
 
-        int compactionThreshold = Integer.valueOf(hbaseConf.get("hbase.hstore.compactionThreshold", "3"));
+        int compactionThreshold = Integer.valueOf(hbaseConf.get("hbase.hstore.compactionThreshold", "3"));//压缩率
         logger.info("hbase.hstore.compactionThreshold is " + compactionThreshold);
         if (hfileSizeMB > 0.0 && hfileSizeMB * compactionThreshold < mbPerRegion) {
             hfileSizeMB = mbPerRegion / compactionThreshold;

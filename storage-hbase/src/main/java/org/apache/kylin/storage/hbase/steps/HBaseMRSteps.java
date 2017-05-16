@@ -88,13 +88,14 @@ public class HBaseMRSteps extends JobBuilderSupport {
     }
 
     //读取rowkey的分布范围--创建hbase的table表
+    //当使用统计,即withStats=true的时候,则不会使用ARG_PARTITION属性
     private HadoopShellExecutable createCreateHTableStep(String jobId, boolean withStats) {
         HadoopShellExecutable createHtableStep = new HadoopShellExecutable();
         createHtableStep.setName(ExecutableConstants.STEP_NAME_CREATE_HBASE_TABLE);
         StringBuilder cmd = new StringBuilder();
         appendExecCmdParameters(cmd, BatchConstants.ARG_CUBE_NAME, seg.getRealization().getName());
         appendExecCmdParameters(cmd, BatchConstants.ARG_SEGMENT_ID, seg.getUuid());
-        appendExecCmdParameters(cmd, BatchConstants.ARG_PARTITION, getRowkeyDistributionOutputPath(jobId) + "/part-r-00000");
+        appendExecCmdParameters(cmd, BatchConstants.ARG_PARTITION, getRowkeyDistributionOutputPath(jobId) + "/part-r-00000");///root/jobid/segmentName/rowkey_stats/part-r-00000
         appendExecCmdParameters(cmd, BatchConstants.ARG_STATS_ENABLED, String.valueOf(withStats));
 
         createHtableStep.setJobParams(cmd.toString());
@@ -130,7 +131,7 @@ public class HBaseMRSteps extends JobBuilderSupport {
 
     //读取rowkey--所有度量的值作为输入源,输出到hbase中,rowkey不变,只是将所有的度量值,拆分成若干个列族,存放到不同的列里面
     public MapReduceExecutable createConvertCuboidToHfileStep(String jobId) {
-        String cuboidRootPath = getCuboidRootPath(jobId);
+        String cuboidRootPath = getCuboidRootPath(jobId);//root/jobid/segmentName/cuboid
         String inputPath = cuboidRootPath + (cuboidRootPath.endsWith("/") ? "" : "/") + "*";
 
         MapReduceExecutable createHFilesStep = new MapReduceExecutable();
@@ -141,8 +142,8 @@ public class HBaseMRSteps extends JobBuilderSupport {
         appendExecCmdParameters(cmd, BatchConstants.ARG_CUBE_NAME, seg.getRealization().getName());
         appendExecCmdParameters(cmd, BatchConstants.ARG_PARTITION, getRowkeyDistributionOutputPath(jobId) + "/part-r-00000_hfile");
         appendExecCmdParameters(cmd, BatchConstants.ARG_INPUT, inputPath);
-        appendExecCmdParameters(cmd, BatchConstants.ARG_OUTPUT, getHFilePath(jobId));
-        appendExecCmdParameters(cmd, BatchConstants.ARG_HTABLE_NAME, seg.getStorageLocationIdentifier());
+        appendExecCmdParameters(cmd, BatchConstants.ARG_OUTPUT, getHFilePath(jobId));///root/segmentName/hfile
+        appendExecCmdParameters(cmd, BatchConstants.ARG_HTABLE_NAME, seg.getStorageLocationIdentifier());//hbase的table名字
         appendExecCmdParameters(cmd, BatchConstants.ARG_JOB_NAME, "Kylin_HFile_Generator_" + seg.getRealization().getName() + "_Step");
 
         createHFilesStep.setMapReduceParams(cmd.toString());
@@ -195,11 +196,12 @@ public class HBaseMRSteps extends JobBuilderSupport {
         return mergingHDFSPaths;
     }
 
+    ///root/segmentName/hfile  用于hfile文件的输出目录
     public String getHFilePath(String jobId) {
         return HBaseConnection.makeQualifiedPathInHBaseCluster(getJobWorkingDir(jobId) + "/" + seg.getRealization().getName() + "/hfile/");
     }
 
-    //rowkey的分布输出---输出内容是rowkey集合
+    //rowkey的分布输出---输出内容是rowkey集合   /root/jobid/segmentName/rowkey_stats
     public String getRowkeyDistributionOutputPath(String jobId) {
         return HBaseConnection.makeQualifiedPathInHBaseCluster(getJobWorkingDir(jobId) + "/" + seg.getRealization().getName() + "/rowkey_stats");
     }

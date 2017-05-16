@@ -39,7 +39,7 @@ public class BatchCubingJobBuilder2 extends JobBuilderSupport {
     private static final Logger logger = LoggerFactory.getLogger(BatchCubingJobBuilder2.class);
 
     private final IMRBatchCubingInputSide inputSide;
-    private final IMRBatchCubingOutputSide2 outputSide;
+    private final IMRBatchCubingOutputSide2 outputSide;//org.apache.kylin.storage.hbase.steps.HBaseMROutput2Transition
 
     public BatchCubingJobBuilder2(CubeSegment newSegment, String submitter) {
         super(newSegment, submitter);
@@ -55,23 +55,26 @@ public class BatchCubingJobBuilder2 extends JobBuilderSupport {
         final String cuboidRootPath = getCuboidRootPath(jobId);//cuboid存储的根目录
 
         // Phase 1: Create Flat Table & Materialize Hive View in Lookup Tables
+        //制作宽表,此时临时hive表内是有数据了,即后续只需要查询该宽表即可---宽表名字由segment的UUID组成,因此获取segment,就等于读取到宽表了
         inputSide.addStepPhase1_CreateFlatTable(result);
 
         // Phase 2: Build Dictionary
-        result.addTask(createFactDistinctColumnsStepWithStats(jobId));
-        result.addTask(createBuildDictionaryStep(jobId));
+        //读取宽表
+        result.addTask(createFactDistinctColumnsStepWithStats(jobId));//-output  root/jobid/cube/fact_distinct_columns  -statisticsoutput 统计输出目录 root/jobid/cube/statistics
+        result.addTask(createBuildDictionaryStep(jobId));//输入是root/jobid/cube/fact_distinct_columns,读取输入下/column文件夹,为每一个列建立字典
         result.addTask(createSaveStatisticsStep(jobId));//根据对cube的统计结果,决定使用什么算法处理cube的build
-        outputSide.addStepPhase2_BuildDictionary(result);
+        //初始化hbase的一些情况
+        outputSide.addStepPhase2_BuildDictionary(result);//创建hbase的table
 
-        // Phase 3: Build Cube
+        // Phase 3: Build Cube 真正的builder过程
         addLayerCubingSteps(result, jobId, cuboidRootPath); // layer cubing, only selected algorithm will execute //执行MR任务,CuboidJob中会进行过滤,只有layout算法的才会被执行,否则都是skip输出,即跳过执行
         result.addTask(createInMemCubingStep(jobId, cuboidRootPath)); // inmem cubing, only selected algorithm will execute 只有内存方法的时候才会被执行,该函数里面有判断语句
         outputSide.addStepPhase3_BuildCube(result);
 
-        // Phase 4: Update Metadata & Cleanup
+        // Phase 4: Update Metadata & Cleanup 清理工作
         result.addTask(createUpdateCubeInfoAfterBuildStep(jobId));//更新cube的元数据以及segment的元数据信息
-        inputSide.addStepPhase4_Cleanup(result);
-        outputSide.addStepPhase4_Cleanup(result);
+        inputSide.addStepPhase4_Cleanup(result);//删除临时hive的宽表
+        outputSide.addStepPhase4_Cleanup(result);//删除hbase的一些清理工作
 
         return result;
     }

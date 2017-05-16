@@ -491,16 +491,16 @@ public abstract class AbstractHadoopJob extends Configured implements Tool {
         // write cube / model_desc / cube_desc / dict / table
         ArrayList<String> dumpList = new ArrayList<String>();
         dumpList.add(cube.getResourcePath());
-        dumpList.add(cube.getDescriptor().getModel().getResourcePath());
-        dumpList.add(cube.getDescriptor().getResourcePath());
+        dumpList.add(cube.getDescriptor().getModel().getResourcePath());//model路径
+        dumpList.add(cube.getDescriptor().getResourcePath());//cube的路径
 
-        for (String tableName : cube.getDescriptor().getModel().getAllTables()) {
+        for (String tableName : cube.getDescriptor().getModel().getAllTables()) {//model依赖的所有table路径
             TableDesc table = metaMgr.getTableDesc(tableName);
             dumpList.add(table.getResourcePath());
-            List<String> dependentResources = SourceFactory.getMRDependentResources(table);
+            List<String> dependentResources = SourceFactory.getMRDependentResources(table);//以及table依赖的所有table路径
             dumpList.addAll(dependentResources);
         }
-        for (CubeSegment segment : cube.getSegments()) {
+        for (CubeSegment segment : cube.getSegments()) {//所有segment依赖的路径
             dumpList.addAll(segment.getDictionaryPaths());
         }
 

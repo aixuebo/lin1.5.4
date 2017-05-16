@@ -37,7 +37,7 @@ import com.google.common.collect.Sets;
 public class CuboidScheduler {
 
     private final CubeDesc cubeDesc;
-    private final long max;//最多多少个cuboid节点
+    private final long max;//最多多少个cuboid节点,即2^n次方-1
     private final Map<Long, List<Long>> cache;//记录每一个cuboid下有哪些子节点集合的映射
 
     public CuboidScheduler(CubeDesc cubeDesc) {

@@ -73,10 +73,10 @@ public class JobBuilderSupport {
         StringBuilder cmd = new StringBuilder();
         appendMapReduceParameters(cmd);//追加-conf path 命令
         appendExecCmdParameters(cmd, BatchConstants.ARG_CUBE_NAME, seg.getRealization().getName());//-cubename cubename
-        appendExecCmdParameters(cmd, BatchConstants.ARG_OUTPUT, getFactDistinctColumnsPath(jobId));//-output
+        appendExecCmdParameters(cmd, BatchConstants.ARG_OUTPUT, getFactDistinctColumnsPath(jobId));//-output  root/jobid/cube/fact_distinct_columns
         appendExecCmdParameters(cmd, BatchConstants.ARG_SEGMENT_ID, seg.getUuid());//-segmentid segment的UUID
         appendExecCmdParameters(cmd, BatchConstants.ARG_STATS_ENABLED, String.valueOf(withStats));//-statisticsenabled 是否开启统计
-        appendExecCmdParameters(cmd, BatchConstants.ARG_STATS_OUTPUT, getStatisticsPath(jobId));//-statisticsoutput 统计输出目录
+        appendExecCmdParameters(cmd, BatchConstants.ARG_STATS_OUTPUT, getStatisticsPath(jobId));//-statisticsoutput 统计输出目录 root/jobid/cube/statistics
         appendExecCmdParameters(cmd, BatchConstants.ARG_STATS_SAMPLING_PERCENT, String.valueOf(config.getConfig().getCubingInMemSamplingPercent()));//-statisticssamplingpercent 统计抽样百分比
         appendExecCmdParameters(cmd, BatchConstants.ARG_JOB_NAME, "Kylin_Fact_Distinct_Columns_" + seg.getRealization().getName() + "_Step");//-jobname
         appendExecCmdParameters(cmd, BatchConstants.ARG_CUBING_JOB_ID, jobId);//-cubingJobId jobid
@@ -95,7 +95,7 @@ public class JobBuilderSupport {
         StringBuilder cmd = new StringBuilder();
         appendExecCmdParameters(cmd, BatchConstants.ARG_CUBE_NAME, seg.getRealization().getName());//-cubename cubename
         appendExecCmdParameters(cmd, BatchConstants.ARG_SEGMENT_ID, seg.getUuid());//-segmentid segment的UUID
-        appendExecCmdParameters(cmd, BatchConstants.ARG_INPUT, getFactDistinctColumnsPath(jobId));//-input
+        appendExecCmdParameters(cmd, BatchConstants.ARG_INPUT, getFactDistinctColumnsPath(jobId));//-input root/jobid/cube/fact_distinct_columns
 
         buildDictionaryStep.setJobParams(cmd.toString());
         buildDictionaryStep.setJobClass(CreateDictionaryJob.class);//mr的主要类
@@ -146,11 +146,12 @@ public class JobBuilderSupport {
         return getJobWorkingDir(config, jobId);
     }
 
+    //root/jobid/segmentName
     public String getRealizationRootPath(String jobId) {
         return getJobWorkingDir(jobId) + "/" + seg.getRealization().getName();
     }
 
-    //获取该job的cuboid目录
+    //获取该job的cuboid目录  root/jobid/segmentName/cuboid
     public String getCuboidRootPath(String jobId) {
         return getRealizationRootPath(jobId) + "/cuboid/";
     }
@@ -182,12 +183,12 @@ public class JobBuilderSupport {
         }
     }
 
-    //输出目录
+    //输出目录root/jobid/cube/fact_distinct_columns
     public String getFactDistinctColumnsPath(String jobId) {
         return getRealizationRootPath(jobId) + "/fact_distinct_columns";
     }
 
-    //统计的输出目录
+    //统计的输出目录 root/jobid/cube/statistics
     public String getStatisticsPath(String jobId) {
         return getRealizationRootPath(jobId) + "/statistics";
     }

@@ -129,6 +129,24 @@ public class HiveMRInput implements IMRInput {
 
             final KylinConfig kylinConfig = CubeManager.getInstance(conf.getConfig()).getCube(cubeName).getConfig();
 
+            /**
+             * 1方法有点没效率
+             * a.先执行宽表sql,将宽表需要的字段从hive原始表中抽取出来
+             * b.对宽表执行count的sql
+             * c.对宽表根据count和每一个reduce需要处理的记录的数量,设置reduce数量
+             * d.再次对宽表进行处理,使用Redistribute语法平均分配数据
+             * 2.方法
+             * a.先计算fact表的count的sql---加入分区和filter条件后计算的fact表count
+             * b.根据count计算reduce的数量
+             * c.处理宽表,并且使用Redistribute语法平均分配数据
+             *
+             * 问题:
+             * 1.方法1扫描了3次数据源,方法2扫描了2次数据源,方法2效率优化,但是真的有必要为了计算count而加入扫描么，我觉得没意义,因为使用者是知道表有多大的,是需要多少个reduce的,完全可以一个配置参数去设置reduce的数量
+             * 2.因为Redistribute是为了让数据更加均匀,但是因为获取宽表的时候没有使用on,所以数据源本身就分本已经很均匀了,没必要Redistribute处理。
+             * 再者就算原始数据源使用group得到的,那么为了让Redistribute,又扫描了一次倾斜的数据源,真的有必要么?可能有必要吧,因为后续会用到宽表很多次,如果一次解决了倾斜问题还是不错的选择.但是最好还是一个配置项,让用户自己选择是否需要倾斜数据
+             *
+             * 优化后,其实宽表就需要一个mr抽取出来即可
+             */
             String createFlatTableMethod = kylinConfig.getCreateFlatHiveTableMethod();
             if ("1".equals(createFlatTableMethod)) {
                 // create flat table first, then count and redistribute
@@ -339,10 +357,10 @@ public class HiveMRInput implements IMRInput {
             KylinConfig config = getCubeSpecificConfig();
 
             try {
-
+                //先执行count的sql,存储到输出目录中
                 computeRowCount(config.getCliCommandExecutor());
 
-                Path rowCountFile = new Path(getRowCountOutputDir(), "000000_0");
+                Path rowCountFile = new Path(getRowCountOutputDir(), "000000_0");//读取输出目录,获取count数量
                 long rowCount = readRowCountFromFile(rowCountFile);
                 if (!config.isEmptySegmentAllowed() && rowCount == 0) {
                     stepLogger.log("Detect upstream hive table is empty, " + "fail the job because \"kylin.job.allow.empty.segment\" = \"false\"");
@@ -351,7 +369,7 @@ public class HiveMRInput implements IMRInput {
 
                 int mapperInputRows = config.getHadoopJobMapperInputRows();
 
-                int numReducers = Math.round(rowCount / ((float) mapperInputRows));
+                int numReducers = Math.round(rowCount / ((float) mapperInputRows));//获取最终多少个reduce
                 numReducers = Math.max(1, numReducers);
 
                 stepLogger.log("total input rows = " + rowCount);

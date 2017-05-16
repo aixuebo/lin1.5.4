@@ -43,7 +43,7 @@ public class CubingExecutableUtil {
     public static final String CUBE_NAME = "cubeName";//设置cube的名字
     public static final String SEGMENT_ID = "segmentId";//设置要执行的segment的uuid
     public static final String MERGING_SEGMENT_IDS = "mergingSegmentIds";
-    public static final String STATISTICS_PATH = "statisticsPath";
+    public static final String STATISTICS_PATH = "statisticsPath";//root/jobid/cube/statistics 统计的结果存储在哪里
     public static final String CUBING_JOB_ID = "cubingJobId";//执行该cube的jobID
     public static final String MERGED_STATISTICS_PATH = "mergedStatisticsPath";
     public static final String INDEX_PATH = "indexPath";//设置二级索引目录

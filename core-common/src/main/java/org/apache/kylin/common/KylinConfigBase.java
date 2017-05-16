@@ -436,6 +436,7 @@ abstract public class KylinConfigBase implements Serializable {
         return Double.parseDouble(getOptional("kylin.job.cuboid.size.ratio", "0.25"));
     }
 
+    //估算cubeid占用hbase内存大小时候,针对度量是占有内存的时候,如何扩大存储预估值
     public double getJobCuboidSizeMemHungryRatio() {
         return Double.parseDouble(getOptional("kylin.job.cuboid.size.memhungry.ratio", "0.05"));
     }
@@ -622,7 +623,7 @@ abstract public class KylinConfigBase implements Serializable {
 
     /**
      * HBase region cut size, in GB
-     * 最终切分成多少个region
+     * 单位G,每一个region存储多大数据
      * @return
      */
     public float getKylinHBaseRegionCut() {

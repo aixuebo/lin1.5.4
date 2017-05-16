@@ -50,7 +50,7 @@ public class FactDistinctColumnsMapperBase<KEYIN, VALUEIN> extends KylinMapper<K
     protected long baseCuboidId;//该cube的基础维度集合
 
     protected List<TblColRef> factDictCols;//字典的列属于fact表中的集合
-    protected int[] dictionaryColumnIndex;//字典的列在table中的index
+    protected int[] dictionaryColumnIndex;//字典的列在宽表table中的index
 
     protected IMRTableInputFormat flatTableInputFormat;//如何读取hive的数据库表的内容
 
@@ -74,9 +74,9 @@ public class FactDistinctColumnsMapperBase<KEYIN, VALUEIN> extends KylinMapper<K
         cubeDesc = cube.getDescriptor();
         baseCuboidId = Cuboid.getBaseCuboidId(cubeDesc);
 
-        factDictCols = CubeManager.getInstance(config).getAllDictColumnsOnFact(cubeDesc);
+        factDictCols = CubeManager.getInstance(config).getAllDictColumnsOnFact(cubeDesc);//字典的列属于fact表中的集合
 
-        flatTableInputFormat = MRUtil.getBatchCubingInputSide(cubeSeg).getFlatTableInputFormat();
+        flatTableInputFormat = MRUtil.getBatchCubingInputSide(cubeSeg).getFlatTableInputFormat();//如何读取该segment对应的宽表
 
         intermediateTableDesc = new CubeJoinedFlatTableEnrich(EngineFactory.getJoinedFlatTableDesc(cubeSeg),  cubeDesc);
         dictionaryColumnIndex = new int[factDictCols.size()];

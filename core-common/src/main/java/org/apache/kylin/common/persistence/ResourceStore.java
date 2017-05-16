@@ -59,7 +59,7 @@ abstract public class ResourceStore {
     public static final String STREAMING_RESOURCE_ROOT = "/streaming";
     public static final String KAFKA_RESOURCE_ROOT = "/kafka";
     public static final String STREAMING_OUTPUT_RESOURCE_ROOT = "/streaming_output";
-    public static final String CUBE_STATISTICS_ROOT = "/cube_statistics";
+    public static final String CUBE_STATISTICS_ROOT = "/cube_statistics";//cube的统计内容输出
     public static final String BAD_QUERY_RESOURCE_ROOT = "/bad_query";
 
     private static final ConcurrentHashMap<KylinConfig, ResourceStore> CACHE = new ConcurrentHashMap<KylinConfig, ResourceStore>();

@@ -69,7 +69,7 @@ public class SaveStatisticsStep extends AbstractExecutable {
             FSDataInputStream is = fs.open(statisticsFilePath);
             try {
                 // put the statistics to metadata store
-                String statisticsFileName = newSegment.getStatisticsResourcePath();
+                String statisticsFileName = newSegment.getStatisticsResourcePath();//为每一个cube的segment输出统计信息  /cube_statistics/cubeName/cubeSegmentId.seq
                 rs.putResource(statisticsFileName, is, System.currentTimeMillis());//将统计结果存储到statisticsFileName路径下
             } finally {
                 IOUtils.closeStream(is);

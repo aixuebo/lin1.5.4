@@ -59,21 +59,22 @@ public class CubeDimEncMap implements IDimensionEncodingMap {
         this.dictionaryMap = dictionaryMap;
     }
 
+    //如何对该字段的值进行编码
     @Override
     public DimensionEncoding get(TblColRef col) {
         DimensionEncoding result = encMap.get(col);
         if (result == null) {
-            RowKeyColDesc colDesc = cubeDesc.getRowkey().getColDesc(col);
-            if (colDesc.isUsingDictionary()) {
+            RowKeyColDesc colDesc = cubeDesc.getRowkey().getColDesc(col);//在rowkey中获取该列对象
+            if (colDesc.isUsingDictionary()) {//说明该列使用了字典方式编码
                 // special dictionary encoding
-                Dictionary<String> dict = getDictionary(col);
+                Dictionary<String> dict = getDictionary(col);//获取该列对应的字典
                 if (dict == null) {
                     logger.warn("No dictionary found for dict-encoding column " + col + ", segment " + seg);
                     result = new FixedLenDimEnc(0);
                 } else {
-                    result = new DictionaryDimEnc(dict);
+                    result = new DictionaryDimEnc(dict);//使用字典进行编码
                 }
-            } else {
+            } else {//说明该列直接编码,不需要字典
                 // normal case
                 result = DimensionEncodingFactory.create(colDesc.getEncodingName(), colDesc.getEncodingArgs());
             }
@@ -82,6 +83,7 @@ public class CubeDimEncMap implements IDimensionEncodingMap {
         return result;
     }
 
+    //返回该字段对应的字典对象
     @Override
     public Dictionary<String> getDictionary(TblColRef col) {
         if (seg == null)
