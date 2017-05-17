@@ -26,7 +26,7 @@ import java.util.List;
  */
 public interface IJoinedFlatTableDesc {
 
-    String getTableName();//临时表的名字
+    String getTableName();//临时表的名字--"kylin_intermediate_" + cubeDesc.getName() + "_" + cubeSegment.getUuid().replaceAll("-", "_");
 
     DataModelDesc getDataModel();//该cube需要哪个模型
     

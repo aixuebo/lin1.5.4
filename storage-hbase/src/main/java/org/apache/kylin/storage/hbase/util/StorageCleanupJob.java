@@ -57,6 +57,9 @@ import org.apache.kylin.metadata.realization.IRealizationConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 真正删除HDFS上的数据以及Hbase上的数据
+ */
 public class StorageCleanupJob extends AbstractApplication {
 
     @SuppressWarnings("static-access")
@@ -186,23 +189,23 @@ public class StorageCleanupJob extends AbstractApplication {
         // GlobFilter filter = new
         // GlobFilter(KylinConfig.getInstanceFromEnv().getHdfsWorkingDirectory()
         // + "/kylin-.*");
-        //查目录下是kylin-开头的目录,即可以被删除的kylin下的KDFS目录
+        //查目录下是kylin-开头的目录,即可以被删除的kylin下的HDFS目录
         FileStatus[] fStatus = fs.listStatus(new Path(KylinConfig.getInstanceFromEnv().getHdfsWorkingDirectory()));
         for (FileStatus status : fStatus) {
             String path = status.getPath().getName();
             // System.out.println(path);
             if (path.startsWith("kylin-")) {
                 String kylinJobPath = engineConfig.getHdfsWorkingDirectory() + path;
-                allHdfsPathsNeedToBeDeleted.add(kylinJobPath);
+                allHdfsPathsNeedToBeDeleted.add(kylinJobPath);//等待删除的目录
             }
         }
 
         //将运行中的job从删除集合中删除,即不能删除这些job的信息
         List<String> allJobs = executableManager.getAllJobIds();//所有执行的job
         for (String jobId : allJobs) {
-            // only remove FINISHED and DISCARDED job intermediate files
+            // only remove FINISHED and DISCARDED job intermediate files 仅仅删除成功和丢弃的job
             final ExecutableState state = executableManager.getOutput(jobId).getState();
-            if (!state.isFinalState()) {
+            if (!state.isFinalState()) {//只要该job不是成功,也不是抛弃的,则都不会被删除
                 String path = JobBuilderSupport.getJobWorkingDir(engineConfig.getHdfsWorkingDirectory(), jobId);
                 allHdfsPathsNeedToBeDeleted.remove(path);
                 logger.info("Skip " + path + " from deletion list, as the path belongs to job " + jobId + " with status " + state);
@@ -262,14 +265,14 @@ public class StorageCleanupJob extends AbstractApplication {
         String line = null;
         List<String> allJobs = executableManager.getAllJobIds();//所有的jobid集合
         List<String> workingJobList = new ArrayList<String>();//工作中的job,不能被删除
-        List<String> allHiveTablesNeedToBeDeleted = new ArrayList<String>();//要准备去删除的job
+        List<String> allHiveTablesNeedToBeDeleted = new ArrayList<String>();//要准备去删除的hive的table
 
 
-        for (String jobId : allJobs) {
+        for (String jobId : allJobs) {//循环每一个job
             // only remove FINISHED and DISCARDED job intermediate table
-            final ExecutableState state = executableManager.getOutput(jobId).getState();
+            final ExecutableState state = executableManager.getOutput(jobId).getState();//获取该job的状态
 
-            if (!state.isFinalState()) {
+            if (!state.isFinalState()) {//说明不是DISCARDED 也不是 SUCCEED,则保留,说明该任务还在运行中
                 workingJobList.add(jobId);
                 logger.info("Skip intermediate hive table with job id " + jobId + " with job status " + state);
             }
@@ -294,9 +297,9 @@ public class StorageCleanupJob extends AbstractApplication {
         if (delete == true) {
             hiveCmdBuilder.reset();
             //执行删除hive表操作
-            hiveCmdBuilder.addStatement(useDatabaseHql);
+            hiveCmdBuilder.addStatement(useDatabaseHql);//使用哪个数据库
             for (String delHive : allHiveTablesNeedToBeDeleted) {
-                hiveCmdBuilder.addStatement("drop table if exists " + delHive + "; ");
+                hiveCmdBuilder.addStatement("drop table if exists " + delHive + "; ");//删除hive的表
                 logger.info("Remove " + delHive + " from hive tables.");
             }
 

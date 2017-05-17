@@ -42,7 +42,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 /**
- * 用于删除过期的资源
+ * 用于删除过期的资源---只是删除元数据
  * ./bin/metastore.sh clean --delete true
  * ${KYLIN_HOME}/bin/kylin.sh org.apache.kylin.storage.hbase.util.StorageCleanupJob --delete true
  */
@@ -160,15 +160,16 @@ public class MetadataCleanupJob extends AbstractHadoopJob {
 
         // delete old and completed jobs
         ExecutableDao executableDao = ExecutableDao.getInstance(KylinConfig.getInstanceFromEnv());
-        List<ExecutablePO> allExecutable = executableDao.getJobs();
-        for (ExecutablePO executable : allExecutable) {
+        List<ExecutablePO> allExecutable = executableDao.getJobs();//获取所有的job集合
+        for (ExecutablePO executable : allExecutable) {//运行每一个job
             long lastModified = executable.getLastModified();
-            ExecutableOutputPO output = executableDao.getJobOutput(executable.getUuid());
+            ExecutableOutputPO output = executableDao.getJobOutput(executable.getUuid());//获取该job的所有输出
+            //如果job已经超过了一定时间,并且该job是成功的或者丢弃的,则可以将该job删除掉
             if (System.currentTimeMillis() - lastModified > TIME_THREADSHOLD_FOR_JOB && (ExecutableState.SUCCEED.toString().equals(output.getStatus()) || ExecutableState.DISCARDED.toString().equals(output.getStatus()))) {
-                toDeleteResource.add(ResourceStore.EXECUTE_RESOURCE_ROOT + "/" + executable.getUuid());
-                toDeleteResource.add(ResourceStore.EXECUTE_OUTPUT_RESOURCE_ROOT + "/" + executable.getUuid());
+                toDeleteResource.add(ResourceStore.EXECUTE_RESOURCE_ROOT + "/" + executable.getUuid());//删除该job
+                toDeleteResource.add(ResourceStore.EXECUTE_OUTPUT_RESOURCE_ROOT + "/" + executable.getUuid());//删除该job的输出内容
 
-                for (ExecutablePO task : executable.getTasks()) {
+                for (ExecutablePO task : executable.getTasks()) {//删除该job的子job的输出内容
                     toDeleteResource.add(ResourceStore.EXECUTE_OUTPUT_RESOURCE_ROOT + "/" + task.getUuid());
                 }
             }

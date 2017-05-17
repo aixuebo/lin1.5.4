@@ -78,6 +78,7 @@ public enum ExecutableState {
         VALID_STATE_TRANSFER.put(ExecutableState.ERROR, ExecutableState.READY);
     }
 
+    //true表示完成
     public boolean isFinalState() {
         return this == SUCCEED || this == DISCARDED;
     }
