@@ -93,7 +93,7 @@ public class StorageCleanupJob extends AbstractApplication {
             }
         }
 
-        // remove every segment htable from drop list
+        // remove every segment htable from drop list 保持还活跃的cube的segment对应的hbase的表
         for (CubeInstance cube : cubeMgr.listAllCubes()) {
             for (CubeSegment seg : cube.getSegments()) {
                 String tablename = seg.getStorageLocationIdentifier();
@@ -190,11 +190,11 @@ public class StorageCleanupJob extends AbstractApplication {
         // GlobFilter(KylinConfig.getInstanceFromEnv().getHdfsWorkingDirectory()
         // + "/kylin-.*");
         //查目录下是kylin-开头的目录,即可以被删除的kylin下的HDFS目录
-        FileStatus[] fStatus = fs.listStatus(new Path(KylinConfig.getInstanceFromEnv().getHdfsWorkingDirectory()));
+        FileStatus[] fStatus = fs.listStatus(new Path(KylinConfig.getInstanceFromEnv().getHdfsWorkingDirectory()));///kylin/kylin_metadata/
         for (FileStatus status : fStatus) {
             String path = status.getPath().getName();
             // System.out.println(path);
-            if (path.startsWith("kylin-")) {
+            if (path.startsWith("kylin-")) {//存储的是所有的jobId
                 String kylinJobPath = engineConfig.getHdfsWorkingDirectory() + path;
                 allHdfsPathsNeedToBeDeleted.add(kylinJobPath);//等待删除的目录
             }
@@ -217,7 +217,7 @@ public class StorageCleanupJob extends AbstractApplication {
         for (CubeInstance cube : cubeMgr.listAllCubes()) {
             for (CubeSegment seg : cube.getSegments()) {
                 String jobUuid = seg.getLastBuildJobID();
-                if (jobUuid != null && jobUuid.equals("") == false) {
+                if (jobUuid != null && jobUuid.equals("") == false) {//最后一个job也是不能删除的
                     String path = JobBuilderSupport.getJobWorkingDir(engineConfig.getHdfsWorkingDirectory(), jobUuid);
                     allHdfsPathsNeedToBeDeleted.remove(path);
                     logger.info("Skip " + path + " from deletion list, as the path belongs to segment " + seg + " of cube " + cube.getName());
@@ -248,6 +248,8 @@ public class StorageCleanupJob extends AbstractApplication {
     }
 
     //删除已经jobid不是在工作中的数据库表
+    //疑问:hive的表使用的是cube的name和cube的segment的UUID组成的,为什么要用jobid去过滤,觉得有问题,不会有符合标准的hive table被筛选出来呢
+    //而且临时表hive都已经在cube的builder过程的最后阶段被清理掉了,难道是job也会创建临时表么?
     private void cleanUnusedIntermediateHiveTable(Configuration conf) throws IOException {
         final KylinConfig config = KylinConfig.getInstanceFromEnv();
         final CliCommandExecutor cmdExec = config.getCliCommandExecutor();

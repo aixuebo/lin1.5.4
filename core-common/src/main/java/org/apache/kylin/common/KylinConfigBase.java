@@ -203,6 +203,7 @@ abstract public class KylinConfigBase implements Serializable {
     }
 
     //当hbase存储的内容太大的时候,会存储到hdfs上,这个是hdfs的根目录
+    //该目录返回/kylin/kylin_metadata/
     public String getHdfsWorkingDirectory() {
         String root = getRequired("kylin.hdfs.working.dir");
         if (!root.endsWith("/")) {
