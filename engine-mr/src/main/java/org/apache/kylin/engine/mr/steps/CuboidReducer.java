@@ -100,9 +100,9 @@ public class CuboidReducer extends KylinReducer<Text, Text, Text, Text> {
                 aggs.aggregate(input);
             }
         }
-        aggs.collectStates(result);
+        aggs.collectStates(result);//将度量的聚合值收集到redult中
 
-        ByteBuffer valueBuf = codec.encode(result);
+        ByteBuffer valueBuf = codec.encode(result);//对结果进行编码,存储到buffer中
 
         outputValue.set(valueBuf.array(), 0, valueBuf.position());
         context.write(key, outputValue);

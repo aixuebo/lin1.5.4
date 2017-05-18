@@ -46,6 +46,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * 只针对AlgorithmEnum.INMEM算法进行处理
+ *
+ * 尚未证实算法逻辑是否按照如下规则算,不过先把目前的想法记录下来:(该算法虽然也是map-reduce操作,但是不会有那么多层的迭代,只是会一个map-reduce就结束了,该方法会把所有的组合在解析到一行数据后都进行处理)
  */
 public class InMemCuboidJob extends AbstractHadoopJob {
 

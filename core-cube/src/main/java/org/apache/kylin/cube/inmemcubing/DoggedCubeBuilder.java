@@ -65,7 +65,7 @@ public class DoggedCubeBuilder extends AbstractInMemCubeBuilder {
 
         // check memory more often if a single row is big
         if (cubeDesc.hasMemoryHungryMeasures()) //true表示cube有耗费内存的度量
-            unitRows /= 10;
+            unitRows /= 10;//每次少读取一部分数据
     }
 
     public void setSplitRowThreshold(int rowThreshold) {
@@ -83,6 +83,11 @@ public class DoggedCubeBuilder extends AbstractInMemCubeBuilder {
         BuildOnce() {
         }
 
+        /**
+         * 从队列中不断的获取元素
+         * @param input 队列的元素List<String> 表示一行的数据具体内容,因为一行是由多个列组成的,因此元素是List<String>表示列
+         * @param output 最终如何输出builder后的结果
+         */
         public void build(BlockingQueue<List<String>> input, ICuboidWriter output) throws IOException {
             final List<SplitThread> splits = new ArrayList<SplitThread>();//已经拆分出来的数据块集合
             final Merger merger = new Merger();
@@ -97,7 +102,7 @@ public class DoggedCubeBuilder extends AbstractInMemCubeBuilder {
                 while (!eof) {
 
                     if (last != null && shouldCutSplit(splits)) {//true说明应该拆分数据块了
-                        cutSplit(last);
+                        cutSplit(last);//重新切分一个数据
                         last = null;
                     }
 
@@ -208,22 +213,28 @@ public class DoggedCubeBuilder extends AbstractInMemCubeBuilder {
         //不断的从队列中读取一行数据,使用split对象处理该行数据
         //n表示每次读取行数
         //返回值 true表示 处理数据时候有异常,或者读取到的一行数据是null
+
+        /**
+         * @param input 总的数据集合
+         * @param split 要向哪个线程分配数据
+         * @param n 本次读取多少行数据-----最多分配这么多条数据
+         */
         private boolean feedSomeInput(BlockingQueue<List<String>> input, SplitThread split, int n) {
             try {
-                int i = 0;
-                while (i < n) {
+                int i = 0;//已经分配了多少条数据
+                while (i < n) {//只要数据还没有分足,就不断分配
                     List<String> record = input.take();//获取一行数据
                     i++;
 
                     while (split.inputQueue.offer(record, 1, TimeUnit.SECONDS) == false) {//false说明队列已经满了
                         if (split.exception != null) //有异常则返回true
-                            return true; // got some error
+                            return true; // got some error 该线程的队列已经满了,则可以退出了
                     }
 
                     //到这里说明已经添加成功
                     split.inputRowCount++;//处理一行数据
 
-                    if (record == null || record.isEmpty()) {
+                    if (record == null || record.isEmpty()) {//说明已经数据源已经没有数据了,因此不需要继续添加数据了
                         return true;
                     }
                 }

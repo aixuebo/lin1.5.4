@@ -110,7 +110,7 @@ public class JobBuilderSupport {
         //设置任务需要的参数
         CubingExecutableUtil.setCubeName(seg.getRealization().getName(), result.getParams());
         CubingExecutableUtil.setSegmentId(seg.getUuid(), result.getParams());
-        CubingExecutableUtil.setCubingJobId(jobId, result.getParams());
+        CubingExecutableUtil.setCubingJobId(jobId, result.getParams());//设置jobid
         CubingExecutableUtil.setIndexPath(this.getSecondaryIndexPath(jobId), result.getParams());//设置二级索引目录
 
         return result;
@@ -215,11 +215,11 @@ public class JobBuilderSupport {
 
     /**
      * @param cuboidRootPath 存储cuboid的根目录
-     * @param totalRowkeyColumnCount 全部维度数
-     * @param groupRowkeyColumnsCount 多少组
+     * @param totalRowkeyColumnCount rowkey多少个字段组成
+     * @param groupRowkeyColumnsCount 最多循环多少次
      */
     public String[] getCuboidOutputPaths(String cuboidRootPath, int totalRowkeyColumnCount, int groupRowkeyColumnsCount) {
-        String[] paths = new String[groupRowkeyColumnsCount + 1];//路径集合
+        String[] paths = new String[groupRowkeyColumnsCount + 1];//路径集合,即每一次循环产生一个目录
         for (int i = 0; i <= groupRowkeyColumnsCount; i++) {
             int dimNum = totalRowkeyColumnCount - i;//总维度
             if (dimNum == totalRowkeyColumnCount) {

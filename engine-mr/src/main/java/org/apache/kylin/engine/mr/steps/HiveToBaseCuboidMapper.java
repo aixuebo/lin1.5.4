@@ -48,7 +48,7 @@ public class HiveToBaseCuboidMapper<KEYIN> extends BaseCuboidMapperBase<KEYIN, O
 
         try {
             //put a record into the shared bytesSplitter
-            String[] row = flatTableInputFormat.parseMapperInput(value);
+            String[] row = flatTableInputFormat.parseMapperInput(value);//解析一行数据,转换成列的集合
             bytesSplitter.setBuffers(convertUTF8Bytes(row));//将一行数据转换成字节数组
             //take care of the data in bytesSplitter
             outputKV(context);

@@ -29,7 +29,7 @@ import com.google.common.collect.Maps;
 public class RowKeyEncoderProvider {
 
     private CubeSegment cubeSegment;
-    private HashMap<Long, RowKeyEncoder> rowKeyEncoders;//不同的cuboid对应不同的编码器
+    private HashMap<Long, RowKeyEncoder> rowKeyEncoders;//不同的cuboid对应不同的编码器---因为RowKeyEncoder解码器里面会存储cuboid,因此必须一个cuboid对应一个单独的解码器RowKeyEncoder
 
     public RowKeyEncoderProvider(CubeSegment cubeSegment) {
         this.cubeSegment = cubeSegment;

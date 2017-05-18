@@ -64,9 +64,10 @@ public class CubingJob extends DefaultChainedExecutable {
         INMEM
     }
 
-    // KEYS of Output.extraInfo map, info passed across job steps
+    // KEYS of Output.extraInfo map, info passed across job steps 在basecuboid中查询宽表的时候统计到的结果
     public static final String SOURCE_RECORD_COUNT = "sourceRecordCount";//原始记录数
     public static final String SOURCE_SIZE_BYTES = "sourceSizeBytes";//原始文件大小
+
     public static final String CUBE_SIZE_BYTES = "byteSizeBytes";//cube的文件大小
     public static final String MAP_REDUCE_WAIT_TIME = "mapReduceWaitTime";//mr任务过程中等待的时间
     private static final String DEPLOY_ENV_NAME = "envName";

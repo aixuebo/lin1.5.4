@@ -77,17 +77,17 @@ public class InMemCuboidReducer extends KylinReducer<ByteArrayWritable, ByteArra
 
         aggs.reset();
 
-        for (ByteArrayWritable value : values) {
+        for (ByteArrayWritable value : values) {//对相同的数据进行聚类
             codec.decode(value.asBuffer(), input);
             aggs.aggregate(input);
         }
-        aggs.collectStates(result);
+        aggs.collectStates(result);//收集聚类后的结果
 
         // output key
         outputKey.set(key.array(), key.offset(), key.length());
 
         // output value
-        ByteBuffer valueBuf = codec.encode(result);
+        ByteBuffer valueBuf = codec.encode(result);//对最终聚合后的结果进行buffer处理
         outputValue.set(valueBuf.array(), 0, valueBuf.position());
 
         context.write(outputKey, outputValue);

@@ -166,7 +166,7 @@ public class MapReduceExecutable extends AbstractExecutable {
                 status = newStatus;
                 if (status.isComplete()) {//说明此时该MR任务已经完成
                     final Map<String, String> info = hadoopCmdOutput.getInfo();
-                    readCounters(hadoopCmdOutput, info);
+                    readCounters(hadoopCmdOutput, info);//设置统计的参数值
                     executableManager.addJobInfo(getId(), info);
 
                     if (status == JobStepStatusEnum.FINISHED) {
@@ -207,7 +207,7 @@ public class MapReduceExecutable extends AbstractExecutable {
         String saveAs = getParam(KEY_COUNTER_SAVEAS);
         if (saveAs != null) {
             String[] saveAsNames = saveAs.split(",");
-            saveCounterAs(hadoopCmdOutput.getMapInputRecords(), saveAsNames, 0, info);
+            saveCounterAs(hadoopCmdOutput.getMapInputRecords(), saveAsNames, 0, info);//hadoopCmdOutput.getMapInputRecords()表示具体的值
             saveCounterAs(hadoopCmdOutput.getHdfsBytesRead(), saveAsNames, 1, info);
             saveCounterAs(hadoopCmdOutput.getHdfsBytesWritten(), saveAsNames, 2, info);
         }

@@ -69,10 +69,10 @@ public class BatchCubingJobBuilder2 extends JobBuilderSupport {
         // Phase 3: Build Cube 真正的builder过程
         addLayerCubingSteps(result, jobId, cuboidRootPath); // layer cubing, only selected algorithm will execute //执行MR任务,CuboidJob中会进行过滤,只有layout算法的才会被执行,否则都是skip输出,即跳过执行
         result.addTask(createInMemCubingStep(jobId, cuboidRootPath)); // inmem cubing, only selected algorithm will execute 只有内存方法的时候才会被执行,该函数里面有判断语句
-        outputSide.addStepPhase3_BuildCube(result);
+        outputSide.addStepPhase3_BuildCube(result);//将cobid转换成hbase识别的hfile文件,然后使用hbase的bulk功能,将hfile数据剪切到hbase里面
 
         // Phase 4: Update Metadata & Cleanup 清理工作
-        result.addTask(createUpdateCubeInfoAfterBuildStep(jobId));//更新cube的元数据以及segment的元数据信息
+        result.addTask(createUpdateCubeInfoAfterBuildStep(jobId));//更新cube的元数据以及segment的元数据信息---非MR,所以很快会完成
         inputSide.addStepPhase4_Cleanup(result);//删除临时hive的宽表
         outputSide.addStepPhase4_Cleanup(result);//删除hbase的一些清理工作
 
@@ -82,14 +82,14 @@ public class BatchCubingJobBuilder2 extends JobBuilderSupport {
     //执行MR任务
     private void addLayerCubingSteps(final CubingJob result, final String jobId, final String cuboidRootPath) {
         RowKeyDesc rowKeyDesc = ((CubeSegment) seg).getCubeDesc().getRowkey();
-        final int groupRowkeyColumnsCount = ((CubeSegment) seg).getCubeDesc().getBuildLevel();
-        final int totalRowkeyColumnsCount = rowKeyDesc.getRowKeyColumns().length;
-        final String[] cuboidOutputTempPath = getCuboidOutputPaths(cuboidRootPath, totalRowkeyColumnsCount, groupRowkeyColumnsCount);
+        final int groupRowkeyColumnsCount = ((CubeSegment) seg).getCubeDesc().getBuildLevel();//组内最多循环次数
+        final int totalRowkeyColumnsCount = rowKeyDesc.getRowKeyColumns().length;//rowkey参与的字段数量
+        final String[] cuboidOutputTempPath = getCuboidOutputPaths(cuboidRootPath, totalRowkeyColumnsCount, groupRowkeyColumnsCount);//分配每一个cuboid所存放的路径
         // base cuboid step
         result.addTask(createBaseCuboidStep(cuboidOutputTempPath, jobId));
         // n dim cuboid steps
-        for (int i = 1; i <= groupRowkeyColumnsCount; i++) {
-            int dimNum = totalRowkeyColumnsCount - i;
+        for (int i = 1; i <= groupRowkeyColumnsCount; i++) {//最多循环多少次
+            int dimNum = totalRowkeyColumnsCount - i;//从最高维度开始运算
             result.addTask(createNDimensionCuboidStep(cuboidOutputTempPath, dimNum, totalRowkeyColumnsCount, jobId));
         }
     }
@@ -143,15 +143,15 @@ public class BatchCubingJobBuilder2 extends JobBuilderSupport {
 
         appendExecCmdParameters(cmd, BatchConstants.ARG_CUBE_NAME, seg.getRealization().getName());
         appendExecCmdParameters(cmd, BatchConstants.ARG_SEGMENT_ID, seg.getUuid());
-        appendExecCmdParameters(cmd, BatchConstants.ARG_INPUT, "FLAT_TABLE"); // marks flat table input
-        appendExecCmdParameters(cmd, BatchConstants.ARG_OUTPUT, cuboidOutputTempPath[0]);
+        appendExecCmdParameters(cmd, BatchConstants.ARG_INPUT, "FLAT_TABLE"); // marks flat table input 输入就是一个大宽表,即临时的hive表
+        appendExecCmdParameters(cmd, BatchConstants.ARG_OUTPUT, cuboidOutputTempPath[0]);//输出目录
         appendExecCmdParameters(cmd, BatchConstants.ARG_JOB_NAME, "Kylin_Base_Cuboid_Builder_" + seg.getRealization().getName());
         appendExecCmdParameters(cmd, BatchConstants.ARG_LEVEL, "0");
-        appendExecCmdParameters(cmd, BatchConstants.ARG_CUBING_JOB_ID, jobId);
+        appendExecCmdParameters(cmd, BatchConstants.ARG_CUBING_JOB_ID, jobId);//设置jobid
 
         baseCuboidStep.setMapReduceParams(cmd.toString());
         baseCuboidStep.setMapReduceJobClass(getBaseCuboidJob());
-        baseCuboidStep.setCounterSaveAs(CubingJob.SOURCE_RECORD_COUNT + "," + CubingJob.SOURCE_SIZE_BYTES);
+        baseCuboidStep.setCounterSaveAs(CubingJob.SOURCE_RECORD_COUNT + "," + CubingJob.SOURCE_SIZE_BYTES);//统计原始文件行数和原始文件大小
         return baseCuboidStep;
     }
 
