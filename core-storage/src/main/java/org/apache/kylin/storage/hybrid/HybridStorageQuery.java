@@ -31,11 +31,15 @@ import org.apache.kylin.storage.StorageFactory;
 import com.google.common.collect.Lists;
 
 /**
+ * 因为hybrid是混血模式,即将多个cube组合起来,作为代理方式来查询sql
+ *
+ * 该类表示如何真正的去查询sql,即使用代理类查询sql,返回每一个cube具体的查询结果的迭代器
  */
 public class HybridStorageQuery implements IStorageQuery {
 
-    private IRealization[] realizations;
-    private IStorageQuery[] storageEngines;
+    //每一个cube对应一个具体的cube和查询接口
+    private IRealization[] realizations;//元素是具体的cube
+    private IStorageQuery[] storageEngines;//元素是具体cube的查询结构
 
     public HybridStorageQuery(HybridInstance hybridInstance) {
         this.realizations = hybridInstance.getRealizations();
@@ -45,17 +49,18 @@ public class HybridStorageQuery implements IStorageQuery {
         }
     }
 
+    //真正的查询sql
     @Override
     public ITupleIterator search(final StorageContext context, final SQLDigest sqlDigest, final TupleInfo returnTupleInfo) {
-        List<ITupleIterator> tupleIterators = Lists.newArrayList();
-        for (int i = 0; i < realizations.length; i++) {
-            if (realizations[i].isReady() && realizations[i].isCapable(sqlDigest).capable) {
-                ITupleIterator dataIterator = storageEngines[i].search(context, sqlDigest, returnTupleInfo);
+        List<ITupleIterator> tupleIterators = Lists.newArrayList();//返回值
+        for (int i = 0; i < realizations.length; i++) {//查询每一个cube
+            if (realizations[i].isReady() && realizations[i].isCapable(sqlDigest).capable) {//说明该cube是可以查询该sql的
+                ITupleIterator dataIterator = storageEngines[i].search(context, sqlDigest, returnTupleInfo);//真正的查询sql,返回查询的结果
                 tupleIterators.add(dataIterator);
             }
         }
         // combine tuple iterator
-        return new CompoundTupleIterator(tupleIterators);
+        return new CompoundTupleIterator(tupleIterators);//组合所有的查询结果返回给客户端
     }
 
 }

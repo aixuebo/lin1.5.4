@@ -39,20 +39,23 @@ public abstract class TupleFilter {
 
     //过滤操作符号
     public enum FilterOperatorEnum {
+        //以下比较的操作符实现类都是CompareTupleFilter
         EQ(1), NEQ(2),//等于  不等于
         GT(3), LT(4), GTE(5), LTE(6),//大于  小于 大于等于  小于等于
         ISNULL(7), ISNOTNULL(8),//是否是null
         IN(9), NOTIN(10),//in 和not in
-        AND(20), OR(21), NOT(22),//关系操作
-        COLUMN(30),//列名字
-        CONSTANT(31),//常量
-        DYNAMIC(32),
-        EXTRACT(33),
-        CASE(34),//case when then操作
+
+        AND(20), OR(21), NOT(22),//关系操作---LogicalTupleFilter具体实现类
+
+        COLUMN(30),//列名字---说明该表达式可以代表一个列以及该列在运行中对应的值  ColumnTupleFilter具体实现类,该类是不允许支持子类的
+        CONSTANT(31),//常量---ConstantTupleFilter具体实现类,该类是不允许支持子类的
+        DYNAMIC(32),//动态绑定一个变量名字---DynamicTupleFilter是具体的实现类,该类是不允许支持子类的
+        EXTRACT(33),//抽取数据---ExtractTupleFilter具体的实现类,抽取日期和时间的数据值
+        CASE(34),//case when then操作-----CaseTupleFilter具体的实现类,子类有若干个Filter组成
         FUNCTION(35),//函数
-        MASSIN(36),
+        MASSIN(36),//参见MassInTupleFilter实现类 表示块函数
         EVAL_FUNC(37),
-        UNSUPPORTED(38);
+        UNSUPPORTED(38);//表示不支持的过滤器--具体实现UnsupportedTupleFilter
 
         private final int value;
 
@@ -153,6 +156,7 @@ public abstract class TupleFilter {
             return flatFilter;
         }
 
+        //代码执行到这边,说明filter就是LogicalTupleFilter
         // post-order recursive travel
         FilterOperatorEnum op = filter.getOperator();//本身操作
         List<TupleFilter> andChildren = new LinkedList<TupleFilter>();
@@ -177,8 +181,8 @@ public abstract class TupleFilter {
                 flatFilter.addChildren(andChild.getChildren());
             }
             if (!orChildren.isEmpty()) {//or不是空
-                List<TupleFilter> fullAndFilters = cartesianProduct(orChildren, flatFilter);
-                flatFilter = new LogicalTupleFilter(FilterOperatorEnum.OR);
+                List<TupleFilter> fullAndFilters = cartesianProduct(orChildren, flatFilter);//将or的集合和and的集合进行笛卡尔乘积运算
+                flatFilter = new LogicalTupleFilter(FilterOperatorEnum.OR);//最终的结果就是or操作所有的笛卡尔乘积
                 flatFilter.addChildren(fullAndFilters);
             }
         } else if (op == FilterOperatorEnum.OR) {//组建新的or filter
@@ -186,9 +190,9 @@ public abstract class TupleFilter {
             for (TupleFilter orChild : orChildren) {
                 flatFilter.addChildren(orChild.getChildren());
             }
-            flatFilter.addChildren(andChildren);
+            flatFilter.addChildren(andChildren);//and作为一个整体添加到or中
         } else if (op == FilterOperatorEnum.NOT) {
-            assert (filter.children.size() == 1);
+            assert (filter.children.size() == 1);//一定只有一个子节点
             TupleFilter reverse = filter.children.get(0).reverse();
             flatFilter = flattenInternal(reverse);
         } else {
@@ -197,6 +201,7 @@ public abstract class TupleFilter {
         return flatFilter;
     }
 
+    //笛卡尔乘积运算
     private List<TupleFilter> cartesianProduct(List<TupleFilter> leftOrFilters, TupleFilter partialAndFilter) {
         //and
         List<TupleFilter> oldProductFilters = new LinkedList<TupleFilter>();
@@ -229,11 +234,12 @@ public abstract class TupleFilter {
 
     public abstract void deserialize(IFilterCodeSystem<?> cs, ByteBuffer buffer);
 
+    //所有的子类过滤器一定都得是可执行的,才会返回true
     public static boolean isEvaluableRecursively(TupleFilter filter) {
         if (filter == null)
             return true;
 
-        if (!filter.isEvaluable())
+        if (!filter.isEvaluable())//说明该filter不能被执行,因此结果是false
             return false;
 
         for (TupleFilter child : filter.getChildren()) {
@@ -243,6 +249,7 @@ public abstract class TupleFilter {
         return true;
     }
 
+    //收集filter的子子孙孙中,需要的列集合,将收集的列集合存储到collector集合中
     public static void collectColumns(TupleFilter filter, Set<TblColRef> collector) {
         if (filter == null || collector == null)
             return;

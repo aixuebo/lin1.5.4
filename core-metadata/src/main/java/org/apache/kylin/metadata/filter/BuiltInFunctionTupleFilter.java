@@ -43,8 +43,8 @@ public class BuiltInFunctionTupleFilter extends FunctionTupleFilter {
     // FIXME Only supports single parameter functions currently
     protected TupleFilter columnContainerFilter;//might be a ColumnTupleFilter(simple case) or FunctionTupleFilter(complex case like substr(lower()))
     protected ConstantTupleFilter constantTupleFilter;
-    protected int colPosition;
-    protected int constantPosition;
+    protected int colPosition;//当前列参数的序号
+    protected int constantPosition;//当前常数参数的序号
 
     protected Method method;//说明存在一个内部的函数
     protected List<Serializable> methodParams;//方法的参数
@@ -100,20 +100,21 @@ public class BuiltInFunctionTupleFilter extends FunctionTupleFilter {
         return isValidFunc && method != null && methodParams.size() == children.size();
     }
 
+    //添加具体的参数值
     @Override
     public void addChild(TupleFilter child) {
         if (child instanceof ColumnTupleFilter || child instanceof BuiltInFunctionTupleFilter) {
             columnContainerFilter = child;
-            colPosition = methodParams.size();
+            colPosition = methodParams.size();//当前参数的序号
             methodParams.add(null);
-        } else if (child instanceof ConstantTupleFilter) {
+        } else if (child instanceof ConstantTupleFilter) {//添加一个常数过滤器
             this.constantTupleFilter = (ConstantTupleFilter) child;
-            Serializable constVal = (Serializable) child.getValues().iterator().next();
+            Serializable constVal = (Serializable) child.getValues().iterator().next();//常数存放的是一个Serializable对象
             try {
-                constantPosition = methodParams.size();
-                Class<?> clazz = Primitives.wrap(method.getParameterTypes()[methodParams.size()]);
-                if (!Primitives.isWrapperType(clazz))
-                    methodParams.add(constVal);
+                constantPosition = methodParams.size();//当前参数的位置
+                Class<?> clazz = Primitives.wrap(method.getParameterTypes()[methodParams.size()]);//获取该参数对应的类型
+                if (!Primitives.isWrapperType(clazz))//非包装类型
+                    methodParams.add(constVal);//直接添加
                 else
                     methodParams.add((Serializable) clazz.cast(clazz.getDeclaredMethod("valueOf", String.class).invoke(null, constVal)));
             } catch (Exception e) {
@@ -169,8 +170,8 @@ public class BuiltInFunctionTupleFilter extends FunctionTupleFilter {
     }
 
     protected void initMethod() {
-        if (BuiltInMethod.MAP.containsKey(name)) {
-            this.method = BuiltInMethod.MAP.get(name).method;
+        if (BuiltInMethod.MAP.containsKey(name)) {//说明该name是内建函数
+            this.method = BuiltInMethod.MAP.get(name).method;//找到该内建函数对应的方法
             isValidFunc = true;
         }
     }

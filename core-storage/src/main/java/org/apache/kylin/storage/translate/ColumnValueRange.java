@@ -41,7 +41,7 @@ public class ColumnValueRange {
     //开始和结束值
     private String beginValue;
     private String endValue;
-    private Set<String> equalValues;
+    private Set<String> equalValues;//因为有in操作,可以相等的value可能是一个集合
 
     public ColumnValueRange(TblColRef column, Collection<String> values, FilterOperatorEnum op) {
         this.column = column;
@@ -153,6 +153,9 @@ public class ColumnValueRange {
         this.endValue = order.min(this.endValue, another.endValue);
     }
 
+    /**
+     * 返回equalValues中的元素在[beginValue,endValue]之间的数据
+     */
     private Set<String> filter(Set<String> equalValues, String beginValue, String endValue) {
         Set<String> result = Sets.newHashSetWithExpectedSize(equalValues.size());
         for (String v : equalValues) {
@@ -163,23 +166,26 @@ public class ColumnValueRange {
         return equalValues;
     }
 
-    private boolean between(String v, String beginValue, String endValue) {
+    //如果v在[beginValue,endValue]则返回true
+    private boolean between(String v, String beginValue, String c) {
         return (beginValue == null || order.compare(beginValue, v) <= 0) && (endValue == null || order.compare(v, endValue) <= 0);
     }
 
     // remove invalid EQ/IN values and round start/end according to dictionary
+    //如果value值不在字典里面,则删除该值
+    //获取开始和结束值在字段里面的序号
     public void preEvaluateWithDict(Dictionary<String> dict) {
         if (dict == null)
             return;
 
-        if (equalValues != null) {
-            Iterator<String> it = equalValues.iterator();
+        if (equalValues != null) {//属于in操作
+            Iterator<String> it = equalValues.iterator();//循环每一个元素
             while (it.hasNext()) {
                 String v = it.next();
                 try {
                     dict.getIdFromValue(v);
                 } catch (IllegalArgumentException e) {
-                    // value not in dictionary
+                    // value not in dictionary 说明该值不再字典里面,则删除该值
                     it.remove();
                 }
             }

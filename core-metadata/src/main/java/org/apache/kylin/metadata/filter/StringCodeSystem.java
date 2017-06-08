@@ -24,7 +24,7 @@ import org.apache.kylin.common.util.BytesUtil;
 
 /**
  * A simple code system where all values are strings and conform to string comparison system.
- * 
+ * 用于String类型的系统
  * @author yangli9
  */
 public class StringCodeSystem implements IFilterCodeSystem<String> {
@@ -35,21 +35,25 @@ public class StringCodeSystem implements IFilterCodeSystem<String> {
         // singleton
     }
 
+    //判断value是否是null
     @Override
     public boolean isNull(String value) {
         return value == null;
     }
 
+    //对第一个值与固定值进行比较
     @Override
     public int compare(String tupleValue, String constValue) {
         return tupleValue.compareTo(constValue);
     }
 
+    //序列化
     @Override
     public void serialize(String value, ByteBuffer buffer) {
         BytesUtil.writeUTFString(value, buffer);
     }
 
+    //反序列化
     @Override
     public String deserialize(ByteBuffer buffer) {
         return BytesUtil.readUTFString(buffer);

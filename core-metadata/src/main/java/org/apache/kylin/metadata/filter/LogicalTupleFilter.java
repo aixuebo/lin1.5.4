@@ -28,6 +28,7 @@ import java.util.List;
 import org.apache.kylin.metadata.tuple.IEvaluatableTuple;
 
 //支持逻辑的查询
+//仅仅支持 and or not 三个操作
 public class LogicalTupleFilter extends TupleFilter {
 
     public LogicalTupleFilter(FilterOperatorEnum op) {
@@ -61,6 +62,7 @@ public class LogicalTupleFilter extends TupleFilter {
     //        }
     //    }
 
+    //反转操作
     @Override
     public TupleFilter reverse() {
         switch (operator) {
@@ -69,7 +71,7 @@ public class LogicalTupleFilter extends TupleFilter {
             //return reverseNestedNots(this, 0);
         case AND:
         case OR:
-            LogicalTupleFilter reverse = new LogicalTupleFilter(REVERSE_OP_MAP.get(operator));
+            LogicalTupleFilter reverse = new LogicalTupleFilter(REVERSE_OP_MAP.get(operator));//比如原来是and操作,反转后变成or操作
             for (TupleFilter child : children) {
                 reverse.addChild(child.reverse());
             }
@@ -111,15 +113,16 @@ public class LogicalTupleFilter extends TupleFilter {
     //or操作,有一个是true,则结果就是true
     private boolean evalOr(IEvaluatableTuple tuple, IFilterCodeSystem<?> cs) {
         for (TupleFilter filter : this.children) {
-            if (filter.evaluate(tuple, cs)) {
+            if (filter.evaluate(tuple, cs)) {//有任意一个是true,结果都是true
                 return true;
             }
         }
         return false;
     }
 
+    //not操作只要一个child----例如WHERE NOT condition
     private boolean evalNot(IEvaluatableTuple tuple, IFilterCodeSystem<?> cs) {
-        return !this.children.get(0).evaluate(tuple, cs);
+        return !this.children.get(0).evaluate(tuple, cs);//返回值是false,则即true
     }
 
     //没有返回值
@@ -128,6 +131,7 @@ public class LogicalTupleFilter extends TupleFilter {
         return Collections.emptyList();
     }
 
+    //是否能执行
     @Override
     public boolean isEvaluable() {
         switch (operator) {
@@ -144,11 +148,11 @@ public class LogicalTupleFilter extends TupleFilter {
             // The "anything" is not evaluated, kinda disabled, by the un-evaluable part.
             // If it's partially un-evaluable, then "anything" is partially disabled, and the OR is still not fully evaluatable.
             for (TupleFilter child : children) {
-                if (TupleFilter.isEvaluableRecursively(child) == false)
+                if (TupleFilter.isEvaluableRecursively(child) == false) //说明子类表达式有不可执行的
                     return false;
             }
             return true;
-        default:
+        default://and操作符是一定可以被执行的
             return true;
         }
     }

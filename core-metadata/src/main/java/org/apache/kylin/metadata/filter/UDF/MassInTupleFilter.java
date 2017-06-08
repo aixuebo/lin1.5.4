@@ -47,7 +47,7 @@ public class MassInTupleFilter extends FunctionTupleFilter {
     private transient MassInValueProvider valueProvider = null;
     private transient TblColRef column;
 
-    private String filterTableName;//key in MetadataManager.extFilterMap
+    private String filterTableName;//key in MetadataManager.extFilterMap 是元数据上配置的extFilterMap的name
     private String filterTableResourceIdentifier;//HDFS path, or hbase table name depending on FilterTableType
     private Functions.FilterTableType filterTableType;
 
@@ -60,12 +60,12 @@ public class MassInTupleFilter extends FunctionTupleFilter {
         Preconditions.checkNotNull(tuple);
         Preconditions.checkNotNull(column);
 
-        Object colValue = tuple.getValue(column);
+        Object colValue = tuple.getValue(column);//获取该列的值
 
         if (valueProvider == null) {
             valueProvider = VALUE_PROVIDER_FACTORY.getProvider(filterTableType, filterTableResourceIdentifier, column);
         }
-        boolean ret = valueProvider.getMassInValues().contains(colValue);
+        boolean ret = valueProvider.getMassInValues().contains(colValue);//该value是否包含该值
         return ret;
     }
 
@@ -81,10 +81,10 @@ public class MassInTupleFilter extends FunctionTupleFilter {
 
     @Override
     public void addChild(TupleFilter child) {
-        if (child instanceof ColumnTupleFilter) {
+        if (child instanceof ColumnTupleFilter) {//说明是字段列
             super.addChild(child);
             ColumnTupleFilter columnFilter = (ColumnTupleFilter) child;
-            if (this.column != null) {
+            if (this.column != null) {//字段列不允许多个,只能有一个
                 throw new IllegalStateException("Duplicate columns! old is " + column.getName() + " and new is " + columnFilter.getColumn().getName());
             }
             this.column = columnFilter.getColumn();
@@ -122,6 +122,7 @@ public class MassInTupleFilter extends FunctionTupleFilter {
         filterTableType = Functions.FilterTableType.valueOf(BytesUtil.readUTFString(buffer));
     }
 
+    //是否包含MassInTupleFilter,true表示包含
     public static boolean containsMassInTupleFilter(TupleFilter filter) {
         if (filter == null)
             return false;

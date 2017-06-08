@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  * http://eli.thegreenplace.net/2011/09/29/an-interesting-tree-serialization-algorithm-from-dwarf
  * 
  * @author xjiang
- * 
+ * TupleFilter的序列化与反序列化,可以允许filter传输
  */
 public class TupleFilterSerializer {
 
@@ -45,7 +45,7 @@ public class TupleFilterSerializer {
 
     private static final int BUFFER_SIZE = 65536;
 
-    //所有支持的关联操作集合
+    //所有支持的关联操作集合--ID和操作的映射
     private static final Map<Integer, TupleFilter.FilterOperatorEnum> ID_OP_MAP = new HashMap<Integer, TupleFilter.FilterOperatorEnum>();
 
     static {
@@ -87,68 +87,77 @@ public class TupleFilterSerializer {
 
         if (filter.hasChildren()) {
             // serialize filter+true
-            serializeFilter(1, filter, buffer, cs);
+            serializeFilter(1, filter, buffer, cs);//1表示开始序列化filter本身
             // serialize children
             for (TupleFilter child : filter.getChildren()) {
                 internalSerialize(child, decorator, buffer, cs);
             }
             // serialize none
-            serializeFilter(-1, filter, buffer, cs);
+            serializeFilter(-1, filter, buffer, cs);//-1表示序列化完成filter
         } else {
             // serialize filter+false
             serializeFilter(0, filter, buffer, cs);
         }
     }
 
+    /**
+     *
+     * @param flag  0 表示没有子filter,1表示开始序列化有子类的filter,-1表示已经序列化完成有子类的filter
+     * @param filter
+     * @param buffer
+     * @param cs
+     */
     private static void serializeFilter(int flag, TupleFilter filter, ByteBuffer buffer, IFilterCodeSystem<?> cs) {
         if (flag < 0) {
             BytesUtil.writeVInt(-1, buffer);
         } else {
             int opVal = filter.getOperator().getValue();
-            BytesUtil.writeVInt(opVal, buffer);
-            filter.serialize(cs, buffer);
-            BytesUtil.writeVInt(flag, buffer);
+            BytesUtil.writeVInt(opVal, buffer);//序列化该filter的操作
+            filter.serialize(cs, buffer);//序列化filter本身
+            BytesUtil.writeVInt(flag, buffer);//序列化filter的父子关系
         }
     }
 
+    //反序列化
     public static TupleFilter deserialize(byte[] bytes, IFilterCodeSystem<?> cs) {
         ByteBuffer buffer = ByteBuffer.wrap(bytes);
-        TupleFilter rootFilter = null;
-        Stack<TupleFilter> parentStack = new Stack<TupleFilter>();
+        TupleFilter rootFilter = null;//根过滤器
+        Stack<TupleFilter> parentStack = new Stack<TupleFilter>();//堆栈用于过滤器操作的产生
         while (buffer.hasRemaining()) {
-            int opVal = BytesUtil.readVInt(buffer);
-            if (opVal < 0) {
-                parentStack.pop();
+            int opVal = BytesUtil.readVInt(buffer);//读取flag
+            if (opVal < 0) {//说明一个filter结束了
+                parentStack.pop();//弹出堆栈
                 continue;
             }
 
             // deserialize filter
-            TupleFilter filter = createTupleFilter(opVal);
-            filter.deserialize(cs, buffer);
+            TupleFilter filter = createTupleFilter(opVal);//创建一个过滤器
+            filter.deserialize(cs, buffer);//反序列化该过滤器
 
-            if (rootFilter == null) {
+            if (rootFilter == null) {//首先要创建一个根过滤器
                 // push root to stack
                 rootFilter = filter;
-                parentStack.push(filter);
-                BytesUtil.readVInt(buffer);
+                parentStack.push(filter);//压入堆栈
+                BytesUtil.readVInt(buffer);//读取该flag,但是根的flag没意义,所以不作处理,只是读取出来丢弃掉即可
                 continue;
             }
 
             // add filter to parent
-            TupleFilter parentFilter = parentStack.peek();
+            TupleFilter parentFilter = parentStack.peek();//获取父filter
             if (parentFilter != null) {
-                parentFilter.addChild(filter);
+                parentFilter.addChild(filter);//向父filter中加入该filter
             }
 
             // push filter to stack or not based on having children or not
-            int hasChild = BytesUtil.readVInt(buffer);
-            if (hasChild == 1) {
-                parentStack.push(filter);
+            int hasChild = BytesUtil.readVInt(buffer);//读取flag
+            if (hasChild == 1) {//表示有子类
+                parentStack.push(filter);//向堆栈中添加该
             }
         }
         return rootFilter;
     }
 
+    //根据操作符不同,创建不同的过滤器
     private static TupleFilter createTupleFilter(int opVal) {
         TupleFilter.FilterOperatorEnum op = ID_OP_MAP.get(opVal);
         if (op == null) {

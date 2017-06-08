@@ -24,6 +24,7 @@ import java.util.Collection;
 
 import org.apache.kylin.metadata.tuple.IEvaluatableTuple;
 
+//表示不支持的过滤器
 public class UnsupportedTupleFilter extends TupleFilter {
 
     //    protected UnsupportedTupleFilter(List<TupleFilter> filters, FilterOperatorEnum op) {

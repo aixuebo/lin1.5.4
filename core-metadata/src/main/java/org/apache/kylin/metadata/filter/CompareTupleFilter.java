@@ -80,8 +80,8 @@ public class CompareTupleFilter extends TupleFilter {
             // if value is before column, we need to reverse the operator. e.g. "1 >= c1" => "c1 <= 1" 如果值出现在列的前面,我们需要反转一下他们的关系
             if (!this.conditionValues.isEmpty() && needSwapOperator()) {
                 this.operator = SWAP_OP_MAP.get(this.operator);//交换操作
-                TupleFilter last = this.children.remove(this.children.size() - 1);
-                this.children.add(0, last);
+                TupleFilter last = this.children.remove(this.children.size() - 1);//最后一个就是列对象
+                this.children.add(0, last);//将列对象放到第0个位置上
             }
         } else if (child instanceof ConstantTupleFilter) {//说明出现的是值
             this.conditionValues.addAll(child.getValues());
@@ -162,19 +162,19 @@ public class CompareTupleFilter extends TupleFilter {
         }
 
         // consider null case
-        if (cs.isNull(tupleValue)) {
+        if (cs.isNull(tupleValue)) {//说明该值是null
             if (operator == FilterOperatorEnum.ISNULL)
                 return true;
             else
                 return false;
         }
-        if (cs.isNull(firstCondValue)) {
+        if (cs.isNull(firstCondValue)) {//第一个值是null,而该列的值不是null,则直接返回false
             return false;
         }
 
         // tricky here -- order is ensured by string compare (even for number columns)
         // because it's row key ID (not real value) being compared
-        int comp = cs.compare(tupleValue, firstCondValue);
+        int comp = cs.compare(tupleValue, firstCondValue);//该属性的值与firstCondValue做对比
 
         boolean result;
         switch (operator) {

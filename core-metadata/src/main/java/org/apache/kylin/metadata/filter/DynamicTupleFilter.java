@@ -28,7 +28,7 @@ import org.apache.kylin.metadata.tuple.IEvaluatableTuple;
 /**
  * 
  * @author xjiang
- * 
+ * 动态绑定一个变量名字
  */
 public class DynamicTupleFilter extends TupleFilter {
 

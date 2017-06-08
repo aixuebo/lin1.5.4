@@ -28,12 +28,12 @@ import org.apache.kylin.metadata.tuple.IEvaluatableTuple;
 /**
  * 
  * @author xjiang
- * 
+ * 抽取日期和时间的数据值
  */
 public class ExtractTupleFilter extends TupleFilter {
 
     private int date;
-    private List<Object> values;
+    private List<Object> values;//value只有一个具体的值,表示日期
 
     public ExtractTupleFilter(FilterOperatorEnum op) {
         super(new ArrayList<TupleFilter>(3), op);
@@ -59,9 +59,9 @@ public class ExtractTupleFilter extends TupleFilter {
         String extractType = null;
         String tupleValue = null;
         for (TupleFilter filter : this.children) {
-            filter.evaluate(tuple, cs);
-            if (filter instanceof ConstantTupleFilter) {
-                tupleValue = filter.getValues().iterator().next().toString();
+            filter.evaluate(tuple, cs);//先执行该过滤器
+            if (filter instanceof ConstantTupleFilter) {//该过滤器是一个常量
+                tupleValue = filter.getValues().iterator().next().toString();//获取常量集合的第一个值
             } else if (filter instanceof CompareTupleFilter) {
                 extractType = filter.getValues().iterator().next().toString();
             }

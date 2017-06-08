@@ -43,6 +43,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
 
 /**
+ * 代表一个hybrid对象
  */
 @SuppressWarnings("serial")
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.NONE, getterVisibility = JsonAutoDetect.Visibility.NONE, isGetterVisibility = JsonAutoDetect.Visibility.NONE, setterVisibility = JsonAutoDetect.Visibility.NONE)
@@ -52,22 +53,26 @@ public class HybridInstance extends RootPersistentEntity implements IRealization
     private KylinConfig config;
 
     @JsonProperty("name")
-    private String name;
+    private String name;//该hybrid的name
 
     public void setRealizationEntries(List<RealizationEntry> realizationEntries) {
         this.realizationEntries = realizationEntries;
     }
 
     @JsonProperty("realizations")
-    private List<RealizationEntry> realizationEntries;
+    private List<RealizationEntry> realizationEntries;//该hybrid下有哪些cube作为子对象
 
     @JsonProperty("cost")
     private int cost = 50;
 
-    private volatile IRealization[] realizations = null;
+    private volatile IRealization[] realizations = null;//依赖的cube按照时间已经排序好的集合
+
+    //依赖的cube中所有的列、维度、维值的集合
     private List<TblColRef> allDimensions = null;
     private List<TblColRef> allColumns = null;
     private List<MeasureDesc> allMeasures = null;
+
+    //依赖的cube中最小的开始时间以及最大的开始时间
     private long dateRangeStart;
     private long dateRangeEnd;
     private boolean isReady = false;
@@ -101,9 +106,9 @@ public class HybridInstance extends RootPersistentEntity implements IRealization
                 throw new IllegalArgumentException();
 
             RealizationRegistry registry = RealizationRegistry.getInstance(config);
-            List<IRealization> realizationList = Lists.newArrayList();
-            for (int i = 0; i < realizationEntries.size(); i++) {
-                IRealization realization = registry.getRealization(realizationEntries.get(i).getType(), realizationEntries.get(i).getRealization());
+            List<IRealization> realizationList = Lists.newArrayList();//返回真实存在的依赖的cube
+            for (int i = 0; i < realizationEntries.size(); i++) {//循环依赖的每一个cube
+                IRealization realization = registry.getRealization(realizationEntries.get(i).getType(), realizationEntries.get(i).getRealization());//找到对应的cube
                 if (realization == null) {
                     logger.error("Realization '" + realizationEntries.get(i) + " is not found, remove from Hybrid '" + this.getName() + "'");
                     continue;
@@ -115,12 +120,13 @@ public class HybridInstance extends RootPersistentEntity implements IRealization
                 realizationList.add(realization);
             }
 
+            //依赖的cube中所有的列、维度、维值的集合
             LinkedHashSet<TblColRef> columns = new LinkedHashSet<TblColRef>();
             LinkedHashSet<TblColRef> dimensions = new LinkedHashSet<TblColRef>();
             LinkedHashSet<MeasureDesc> measures = new LinkedHashSet<MeasureDesc>();
             dateRangeStart = 0;
             dateRangeEnd = Long.MAX_VALUE;
-            for (IRealization realization : realizationList) {
+            for (IRealization realization : realizationList) {//循环依赖的真实存在的cube
                 columns.addAll(realization.getAllColumns());
                 dimensions.addAll(realization.getAllDimensions());
                 measures.addAll(realization.getMeasures());
@@ -190,6 +196,7 @@ public class HybridInstance extends RootPersistentEntity implements IRealization
         return RealizationType.HYBRID;
     }
 
+    //返回最后一个cube对应的model
     @Override
     public DataModelDesc getDataModelDesc() {
         if (this.getLatestRealization() != null)
@@ -197,6 +204,7 @@ public class HybridInstance extends RootPersistentEntity implements IRealization
         return null;
     }
 
+    //返回第一个cube对应的fact表
     @Override
     public String getFactTable() {
         return getRealizations()[0].getFactTable();
@@ -284,6 +292,7 @@ public class HybridInstance extends RootPersistentEntity implements IRealization
         this.cost = cost;
     }
 
+    //最后一个cube
     public IRealization getLatestRealization() {
         if (getRealizations().length > 0) {
             return realizations[realizations.length - 1];
@@ -291,6 +300,7 @@ public class HybridInstance extends RootPersistentEntity implements IRealization
         return null;
     }
 
+    //返回存储类型
     @Override
     public int getStorageType() {
         return ID_HYBRID;

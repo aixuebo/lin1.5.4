@@ -22,5 +22,12 @@ import org.apache.kylin.metadata.filter.function.Functions;
 import org.apache.kylin.metadata.model.TblColRef;
 
 public interface MassInValueProviderFactory {
+    /**
+     *
+     * @param filterTableType 资源类型,即HDFS还是hbase
+     * @param filterResourceIdentifier hdfs上的路径path或者hbase上的tableName
+     * @param col 列名字
+     * @return
+     */
     MassInValueProvider getProvider(Functions.FilterTableType filterTableType, String filterResourceIdentifier, TblColRef col);
 }

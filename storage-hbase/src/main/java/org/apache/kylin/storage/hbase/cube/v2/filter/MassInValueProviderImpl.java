@@ -47,6 +47,7 @@ import com.google.common.collect.Sets;
 public class MassInValueProviderImpl implements MassInValueProvider {
     public static final Logger logger = LoggerFactory.getLogger(MassInValueProviderImpl.class);
 
+    //path作为key,value是该path的最后修改时间戳以及对应的具体的值,因此就可以起到缓存的作用了
     private final static Cache<String, Pair<Long, Set<ByteArray>>> hdfs_caches = CacheBuilder.newBuilder().maximumSize(3).removalListener(new RemovalListener<Object, Object>() {
         @Override
         public void onRemoval(RemovalNotification<Object, Object> notification) {
@@ -56,6 +57,12 @@ public class MassInValueProviderImpl implements MassInValueProvider {
 
     private Set<ByteArray> ret = Sets.newHashSet();
 
+    /**
+     *
+     * @param filterTableType 存储在hbase的table上,还是存储在hdfs上
+     * @param filterResourceIdentifier 具体的habse的tableName 还是hdfs上path
+     * @param encoding
+     */
     public MassInValueProviderImpl(Functions.FilterTableType filterTableType, String filterResourceIdentifier, DimensionEncoding encoding) {
 
         if (filterTableType == Functions.FilterTableType.HDFS) {
@@ -70,14 +77,15 @@ public class MassInValueProviderImpl implements MassInValueProvider {
                     // directly create hbase configuration here due to no KYLIN_CONF definition.
                     fileSystem = FileSystem.get(HBaseConfiguration.create());
 
-                    long modificationTime = fileSystem.getFileStatus(new Path(filterResourceIdentifier)).getModificationTime();
-                    Pair<Long, Set<ByteArray>> cached = hdfs_caches.getIfPresent(filterResourceIdentifier);
-                    if (cached != null && cached.getFirst().equals(modificationTime)) {
-                        ret = cached.getSecond();
+                    long modificationTime = fileSystem.getFileStatus(new Path(filterResourceIdentifier)).getModificationTime();//该路径的最后修改时间
+                    Pair<Long, Set<ByteArray>> cached = hdfs_caches.getIfPresent(filterResourceIdentifier);//说明缓存存在
+                    if (cached != null && cached.getFirst().equals(modificationTime)) {//时间戳也对得上
+                        ret = cached.getSecond();//从缓存获取数据
                         logger.info("Load HDFS from cache using " + stopwatch.elapsedMillis() + " millis");
                         return;
                     }
 
+                    //具体读取数据
                     InputStream inputStream = fileSystem.open(new Path(filterResourceIdentifier));
                     List<String> lines = IOUtils.readLines(inputStream, Charset.defaultCharset());
 

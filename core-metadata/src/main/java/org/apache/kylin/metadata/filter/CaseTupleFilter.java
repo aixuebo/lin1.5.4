@@ -32,9 +32,11 @@ import org.apache.kylin.metadata.tuple.IEvaluatableTuple;
  */
 public class CaseTupleFilter extends TupleFilter {
 
+    //内部维护的三组TupleFilter
     private List<TupleFilter> whenFilters;
     private List<TupleFilter> thenFilters;
     private TupleFilter elseFilter;
+
     private Collection<?> values;//执行的最终结果
     private int filterIndex;//添加元素的下标
 

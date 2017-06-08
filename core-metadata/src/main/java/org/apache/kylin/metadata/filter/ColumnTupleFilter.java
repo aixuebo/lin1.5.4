@@ -38,7 +38,7 @@ import org.apache.kylin.metadata.tuple.IEvaluatableTuple;
 public class ColumnTupleFilter extends TupleFilter {
 
     private TblColRef columnRef;//列名字
-    private Object tupleValue;
+    private Object tupleValue;//具体的列值
     private List<Object> values;//第0个表示该列具体的值
 
     public ColumnTupleFilter(TblColRef column) {
@@ -72,7 +72,7 @@ public class ColumnTupleFilter extends TupleFilter {
      */
     @Override
     public boolean evaluate(IEvaluatableTuple tuple, IFilterCodeSystem<?> cs) {
-        this.tupleValue = tuple.getValue(columnRef);
+        this.tupleValue = tuple.getValue(columnRef);//获取具体的列值
         return true;
     }
 
@@ -84,7 +84,7 @@ public class ColumnTupleFilter extends TupleFilter {
     //获取最终的值
     @Override
     public Collection<?> getValues() {
-        this.values.set(0, this.tupleValue);
+        this.values.set(0, this.tupleValue);//将具体的列值赋予values
         return this.values;
     }
 

@@ -25,7 +25,7 @@ package org.apache.kylin.metadata.model;
 public interface IStorageAware {
 
     public static final int ID_HBASE = 0;
-    public static final int ID_HYBRID = 1;
+    public static final int ID_HYBRID = 1;//说明该存储的混血的,即混入多个cube,但是他非真正的存储,他只是一个代理
     public static final int ID_SHARDED_HBASE = 2;
 
     int getStorageType();

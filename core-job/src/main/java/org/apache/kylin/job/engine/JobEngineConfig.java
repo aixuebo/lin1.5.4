@@ -61,7 +61,7 @@ public class JobEngineConfig {
         return null;
     }
 
-    //获取kylin_job_conf文件路径
+    //获取kylin_job_conf文件路径--在home目录下有两个文件,分别是kylin_job_conf_inmem.xml和kylin_job_conf.xml
     private String getHadoopJobConfFilePath(String suffix, boolean appendSuffix) throws IOException {
         String hadoopJobConfFile;
         if (suffix != null && appendSuffix) {

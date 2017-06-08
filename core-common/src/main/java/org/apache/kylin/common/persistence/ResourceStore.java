@@ -51,7 +51,7 @@ abstract public class ResourceStore {
     public static final String TABLE_EXD_RESOURCE_ROOT = "/table_exd";//存储table的额外的key-value信息
     public static final String TABLE_RESOURCE_ROOT = "/table";//保存table元数据信息
     public static final String EXTERNAL_FILTER_RESOURCE_ROOT = "/ext_filter";//用于存储filter
-    public static final String HYBRID_RESOURCE_ROOT = "/hybrid";
+    public static final String HYBRID_RESOURCE_ROOT = "/hybrid";//存储所有的混血模式的cube
 
     public static final String EXECUTE_RESOURCE_ROOT = "/execute";//存放每一个job任务的执行信息
     public static final String EXECUTE_OUTPUT_RESOURCE_ROOT = "/execute_output";//存放每一个job任务的执行的输出信息

@@ -37,6 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 如何管理hybrid对象集合
  */
 public class HybridManager implements IRealizationProvider {
     public static final Serializer<HybridInstance> HYBRID_SERIALIZER = new JsonSerializer<HybridInstance>(HybridInstance.class);
@@ -87,9 +88,10 @@ public class HybridManager implements IRealizationProvider {
         loadAllHybridInstance();
     }
 
+    //加载所有的混血模式下的hybrid
     private void loadAllHybridInstance() throws IOException {
         ResourceStore store = getStore();
-        List<String> paths = store.collectResourceRecursively(ResourceStore.HYBRID_RESOURCE_ROOT, ".json");
+        List<String> paths = store.collectResourceRecursively(ResourceStore.HYBRID_RESOURCE_ROOT, ".json");//加载所有的混血模式cube
 
         logger.debug("Loading Hybrid from folder " + store.getReadableResourcePath(ResourceStore.HYBRID_RESOURCE_ROOT));
 
@@ -100,11 +102,12 @@ public class HybridManager implements IRealizationProvider {
         logger.debug("Loaded " + paths.size() + " Hybrid(s)");
     }
 
+    //如果一个cube有更改,则加载所有依赖该cube的hybrid
     public void reloadHybridInstanceByChild(RealizationType type, String realizationName) {
-        for (HybridInstance hybridInstance : hybridMap.values()) {
+        for (HybridInstance hybridInstance : hybridMap.values()) {//循环每一个hybrid
             boolean includes = false;
             for (RealizationEntry realizationEntry : hybridInstance.getRealizationEntries()) {
-                if (realizationEntry.getType() == type && realizationEntry.getRealization().equalsIgnoreCase(realizationName)) {
+                if (realizationEntry.getType() == type && realizationEntry.getRealization().equalsIgnoreCase(realizationName)) {//说明该hybrid依赖了参数对应的cube,因此要重新加载该hybrid
                     includes = true;
                     break;
                 }
@@ -115,6 +118,7 @@ public class HybridManager implements IRealizationProvider {
         }
     }
 
+    //加载一个hybrid对应的json
     private synchronized HybridInstance loadHybridInstance(String path) {
         ResourceStore store = getStore();
 
@@ -145,6 +149,7 @@ public class HybridManager implements IRealizationProvider {
         return RealizationType.HYBRID;
     }
 
+    //通过hybrid的name获取hybrid对象
     @Override
     public IRealization getRealization(String name) {
         return getHybridInstance(name);

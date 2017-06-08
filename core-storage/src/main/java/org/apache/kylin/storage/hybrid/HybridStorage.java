@@ -21,6 +21,7 @@ import org.apache.kylin.metadata.realization.IRealization;
 import org.apache.kylin.storage.IStorage;
 import org.apache.kylin.storage.IStorageQuery;
 
+//如何查询hybrid对应的sql
 public class HybridStorage implements IStorage {
 
     @Override

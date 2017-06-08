@@ -34,10 +34,11 @@ import com.google.common.collect.Lists;
  */
 public class ConstantTupleFilter extends TupleFilter {
 
+    //定义两个boolean类型的常量
     public static final ConstantTupleFilter FALSE = new ConstantTupleFilter();
-    public static final ConstantTupleFilter TRUE = new ConstantTupleFilter((Object) null); // not sure of underlying code system, null is the only value that applies to all types
+    public static final ConstantTupleFilter TRUE = new ConstantTupleFilter((Object) null); // not sure of underlying code system, null is the only value that applies to all types 有一个元素,则结果就是true
 
-    private Collection<Object> constantValues;//因为是常数,但是类型不确定,因此是Object
+    private Collection<Object> constantValues;//因为是常数,但是类型不确定,因此是Object 因为常数可能是一组集合,因此该值类型是集合
 
     public ConstantTupleFilter() {
         super(Collections.<TupleFilter> emptyList(), FilterOperatorEnum.CONSTANT);
@@ -54,10 +55,11 @@ public class ConstantTupleFilter extends TupleFilter {
         this.constantValues.addAll(values);
     }
 
+    //反转
     @Override
     public TupleFilter reverse() {
-        if (this.evaluate(null, null)) {
-            return ConstantTupleFilter.FALSE;
+        if (this.evaluate(null, null)) {//说明是true,即有常量值
+            return ConstantTupleFilter.FALSE;//则变成false
         } else {
             return ConstantTupleFilter.TRUE;
         }

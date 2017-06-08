@@ -41,9 +41,9 @@ public class ExternalFilterDesc extends RootPersistentEntity implements ISourceA
     @JsonProperty("name")
     private String name;//filter的name
     @JsonProperty("filter_resource_identifier")
-    private String filterResourceIdentifier;
+    private String filterResourceIdentifier;//对应的hdfs上的路径,或者hbase的table的name
     @JsonProperty("filter_table_type")
-    private Functions.FilterTableType filterTableType;
+    private Functions.FilterTableType filterTableType;//数据源的类型,要么是hdfs上path路径,要么是habse的一个table
     @JsonProperty("source_type")
     private int sourceType = ISourceAware.ID_EXTERNAL;
     @JsonProperty("description")

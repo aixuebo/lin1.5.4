@@ -29,7 +29,7 @@ public interface ISourceAware {
     public static final int ID_HIVE = 0;//来源于hive
     public static final int ID_STREAMING = 1;//streaming,比如kafka
     public static final int ID_SPARKSQL = 5;//来源于spark sql
-    public static final int ID_EXTERNAL = 7;
+    public static final int ID_EXTERNAL = 7;//来自于外部存储,存储在hdfs上或者hbase上
 
     int getSourceType();
 }
