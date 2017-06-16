@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 public class BatchCubingJobBuilder2 extends JobBuilderSupport {
     private static final Logger logger = LoggerFactory.getLogger(BatchCubingJobBuilder2.class);
 
-    private final IMRBatchCubingInputSide inputSide;
+    private final IMRBatchCubingInputSide inputSide;//实现类是org.apache.kylin.source.hive.HiveMRInput类getBatchCubingInputSide方法,即org.apache.kylin.source.hive.HiveMRInput类的BatchCubingInputSide子类
     private final IMRBatchCubingOutputSide2 outputSide;//org.apache.kylin.storage.hbase.steps.HBaseMROutput2Transition
 
     public BatchCubingJobBuilder2(CubeSegment newSegment, String submitter) {
