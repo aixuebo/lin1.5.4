@@ -304,7 +304,7 @@ public class TableController extends BasicController {
                 // Clone TableDesc
                 TableDescResponse rtableDesc = new TableDescResponse(table);
                 rtableDesc.setDescExd(exd);
-                if (exd.containsKey(MetadataConstants.TABLE_EXD_CARDINALITY)) {//统计了列的不同值苏慧伦
+                if (exd.containsKey(MetadataConstants.TABLE_EXD_CARDINALITY)) {//统计了列的不同值数量
                     Map<String, Long> cardinality = new HashMap<String, Long>();
                     String scard = exd.get(MetadataConstants.TABLE_EXD_CARDINALITY);
                     if (!StringUtils.isEmpty(scard)) {

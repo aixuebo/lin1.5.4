@@ -229,8 +229,5 @@ public class CuboidJob extends AbstractHadoopJob {
      *            the mapperClass to set
      */
     @SuppressWarnings("rawtypes")
-    public void setMapperClass(Class<? extends Mapper> mapperClass) {
-        this.mapperClass = mapperClass;
-    }
 
 }
