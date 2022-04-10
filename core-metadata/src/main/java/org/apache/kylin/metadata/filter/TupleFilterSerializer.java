@@ -39,6 +39,7 @@ public class TupleFilterSerializer {
 
     private static final Logger logger = LoggerFactory.getLogger(TupleFilterSerializer.class);
 
+    //定义如何反序列化接口
     public interface Decorator {
         TupleFilter onSerialize(TupleFilter filter);
     }

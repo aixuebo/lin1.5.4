@@ -73,6 +73,7 @@ public class ResultScannerAdapter implements ResultScanner {
         };
     }
 
+    //迭代器一行一行返回数据
     @Override
     public Result next() throws IOException {
         List<Cell> cells = Lists.newArrayList();
@@ -83,6 +84,7 @@ public class ResultScannerAdapter implements ResultScanner {
             return Result.create(cells);
     }
 
+    //不支持返回多行数据
     @Override
     public Result[] next(int nbRows) throws IOException {
         throw new UnsupportedOperationException();

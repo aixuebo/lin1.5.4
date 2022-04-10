@@ -160,26 +160,29 @@ public class AggregationScanner implements RegionScanner {
         return outerScanner.getMvccReadPoint();
     }
 
+    //统计对象
     private static class Stats {
-        long inputRows = 0;
-        long inputBytes = 0;
-        long outputRows = 0;
+        long inputRows = 0;//多少条数据
+        long inputBytes = 0;//读取的所有数据的字节长度
+        long outputRows = 0;//next了输出多少行
 
         // have no outputBytes because that requires actual serialize all the
         // aggregator buffers
 
         public void countInputRow(List<Cell> row) {
-            inputRows++;
-            inputBytes += row.get(0).getRowLength();
-            for (int i = 0, n = row.size(); i < n; i++) {
+            inputRows++; //多少条数据
+            inputBytes += row.get(0).getRowLength();//rowkey字节长度
+            for (int i = 0, n = row.size(); i < n; i++) {//每一个value的字节长度
                 inputBytes += row.get(i).getValueLength();
             }
         }
 
+        //追加输出行数
         public void countOutputRow(long rowCount) {
             outputRows += rowCount;
         }
 
+        //统计输出行的占比
         public String toString() {
             double percent = (double) outputRows / inputRows * 100;
             return Math.round(percent) + "% = " + outputRows + " (out rows) / " + inputRows + " (in rows); in bytes = " + inputBytes + "; est. out bytes = " + Math.round(inputBytes * percent / 100);

@@ -79,6 +79,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+/**
+ * 查询某个指定的cube实例
+ */
 @SuppressWarnings("unused")
 public class CubeStorageQuery implements IStorageQuery {
 

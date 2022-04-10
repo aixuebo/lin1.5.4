@@ -104,7 +104,7 @@ public class OLAPEnumerator implements Enumerator<Object[]> {
         logger.debug("query storage...");
 
         // set connection properties
-        setConnectionProperties();//设置连接属性  与kylin建立连接
+        setConnectionProperties();//设置连接属性  后期与kylin建立连接
 
         // bind dynamic variables
         bindVariable(olapContext.filter);//绑定变量
@@ -155,9 +155,9 @@ public class OLAPEnumerator implements Enumerator<Object[]> {
         CalciteConnection conn = (CalciteConnection) optiqContext.getQueryProvider();
         Properties connProps = conn.getProperties();
 
-        String propThreshold = connProps.getProperty(OLAPQuery.PROP_SCAN_THRESHOLD);
+        String propThreshold = connProps.getProperty(OLAPQuery.PROP_SCAN_THRESHOLD);//服务端口
         int threshold = Integer.valueOf(propThreshold);
-        olapContext.storageContext.setThreshold(threshold);
+        olapContext.storageContext.setThreshold(threshold);//设置端口
     }
 
 }

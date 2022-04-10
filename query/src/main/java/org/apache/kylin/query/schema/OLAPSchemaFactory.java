@@ -42,6 +42,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 工厂类,该类使用json文件的方式,让calcite读取该json文件,知道了一个数据库有哪些表 以及表字段内容等。
+ * 从而产生的connection都是calcite产生的,因此后期交互的都是calcite对象.包括ResultSet对象都是calcite的,因此阅读的难度有了提升。
+ * 但是有一个是确定的,就是kylin将表内容转换成json类型的schema提供给了calcite。
  */
 public class OLAPSchemaFactory implements SchemaFactory {
     public static final Logger logger = LoggerFactory.getLogger(OLAPSchemaFactory.class);

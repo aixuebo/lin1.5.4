@@ -25,10 +25,11 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.kylin.query.relnode.OLAPContext;
 
 /**
+ * 查询执行入口
  */
 public class OLAPQuery extends AbstractEnumerable<Object[]> implements Enumerable<Object[]> {
 
-    public static final String PROP_SCAN_THRESHOLD = "scan_threshold";
+    public static final String PROP_SCAN_THRESHOLD = "scan_threshold"; // 服务端口
 
     public enum EnumeratorTypeEnum {
         OLAP, //finish query with Cube or II, or a combination of both 查询kylin的sql

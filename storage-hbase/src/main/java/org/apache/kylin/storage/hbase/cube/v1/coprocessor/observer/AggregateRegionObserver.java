@@ -43,12 +43,13 @@ public class AggregateRegionObserver extends BaseRegionObserver {
     static final Log LOG = LogFactory.getLog(AggregateRegionObserver.class);
 
     static final String COPROCESSOR_ENABLE = "_Coprocessor_Enable";
-    static final String TYPE = "_Type";
+    static final String TYPE = "_Type";//返回rowkey中的列,每一个列属于table中的位置
     static final String PROJECTOR = "_Projector";
     static final String AGGREGATORS = "_Aggregators";
     static final String FILTER = "_Filter";
     static final String BEHAVIOR = "_Behavior";
 
+    //是使用RegionObserver在PostScannerOpen Hook中将RegionScanner替换成支持Aggregation工作的定制化的Scanner
     @Override
     public final RegionScanner postScannerOpen(final ObserverContext<RegionCoprocessorEnvironment> ctxt, final Scan scan, final RegionScanner innerScanner) throws IOException {
 
@@ -73,6 +74,7 @@ public class AggregateRegionObserver extends BaseRegionObserver {
             return innerScanner;
         }
 
+        //返回rowkey中的列,每一个列属于table中的位置
         byte[] typeBytes = scan.getAttribute(TYPE);
         CoprocessorRowType type = CoprocessorRowType.deserialize(typeBytes);
 

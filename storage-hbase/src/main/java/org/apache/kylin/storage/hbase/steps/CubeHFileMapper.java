@@ -47,12 +47,12 @@ public class CubeHFileMapper extends KylinMapper<Text, Text, ImmutableBytesWrita
     ImmutableBytesWritable outputKey = new ImmutableBytesWritable();
 
     String cubeName;
-    CubeDesc cubeDesc;
+    CubeDesc cubeDesc;//描述该cube的---cube包含rowkey的字段排序，以及度量对象等
 
     MeasureDecoder inputCodec;//度量的解码器
     Object[] inputMeasures;//调用解码器后,每一个度量返回一个反序列化后的值,每一个值都是数组的一个元素
 
-    List<KeyValueCreator> keyValueCreators;//每一个列族对应一个该对象----因为每一个列族是分配了不同的度量值的
+    List<KeyValueCreator> keyValueCreators;//每一个列对应一个该对象----因为每一个列是分配了不同的度量值的
 
     @Override
     protected void setup(Context context) throws IOException {
@@ -68,8 +68,8 @@ public class CubeHFileMapper extends KylinMapper<Text, Text, ImmutableBytesWrita
         inputMeasures = new Object[cubeDesc.getMeasures().size()];
         keyValueCreators = Lists.newArrayList();
 
-        for (HBaseColumnFamilyDesc cfDesc : cubeDesc.getHbaseMapping().getColumnFamily()) {
-            for (HBaseColumnDesc colDesc : cfDesc.getColumns()) {
+        for (HBaseColumnFamilyDesc cfDesc : cubeDesc.getHbaseMapping().getColumnFamily()) {//多少个列簇
+            for (HBaseColumnDesc colDesc : cfDesc.getColumns()) {//该列簇下的所有列
                 keyValueCreators.add(new KeyValueCreator(cubeDesc, colDesc));
             }
         }
@@ -79,14 +79,16 @@ public class CubeHFileMapper extends KylinMapper<Text, Text, ImmutableBytesWrita
      *
      * @param key  rowkey
      * @param value 所有的度量集合
+     * 输出的key是rowkey,value是rowkey+某一个列的value组成的一行数据。
+     *              虽然value中已经存在了rowkey,但是key的rowkey的目的是reduce中可以按照key进行分组,让同一个rowkey的不同数据连续写入
      */
     @Override
     public void map(Text key, Text value, Context context) throws IOException, InterruptedException {
         outputKey.set(key.getBytes(), 0, key.getLength());//rowkey
         KeyValue outputValue;
 
-        int n = keyValueCreators.size();
-        if (n == 1 && keyValueCreators.get(0).isFullCopy) { // shortcut for simple full copy
+        int n = keyValueCreators.size();//多少个度量值
+        if (n == 1 && keyValueCreators.get(0).isFullCopy) { // shortcut for simple full copy 说明只有一个列簇,并且该列簇存储了所有的度量值
 
             outputValue = keyValueCreators.get(0).create(key, value.getBytes(), 0, value.getLength());
             context.write(outputKey, outputValue);

@@ -33,7 +33,7 @@ public abstract class AggregationCache {
     static final long MEMOERY_MAX_BYTES = Runtime.getRuntime().maxMemory();
     protected final Map<AggrKey, MeasureAggregator[]> aggBufMap;
     transient int rowMemBytes;
-    private AggrKey firstKey = null;
+    private AggrKey firstKey = null;//使用一个rowkey对应的度量值 * aggBufMap的size,可以估算出所有数据对应的内存大小
 
     public AggregationCache() {
         this.aggBufMap = Maps.newHashMap();

@@ -40,7 +40,7 @@ import org.apache.calcite.schema.Statistic;
 import org.apache.calcite.schema.Statistics;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTableQueryable;
-import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.type.SqlTypeName;AbstractQueryableTable
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.kylin.metadata.datatype.DataType;
@@ -93,8 +93,8 @@ public class OLAPTable extends AbstractQueryableTable implements TranslatableTab
 
     private final OLAPSchema olapSchema;//calcite对应的数据库对象
     private final TableDesc sourceTable;//kylin配置的hive表结构
-    private RelDataType rowType;
-    private List<ColumnDesc> exposedColumns;
+    private RelDataType rowType; //表示一个表的所有列组成的对象
+    private List<ColumnDesc> exposedColumns;//所有的列信息,包含维度列+度量列
 
     public OLAPTable(OLAPSchema schema, TableDesc tableDesc) {
         super(Object[].class);
@@ -120,6 +120,7 @@ public class OLAPTable extends AbstractQueryableTable implements TranslatableTab
         return exposedColumns;
     }
 
+    //此时表示一个表的所有列组成的对象
     @Override
     public RelDataType getRowType(RelDataTypeFactory typeFactory) {
         if (this.rowType == null) {
@@ -133,14 +134,15 @@ public class OLAPTable extends AbstractQueryableTable implements TranslatableTab
     //将kylin中的列对象 转换成calcite的列对象
     private RelDataType deriveRowType(RelDataTypeFactory typeFactory) {
         RelDataTypeFactory.FieldInfoBuilder fieldInfo = typeFactory.builder();
-        for (ColumnDesc column : exposedColumns) {
-            RelDataType sqlType = createSqlType(typeFactory, column.getType(), column.isNullable());
+        for (ColumnDesc column : exposedColumns) {//循环该表的所有列
+            RelDataType sqlType = createSqlType(typeFactory, column.getType(), column.isNullable());//为calcite设置列对象
             sqlType = SqlTypeUtil.addCharsetAndCollation(sqlType, typeFactory);
             fieldInfo.add(column.getName(), sqlType);
         }
         return typeFactory.createStructType(fieldInfo);
     }
 
+    //列的类型通知给calcite
     public static RelDataType createSqlType(RelDataTypeFactory typeFactory, DataType dataType, boolean isNullable) {
         SqlTypeName sqlTypeName = SQLTYPE_MAPPING.get(dataType.getName());//kylin类型转换成calcite的数据类型
         if (sqlTypeName == null)
@@ -208,6 +210,7 @@ public class OLAPTable extends AbstractQueryableTable implements TranslatableTab
     }
 
     //calcite对应的方法--返回如何扫描一个表内容对象
+    //relOptTable 表示一个表对象
     @Override
     public RelNode toRel(ToRelContext context, RelOptTable relOptTable) {
         int fieldCount = relOptTable.getRowType().getFieldCount();//该table有多少列
@@ -224,6 +227,7 @@ public class OLAPTable extends AbstractQueryableTable implements TranslatableTab
         return integers;
     }
 
+    //子查询
     @Override
     public <T> Queryable<T> asQueryable(QueryProvider queryProvider, SchemaPlus schema, String tableName) {
         return new AbstractTableQueryable<T>(queryProvider, schema, this, tableName) {

@@ -82,8 +82,8 @@ public class OLAPTableScan extends TableScan implements OLAPRel, EnumerableRel {
 
     private final OLAPTable olapTable;//calcite对应的表对象
     private final String tableName;//kylin配置的表名字
-    private final int[] fields;//每一个属性对应一个int
-    private ColumnRowType columnRowType;
+    private final int[] fields;//每一个属性对应一个int序号,从0开始累加
+    private ColumnRowType columnRowType;//列具体对应的内容
     private OLAPContext context;
 
     public OLAPTableScan(RelOptCluster cluster, RelOptTable table, OLAPTable olapTable, int[] fields) {
@@ -91,7 +91,7 @@ public class OLAPTableScan extends TableScan implements OLAPRel, EnumerableRel {
         this.olapTable = olapTable;
         this.fields = fields;
         this.tableName = olapTable.getTableName();
-        this.rowType = getRowType();
+        this.rowType = getRowType();//对应的列集合信息
     }
 
     public OLAPTable getOlapTable() {
@@ -121,7 +121,7 @@ public class OLAPTableScan extends TableScan implements OLAPRel, EnumerableRel {
         return new OLAPTableScan(getCluster(), table, olapTable, fields);
     }
 
-    //日安家查询表的规则
+    //查询表的规则
     @Override
     public void register(RelOptPlanner planner) {
         // force clear the query context before traversal relational operators
@@ -236,7 +236,7 @@ public class OLAPTableScan extends TableScan implements OLAPRel, EnumerableRel {
     @Override
     public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
 
-        context.setReturnTupleInfo(rowType, columnRowType);
+        context.setReturnTupleInfo(rowType, columnRowType);//注册列信息
         String execFunction = genExecFunc();
 
         PhysType physType = PhysTypeImpl.of(implementor.getTypeFactory(), this.rowType, pref.preferArray());

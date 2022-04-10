@@ -65,6 +65,7 @@ public class ObserverAggregationCache extends AggregationCache {
             this.iterator = aggBufMap.entrySet().iterator();
         }
 
+        //下一行的数据都存储在results参数中被返回
         @Override
         public boolean next(List<Cell> results) throws IOException {
             try {
@@ -92,7 +93,7 @@ public class ObserverAggregationCache extends AggregationCache {
             MeasureAggregator[] aggBuf = entry.getValue();
             ByteBuffer[] rowValues = aggregators.getHColValues(aggBuf);
 
-            if (nHCols == 0) {
+            if (nHCols == 0) {//只有rowkey,无度量列信息
                 Cell keyValue = new KeyValue(rowKey.get(), rowKey.offset(), rowKey.length(), //
                         null, 0, 0, //
                         null, 0, 0, //

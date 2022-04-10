@@ -68,6 +68,7 @@ public class CoprocessorProjector {
         return serializer.deserialize(ByteBuffer.wrap(bytes));
     }
 
+    //如何对CoprocessorProjector对象进行序列化与反序列化成字节数组
     private static final BytesSerializer<CoprocessorProjector> serializer = new BytesSerializer<CoprocessorProjector>() {
         @Override
         public void serialize(CoprocessorProjector value, ByteBuffer out) {

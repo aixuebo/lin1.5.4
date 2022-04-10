@@ -235,6 +235,7 @@ public class QueryController extends BasicController {
         }
     }
 
+    //从缓存中查找数据结果
     private SQLResponse searchQueryInCache(SQLRequest sqlRequest) {
         SQLResponse response = null;
         Cache exceptionCache = cacheManager.getCache(EXCEPTION_QUERY_CACHE);

@@ -35,18 +35,19 @@ import com.google.common.collect.Maps;
 
 /**
  * @author yangli9
+ * 返回rowkey中的列,每一个列属于table中的位置
  */
 public class CoprocessorRowType {
 
 
     //for observer
     public static CoprocessorRowType fromCuboid(CubeSegment seg, Cuboid cuboid) {
-        List<TblColRef> colList = cuboid.getColumns();
+        List<TblColRef> colList = cuboid.getColumns();//列对象集合
         TblColRef[] cols = colList.toArray(new TblColRef[colList.size()]);
-        RowKeyColumnIO colIO = new RowKeyColumnIO(seg.getDimensionEncodingMap());
-        int[] colSizes = new int[cols.length];
+        RowKeyColumnIO colIO = new RowKeyColumnIO(seg.getDimensionEncodingMap());//cube的rowkey对象,可以获取rowkey对象中列的顺序
+        int[] colSizes = new int[cols.length];//该列在rowkey中的顺序
         for (int i = 0; i < cols.length; i++) {
-            colSizes[i] = colIO.getColumnLength(cols[i]);
+            colSizes[i] = colIO.getColumnLength(cols[i]);//该列在rowkey中的顺序
         }
         return new CoprocessorRowType(cols, colSizes, seg.getRowKeyPreambleSize());
     }
@@ -63,23 +64,24 @@ public class CoprocessorRowType {
         return serializer.deserialize(ByteBuffer.wrap(bytes));
     }
 
+    //序列与反序列化
     private static final BytesSerializer<CoprocessorRowType> serializer = new BytesSerializer<CoprocessorRowType>() {
 
         @Override
         public void serialize(CoprocessorRowType o, ByteBuffer out) {
             int n = o.columns.length;
-            BytesUtil.writeVInt(o.columns.length, out);
-            BytesUtil.writeVInt(o.bodyOffset, out);
+            BytesUtil.writeVInt(o.columns.length, out);//多少个列
+            BytesUtil.writeVInt(o.bodyOffset, out);//bodyOffset的位置
             for (int i = 0; i < n; i++) {
-                BytesUtil.writeAsciiString(o.columns[i].getTable(), out);
-                BytesUtil.writeAsciiString(o.columns[i].getName(), out);
+                BytesUtil.writeAsciiString(o.columns[i].getTable(), out);//列所属表
+                BytesUtil.writeAsciiString(o.columns[i].getName(), out);//列名
                 BytesUtil.writeVInt(o.columnSizes[i], out);
             }
         }
 
         @Override
         public CoprocessorRowType deserialize(ByteBuffer in) {
-            int n = BytesUtil.readVInt(in);
+            int n = BytesUtil.readVInt(in);//多少列
             int bodyOffset = BytesUtil.readVInt(in);
             TblColRef[] cols = new TblColRef[n];
             int[] colSizes = new int[n];
@@ -103,11 +105,11 @@ public class CoprocessorRowType {
 
     // ============================================================================
 
-    public TblColRef[] columns;
+    public TblColRef[] columns;//列对象
     private int bodyOffset;
-    public int[] columnSizes;
-    public int[] columnOffsets;
-    public HashMap<TblColRef, Integer> columnIdxMap;
+    public int[] columnSizes;//列对象大小
+    public int[] columnOffsets;//列在rowkey中的位置
+    public HashMap<TblColRef, Integer> columnIdxMap;//列对象 对应的序号映射
 
     public CoprocessorRowType(TblColRef[] columns, int[] columnSizes, int bodyOffset) {
         this.bodyOffset = bodyOffset;
@@ -116,6 +118,7 @@ public class CoprocessorRowType {
         init();
     }
 
+    //返回列对象下标
     public int getColIndexByTblColRef(TblColRef colRef) {
         return columnIdxMap.get(colRef);
     }
@@ -136,6 +139,7 @@ public class CoprocessorRowType {
         this.columnIdxMap = map;
     }
 
+    //多少列
     public int getColumnCount() {
         return columns.length;
     }
